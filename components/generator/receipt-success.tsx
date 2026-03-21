@@ -18,16 +18,18 @@ export function ReceiptSuccess({
   minDate,
 }: ReceiptSuccessProps): React.JSX.Element {
   const [qrCode, setQrCode] = useState<string>('');
+  const [qrError, setQrError] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    generateQR();
+    void generateQR();
   }, [proof]);
 
   const generateQR = async (): Promise<void> => {
     try {
       const QRCode = (await import('qrcode')).default;
       const verifyUrl = getVerifyUrl();
+      setQrError('');
       
       const qr = await QRCode.toDataURL(verifyUrl, {
         errorCorrectionLevel: 'H',
@@ -42,15 +44,13 @@ export function ReceiptSuccess({
       setQrCode(qr);
     } catch (error) {
       console.error('QR generation failed:', error instanceof Error ? error.message : error);
+      setQrError('Could not generate QR code. You can still copy the verification link.');
     }
   };
 
   const getVerifyUrl = (): string => {
     const params = new URLSearchParams({
-      proof: encodeURIComponent(proof),
-      chain,
-      amount: claimedAmount,
-      date: minDate,
+      proof,
     });
     
     return `${window.location.origin}/verify?${params.toString()}`;
@@ -121,6 +121,12 @@ export function ReceiptSuccess({
           <Button onClick={downloadQR} variant="secondary" className="w-full">
             📥 Download QR Code
           </Button>
+        </div>
+      )}
+
+      {qrError && (
+        <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 text-sm text-amber-600">
+          {qrError}
         </div>
       )}
 

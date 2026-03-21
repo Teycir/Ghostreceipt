@@ -67,6 +67,26 @@
 
 ---
 
+# Task Plan: Verify & Sharing Integrity Fixes
+
+- [x] Ensure verifier displays claims derived from verified proof signals, not URL metadata.
+- [x] Reduce and stabilize share-link payload encoding.
+- [x] Add user-facing QR generation error state.
+- [x] Handle clipboard paste failures without unhandled promise rejections.
+- [x] Add unit tests for proof export/import compatibility and claim extraction from public signals.
+- [x] Run typecheck and targeted tests, then summarize.
+
+## Review
+- Verifier now only consumes `proof` from URL and derives displayed claims from verified `publicSignals`.
+- Proof share payload export/import uses URL-safe base64url with backward-compatible JSON import support.
+- Receipt QR generation now exposes a user-facing fallback error while preserving copy-link flow.
+- Clipboard paste flow now handles denied/failed reads without surfacing unhandled promise rejections.
+- Added unit tests: `tests/unit/zk/prover.test.ts` and `tests/unit/zk/share.test.ts`.
+- `npm run typecheck` passes.
+- `npm test -- tests/unit/zk/prover.test.ts tests/unit/zk/share.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/providers/cascade.test.ts tests/unit/zk/witness.test.ts` passes (26 tests).
+
+---
+
 # Task Plan: Gitignore Hygiene
 
 - [x] Audit current `.gitignore` entries against actual local/generated files.

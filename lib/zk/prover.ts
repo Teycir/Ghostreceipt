@@ -104,21 +104,25 @@ export class ProofGenerator {
    * Export proof to shareable format
    */
   exportProof(result: ProofResult): string {
-    return JSON.stringify(result);
+    return encodeSharePayload(JSON.stringify(result));
   }
 
   /**
    * Import proof from shareable format
    */
   importProof(exported: string): ProofResult {
+    const rawInput = exported.trim();
+
     try {
-      const parsed = JSON.parse(exported);
-      
+      const parsed = JSON.parse(
+        rawInput.startsWith('{') ? rawInput : decodeSharePayload(rawInput)
+      );
+
       // Validate structure
-      if (!parsed.proof || !parsed.publicSignals) {
+      if (!parsed.proof || !Array.isArray(parsed.publicSignals)) {
         throw new Error('Invalid proof format');
       }
-      
+
       return parsed as ProofResult;
     } catch (error) {
       if (error instanceof Error) {
@@ -140,4 +144,32 @@ export function createProofGenerator(): ProofGenerator {
     '/zk/receipt_final.zkey',
     '/zk/verification_key.json'
   );
+}
+
+function encodeSharePayload(jsonPayload: string): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(jsonPayload, 'utf8').toString('base64url');
+  }
+
+  const bytes = new TextEncoder().encode(jsonPayload);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
+}
+
+function decodeSharePayload(encodedPayload: string): string {
+  const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+  const normalized = `${base64}${padding}`;
+
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(normalized, 'base64').toString('utf8');
+  }
+
+  const binary = atob(normalized);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }

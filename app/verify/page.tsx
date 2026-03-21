@@ -3,11 +3,10 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import type { Chain } from '@/lib/validation/schemas';
+import { extractVerifiedClaims } from '@/lib/zk/share';
 
 interface VerificationResult {
   valid: boolean;
-  chain: Chain;
   claimedAmount: string;
   minDate: string;
   error?: string | undefined;
@@ -25,14 +24,10 @@ function VerifyContent(): React.JSX.Element {
   const verifyReceipt = async (): Promise<void> => {
     try {
       const proof = searchParams.get('proof');
-      const chain = searchParams.get('chain') as Chain;
-      const amount = searchParams.get('amount');
-      const date = searchParams.get('date');
 
-      if (!proof || !chain || !amount || !date) {
+      if (!proof) {
         setResult({
           valid: false,
-          chain: 'bitcoin',
           claimedAmount: '',
           minDate: '',
           error: 'Missing verification parameters',
@@ -44,7 +39,7 @@ function VerifyContent(): React.JSX.Element {
       // Import proof
       const { createProofGenerator } = await import('@/lib/zk/prover');
       const prover = createProofGenerator();
-      const proofData = prover.importProof(decodeURIComponent(proof));
+      const proofData = prover.importProof(proof);
 
       // Verify proof
       const verification = await prover.verifyProof(
@@ -52,17 +47,19 @@ function VerifyContent(): React.JSX.Element {
         proofData.proof
       );
 
+      const claims = verification.valid
+        ? extractVerifiedClaims(proofData.publicSignals)
+        : null;
+
       setResult({
         valid: verification.valid,
-        chain,
-        claimedAmount: amount,
-        minDate: date,
+        claimedAmount: claims?.claimedAmount ?? '',
+        minDate: claims?.minDateIsoUtc ?? '',
         error: verification.error,
       });
     } catch (error) {
       setResult({
         valid: false,
-        chain: 'bitcoin',
         claimedAmount: '',
         minDate: '',
         error: error instanceof Error ? error.message : 'Verification failed',
@@ -135,15 +132,8 @@ function VerifyContent(): React.JSX.Element {
               {result.valid && (
                 <div className="space-y-3 mt-6">
                   <div className="p-3 bg-background/50 rounded-md">
-                    <div className="text-xs text-muted-foreground mb-1">Chain</div>
-                    <div className="text-sm font-semibold capitalize">
-                      {result.chain}
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-background/50 rounded-md">
                     <div className="text-xs text-muted-foreground mb-1">
-                      Minimum Amount {result.chain === 'bitcoin' ? '(satoshis)' : '(wei)'}
+                      Minimum Amount (atomic units)
                     </div>
                     <div className="text-sm font-semibold font-mono">
                       {result.claimedAmount}

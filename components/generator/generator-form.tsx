@@ -151,7 +151,7 @@ export function GeneratorForm(): React.JSX.Element {
         setErrorMessage('Clipboard access denied');
         return;
       }
-      throw error;
+      setErrorMessage('Failed to read from clipboard');
     }
   };
 
@@ -190,7 +190,9 @@ export function GeneratorForm(): React.JSX.Element {
           </label>
           <button
             type="button"
-            onClick={() => pasteFromClipboard('txHash')}
+            onClick={() => {
+              void pasteFromClipboard('txHash');
+            }}
             className="px-2 py-1 text-xs bg-primary/10 border border-primary/30 rounded text-primary hover:bg-primary/20 transition-colors"
           >
             📋 Paste
