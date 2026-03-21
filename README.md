@@ -275,10 +275,10 @@ GhostReceipt is part of a privacy-first toolkit. Check out these related project
 ## References
 - Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
 - Execution checklist: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
-- Reuse source: `/home/teycir/Repos/xmrproof`
-- Reuse source: `/home/teycir/Repos/Timeseal`
-- Reuse source: `/home/teycir/Repos/Sanctum`
-- Reuse source: `/home/teycir/Repos/smartcontractpatternfinder`
+- Reference source: `/home/teycir/Repos/xmrproof`
+- Reference source: `/home/teycir/Repos/Timeseal`
+- Reference source: `/home/teycir/Repos/Sanctum`
+- Reference source: `/home/teycir/Repos/smartcontractpatternfinder`
 
 ## Contact
 - Creator: [Teycir Ben Soltane](https://teycirbensoltane.tn)
