@@ -107,6 +107,31 @@ describe('ProviderCascade', () => {
     });
   });
 
+  it('preserves provider error metadata when all providers fail', async () => {
+    const providerOneFetch = jest
+      .fn<ReturnType<Provider['fetchTransaction']>, Parameters<Provider['fetchTransaction']>>()
+      .mockRejectedValue(new Error('HTTP 500: Internal Server Error'));
+
+    const providerTwoFetch = jest
+      .fn<ReturnType<Provider['fetchTransaction']>, Parameters<Provider['fetchTransaction']>>()
+      .mockRejectedValue(new Error('HTTP 503: Service Unavailable'));
+
+    const cascade = new ProviderCascade(
+      [
+        createProvider('p1', providerOneFetch),
+        createProvider('p2', providerTwoFetch),
+      ],
+      baseConfig
+    );
+
+    await expect(cascade.fetchTransaction(sampleTx.txHash)).rejects.toMatchObject({
+      code: 'PROVIDER_ERROR',
+      retryable: true,
+      provider: 'p2',
+      message: 'HTTP 503: Service Unavailable',
+    });
+  });
+
   it('aborts provider call when timeout elapses', async () => {
     let aborted = false;
 
@@ -126,9 +151,11 @@ describe('ProviderCascade', () => {
       }
     );
 
-    await expect(cascade.fetchTransaction(sampleTx.txHash)).rejects.toThrow(
-      'All providers failed. Last error: Provider slow-provider timeout after 10ms'
-    );
+    await expect(cascade.fetchTransaction(sampleTx.txHash)).rejects.toMatchObject({
+      code: 'TIMEOUT',
+      provider: 'slow-provider',
+      message: 'Provider slow-provider timeout after 10ms',
+    });
     expect(aborted).toBe(true);
   });
 });

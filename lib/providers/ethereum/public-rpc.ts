@@ -21,9 +21,24 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     transport: http(),
   });
 
+  private getClient(signal?: AbortSignal) {
+    if (!signal) {
+      return this.client;
+    }
+
+    return createPublicClient({
+      chain: mainnet,
+      transport: http(undefined, {
+        fetchOptions: {
+          signal,
+        },
+      }),
+    });
+  }
+
   async fetchTransaction(
     txHash: string,
-    _signal?: AbortSignal
+    signal?: AbortSignal
   ): Promise<CanonicalTxData> {
     // Validate hash format
     const validationResult = EthereumTxHashSchema.safeParse(txHash);
@@ -31,9 +46,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
       throw new Error(`Invalid Ethereum transaction hash: ${txHash}`);
     }
 
+    const client = this.getClient(signal);
+
     try {
       // Fetch transaction
-      const tx = await this.client.getTransaction({
+      const tx = await client.getTransaction({
         hash: txHash as Hash,
       });
 
@@ -42,15 +59,15 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
       }
 
       // Fetch transaction receipt for confirmations
-      const receipt = await this.client.getTransactionReceipt({
+      const receipt = await client.getTransactionReceipt({
         hash: txHash as Hash,
       });
 
       // Fetch current block number for confirmations
-      const currentBlock = await this.client.getBlockNumber();
+      const currentBlock = await client.getBlockNumber();
 
       // Fetch block for timestamp
-      const block = await this.client.getBlock({
+      const block = await client.getBlock({
         blockNumber: receipt.blockNumber,
       });
 

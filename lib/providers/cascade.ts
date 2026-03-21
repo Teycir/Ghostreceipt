@@ -137,10 +137,16 @@ export class ProviderCascade {
       );
     }
 
-    // All providers failed
-    throw new Error(
-      `All providers failed. Last error: ${lastError?.message || 'Unknown'}`,
-      { cause: lastError }
+    if (lastError) {
+      // Preserve provider-specific metadata so route-level mapping can respond accurately.
+      throw lastError;
+    }
+
+    throw this.createProviderError(
+      'No provider could accept the request (all providers unavailable or at capacity)',
+      'cascade',
+      'PROVIDER_ERROR',
+      true
     );
   }
 

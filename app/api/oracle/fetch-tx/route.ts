@@ -112,8 +112,21 @@ function mapErrorToResponse(error: unknown): {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Parse and validate request body
-    const body = await request.json();
+    // Parse request body
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      const errorResponse: ErrorResponse = {
+        error: {
+          code: 'INVALID_HASH',
+          message: 'Invalid JSON request body',
+        },
+      };
+      return NextResponse.json(errorResponse, { status: 400 });
+    }
+
+    // Validate request body
     const validationResult = OracleFetchTxRequestSchema.safeParse(body);
 
     if (!validationResult.success) {
