@@ -115,3 +115,16 @@
 - `npm run typecheck` passes.
 - `npm run test:coverage -- --ci --runInBand` passes (52 tests).
 - `npm run build` passes (required unsandboxed execution due Turbopack sandbox process constraints).
+
+---
+
+# Task Plan: Dependency Vulnerability Triage & Remediation
+
+- [ ] Capture current dependency vulnerability inventory from local tooling.
+- [ ] Normalize and prioritize findings by severity and direct/transitive upgrade path.
+- [ ] Apply the minimal safe dependency updates in `package.json`/`package-lock.json`.
+- [ ] Run verification checks (`lint`, `typecheck`, targeted tests) after upgrades.
+- [ ] Summarize resolved findings, remaining risk, and follow-up recommendations.
+
+## Review
+- Pending.
