@@ -1,4 +1,4 @@
-import { RateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
+import { RateLimiter, createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 
 describe('RateLimiter', () => {
   beforeEach(() => {
@@ -72,47 +72,91 @@ describe('RateLimiter', () => {
 
     expect(limiter['store'].size).toBe(0);
   });
+
+  it('should dispose and clear tracked clients', () => {
+    const limiter = createRateLimiter({ windowMs: 60000, maxRequests: 2 });
+    limiter.check('client1');
+    limiter.check('client2');
+
+    limiter.dispose();
+
+    expect(limiter['store'].size).toBe(0);
+  });
 });
 
 describe('getClientIdentifier', () => {
-  it('should extract IP from x-forwarded-for header', () => {
+  it('should use trusted proxy headers when explicitly enabled', () => {
     const request = new Request('http://localhost', {
       headers: {
         'x-forwarded-for': '192.168.1.1, 10.0.0.1',
       },
     });
 
-    const identifier = getClientIdentifier(request);
-    expect(identifier).toBe('192.168.1.1');
+    const identifier = getClientIdentifier(request, { trustProxyHeaders: true });
+    expect(identifier).toBe('ip:192.168.1.1');
   });
 
-  it('should extract IP from x-real-ip header', () => {
+  it('should prefer cf-connecting-ip when trusted proxy headers are enabled', () => {
     const request = new Request('http://localhost', {
       headers: {
-        'x-real-ip': '192.168.1.2',
+        'cf-connecting-ip': '203.0.113.10',
+        'x-forwarded-for': '198.51.100.11',
+      },
+    });
+
+    const identifier = getClientIdentifier(request, { trustProxyHeaders: true });
+    expect(identifier).toBe('ip:203.0.113.10');
+  });
+
+  it('should ignore spoofable forwarding headers by default', () => {
+    const request = new Request('http://localhost', {
+      headers: {
+        'x-forwarded-for': '203.0.113.20',
+        'user-agent': 'unit-test-agent',
       },
     });
 
     const identifier = getClientIdentifier(request);
-    expect(identifier).toBe('192.168.1.2');
+    expect(identifier).toMatch(/^fp:[a-f0-9]{24}$/);
   });
 
-  it('should return unknown if no IP headers present', () => {
+  it('should derive deterministic fingerprint when proxy headers are not trusted', () => {
+    const requestA = new Request('http://localhost', {
+      headers: {
+        'user-agent': 'unit-test-agent',
+        'accept-language': 'en-US',
+      },
+    });
+    const requestB = new Request('http://localhost', {
+      headers: {
+        'user-agent': 'unit-test-agent',
+        'accept-language': 'en-US',
+      },
+    });
+
+    const identifierA = getClientIdentifier(requestA);
+    const identifierB = getClientIdentifier(requestB);
+
+    expect(identifierA).toBe(identifierB);
+    expect(identifierA).toMatch(/^fp:[a-f0-9]{24}$/);
+  });
+
+  it('should return anon when no identifying headers are present', () => {
     const request = new Request('http://localhost');
 
     const identifier = getClientIdentifier(request);
-    expect(identifier).toBe('unknown');
+    expect(identifier).toBe('anon');
   });
 
-  it('should prefer x-forwarded-for over x-real-ip', () => {
+  it('should fallback to fingerprint when trusted headers are invalid', () => {
     const request = new Request('http://localhost', {
       headers: {
-        'x-forwarded-for': '192.168.1.1',
-        'x-real-ip': '192.168.1.2',
+        'x-forwarded-for': 'not-an-ip',
+        'user-agent': 'unit-test-agent',
       },
     });
 
-    const identifier = getClientIdentifier(request);
-    expect(identifier).toBe('192.168.1.1');
+    const identifier = getClientIdentifier(request, { trustProxyHeaders: true });
+    expect(identifier).toMatch(/^fp:[a-f0-9]{24}$/);
   });
 });

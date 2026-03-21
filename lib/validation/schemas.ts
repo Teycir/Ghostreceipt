@@ -98,6 +98,7 @@ export const ErrorCodeSchema = z.enum([
   'RATE_LIMIT_EXCEEDED',
   'TRANSACTION_NOT_FOUND',
   'INSUFFICIENT_CONFIRMATIONS',
+  'REPLAY_DETECTED',
   'INTERNAL_ERROR',
 ]);
 

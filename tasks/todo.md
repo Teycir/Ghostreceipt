@@ -1,3 +1,53 @@
+# Task Plan: CVE-2025-59472 Scanner Finding Triage
+
+- [x] Validate advisory affected/fixed ranges from primary sources.
+- [x] Verify local dependency graph resolves to a fixed Next.js version.
+- [x] Confirm runtime configuration does not enable the vulnerable execution mode.
+- [x] Upgrade Next.js ecosystem to latest available stable versions.
+- [x] Remove scanner exception and keep scans exception-free.
+- [x] Record verification evidence and outcome.
+
+## Review
+- Primary-source verification:
+  - OSV/GHSA entry for `GHSA-5f7q-jpqc-wp7h` / `CVE-2025-59472` reports fixed version `next@16.1.5` for the 16.x line.
+- Local dependency verification:
+  - `npm view next dist-tags --json` shows `latest: 16.2.1` and `canary: 16.2.1-canary.4`.
+  - `npm view geist dist-tags --json` shows `latest: 1.7.0`.
+  - `npm install next@latest geist@latest eslint-config-next@latest` completed with `up to date`.
+  - `npm ls next geist --depth=2` resolves `next@16.2.1` both directly and under `geist@1.7.0`.
+  - `npm audit --omit=dev` reports `found 0 vulnerabilities`.
+- Runtime exposure verification:
+  - `rg` found no project configuration enabling `experimental.ppr`, `cacheComponents`, or `NEXT_PRIVATE_MINIMAL_MODE`.
+- Scanner verification (no exceptions):
+  - Ran OSV-Scanner `v2.3.3` directly against `package-lock.json` with no `osv-scanner.toml` present.
+  - Scan completed with no vulnerability IDs reported.
+
+---
+
+# Task Plan: Security Review Findings Remediation
+
+- [x] Harden client identity extraction to prevent header spoofing and avoid global `unknown` throttling.
+- [x] Add timer lifecycle controls (`dispose`/`unref`) for rate limiter and replay protection.
+- [x] Enforce replay protection in a real runtime path (`idempotencyKey` on oracle fetch endpoint).
+- [x] Integrate SSRF URL validation into provider outbound request paths.
+- [x] Add/adjust unit tests under `tests/` for the new security behavior.
+- [x] Run verification (`typecheck` + targeted tests) and record results.
+
+## Review
+- Added trust-aware client identity extraction with secure default (`TRUST_PROXY_HEADERS=false`) and deterministic non-global fallback fingerprint.
+- Added `startCleanup`/`stopCleanup`/`dispose` lifecycle controls with `unref` for rate limiter and replay protection timers.
+- Enforced anti-replay in `/api/oracle/fetch-tx` using `idempotencyKey` (returns `409` with `REPLAY_DETECTED` on replay).
+- Enforced SSRF URL validation in mempool and etherscan provider fetch paths (including health checks).
+- Added/updated tests:
+  - `tests/unit/security/rate-limit.test.ts`
+  - `tests/unit/security/replay.test.ts`
+  - `tests/unit/providers/ssrf-enforcement.test.ts`
+  - `tests/unit/api/fetch-tx-route.test.ts`
+- `npm run typecheck` passes.
+- `npm test -- tests/unit/security/rate-limit.test.ts tests/unit/security/replay.test.ts tests/unit/providers/ssrf-enforcement.test.ts tests/unit/api/fetch-tx-route.test.ts` passes (28 tests).
+
+---
+
 # Task Plan: Provider Cascade & API Error Handling Corrections
 
 - [x] Add chain-aware transaction hash validation at request schema boundary.

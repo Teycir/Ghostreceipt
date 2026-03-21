@@ -5,18 +5,27 @@ interface ReplayEntry {
 export class ReplayProtection {
   private store: Map<string, ReplayEntry>;
   private maxAgeMs: number;
+  private maxFutureSkewMs: number;
+  private cleanupTimer: ReturnType<typeof setInterval> | null;
 
-  constructor(maxAgeMs: number = 300000) {
+  constructor(maxAgeMs: number = 300000, maxFutureSkewMs: number = 30000) {
     this.store = new Map();
     this.maxAgeMs = maxAgeMs;
+    this.maxFutureSkewMs = maxFutureSkewMs;
+    this.cleanupTimer = null;
 
-    setInterval(() => {
-      this.cleanup();
-    }, 60000);
+    this.startCleanup();
   }
 
   check(signatureId: string, timestamp: number): { allowed: boolean; reason?: string } {
     const now = Date.now();
+
+    if (timestamp > now + this.maxFutureSkewMs) {
+      return {
+        allowed: false,
+        reason: 'Signature timestamp is too far in the future',
+      };
+    }
 
     if (now - timestamp > this.maxAgeMs) {
       return {
@@ -43,6 +52,35 @@ export class ReplayProtection {
         this.store.delete(key);
       }
     }
+  }
+
+  startCleanup(intervalMs: number = 60000): void {
+    if (this.cleanupTimer !== null) {
+      return;
+    }
+
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, intervalMs);
+
+    const timer = this.cleanupTimer as unknown as { unref?: () => void };
+    if (typeof timer.unref === 'function') {
+      timer.unref();
+    }
+  }
+
+  stopCleanup(): void {
+    if (this.cleanupTimer === null) {
+      return;
+    }
+
+    clearInterval(this.cleanupTimer);
+    this.cleanupTimer = null;
+  }
+
+  dispose(): void {
+    this.stopCleanup();
+    this.store.clear();
   }
 }
 

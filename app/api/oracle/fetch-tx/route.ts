@@ -6,6 +6,7 @@ import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
+import { replayProtection } from '@/lib/security/replay';
 import type { Provider, ProviderError } from '@/lib/providers/types';
 
 const rateLimiter = createRateLimiter({
@@ -165,7 +166,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    const { chain, txHash } = validationResult.data;
+    const { chain, txHash, idempotencyKey } = validationResult.data;
+
+    const normalizedIdempotencyKey = idempotencyKey?.trim();
+    if (normalizedIdempotencyKey) {
+      const replayCheck = replayProtection.check(
+        `${clientId}:${normalizedIdempotencyKey}`,
+        Date.now()
+      );
+
+      if (!replayCheck.allowed) {
+        const errorResponse: ErrorResponse = {
+          error: {
+            code: 'REPLAY_DETECTED',
+            message: replayCheck.reason ?? 'Duplicate idempotency key',
+          },
+        };
+        return NextResponse.json(errorResponse, { status: 409 });
+      }
+    }
 
     // Initialize providers based on chain
     let cascade: ProviderCascade;

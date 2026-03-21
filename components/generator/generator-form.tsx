@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ReceiptSuccess } from './receipt-success';
+import { announceToScreenReader } from '@/lib/accessibility';
 import type { Chain } from '@/lib/validation/schemas';
 
 interface FormData {
@@ -77,6 +78,7 @@ export function GeneratorForm(): React.JSX.Element {
     try {
       setState('fetching');
       setErrorMessage('');
+      announceToScreenReader('Fetching transaction data');
 
       const response = await fetch('/api/oracle/fetch-tx', {
         method: 'POST',
@@ -94,6 +96,7 @@ export function GeneratorForm(): React.JSX.Element {
       }
 
       setState('validating');
+      announceToScreenReader('Validating transaction data');
       
       // Build witness from oracle payload and user claim
       const { buildWitness, validateWitness } = await import('@/lib/zk/witness');
@@ -109,6 +112,7 @@ export function GeneratorForm(): React.JSX.Element {
       }
 
       setState('generating');
+      announceToScreenReader('Generating zero-knowledge proof');
       
       // Generate proof
       const { createProofGenerator } = await import('@/lib/zk/prover');
@@ -127,8 +131,10 @@ export function GeneratorForm(): React.JSX.Element {
       });
 
       setState('success');
+      announceToScreenReader('Receipt generated successfully');
     } catch (error) {
       setState('error');
+      announceToScreenReader(`Error: ${error instanceof Error ? error.message : 'An unexpected error occurred'}`);
       if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {

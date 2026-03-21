@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-22 - Scanner Exception Policy
+- Do not add vulnerability scanner exception files by default when the user asks for clean scanning posture.
+- For dependency CVEs, first attempt latest stable upgrades and verify with scanner output without exceptions.
+- Only add suppressions if the user explicitly approves an exception path.
+
 ## 2026-03-21 - Verification Claim Source Integrity
 - Never display verification claims from URL metadata if equivalent values are present in proof public signals.
 - Treat URL params as transport only; treat verified proof signals as source of truth for user-visible claim fields.

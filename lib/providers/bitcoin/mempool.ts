@@ -1,6 +1,7 @@
 import type { BitcoinProvider, ProviderConfig } from '../types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { BitcoinTxHashSchema } from '@/lib/validation/schemas';
+import { validateUrl } from '@/lib/security/ssrf';
 
 /**
  * Mempool.space API response types
@@ -72,6 +73,10 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     }
 
     const url = `${this.baseUrl}/tx/${txHash}`;
+    const urlValidation = validateUrl(url);
+    if (!urlValidation.valid) {
+      throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+    }
 
     const response = await fetch(url, {
       method: 'GET',
@@ -138,7 +143,13 @@ export class MempoolSpaceProvider implements BitcoinProvider {
 
   async isHealthy(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/blocks/tip/height`, {
+      const healthUrl = `${this.baseUrl}/blocks/tip/height`;
+      const urlValidation = validateUrl(healthUrl);
+      if (!urlValidation.valid) {
+        throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+      }
+
+      const response = await fetch(healthUrl, {
         method: 'GET',
       });
       return response.ok;

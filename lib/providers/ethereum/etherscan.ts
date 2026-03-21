@@ -1,6 +1,7 @@
 import type { EthereumProvider, ProviderConfig, ApiKeyConfig } from '../types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
+import { validateUrl } from '@/lib/security/ssrf';
 
 /**
  * Etherscan API response types
@@ -131,8 +132,13 @@ export class EtherscanProvider implements EthereumProvider {
     url.searchParams.set('action', 'eth_getTransactionByHash');
     url.searchParams.set('txhash', txHash);
     url.searchParams.set('apikey', apiKey);
+    const urlValue = url.toString();
+    const urlValidation = validateUrl(urlValue);
+    if (!urlValidation.valid) {
+      throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+    }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(urlValue, {
       method: 'GET',
       signal: signal ?? null,
       headers: {
@@ -188,8 +194,13 @@ export class EtherscanProvider implements EthereumProvider {
       url.searchParams.set('module', 'proxy');
       url.searchParams.set('action', 'eth_blockNumber');
       url.searchParams.set('apikey', apiKey);
+      const urlValue = url.toString();
+      const urlValidation = validateUrl(urlValue);
+      if (!urlValidation.valid) {
+        throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+      }
 
-      const response = await fetch(url.toString(), {
+      const response = await fetch(urlValue, {
         method: 'GET',
       });
 

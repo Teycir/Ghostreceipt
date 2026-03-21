@@ -1,4 +1,5 @@
 import { POST, mapErrorToResponse } from '@/app/api/oracle/fetch-tx/route';
+import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import type { NextRequest } from 'next/server';
 
 describe('mapErrorToResponse', () => {
@@ -40,6 +41,22 @@ describe('mapErrorToResponse', () => {
 });
 
 describe('POST /api/oracle/fetch-tx', () => {
+  const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+
+  beforeEach(() => {
+    process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
+  });
+
+  afterEach(() => {
+    if (originalOraclePrivateKey === undefined) {
+      delete process.env['ORACLE_PRIVATE_KEY'];
+    } else {
+      process.env['ORACLE_PRIVATE_KEY'] = originalOraclePrivateKey;
+    }
+
+    jest.restoreAllMocks();
+  });
+
   it('returns 400 for invalid ethereum tx hash before provider calls', async () => {
     const request = new Request('http://localhost/api/oracle/fetch-tx', {
       method: 'POST',
@@ -79,5 +96,51 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(response.status).toBe(400);
     expect(body.error.code).toBe('INVALID_HASH');
     expect(body.error.message).toBe('Invalid JSON request body');
+  });
+
+  it('returns 409 when the same idempotency key is replayed by the same client', async () => {
+    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
+      chain: 'bitcoin',
+      txHash: 'a'.repeat(64),
+      valueAtomic: '1000',
+      timestampUnix: 1700000000,
+      confirmations: 12,
+      blockNumber: 123456,
+      blockHash: 'b'.repeat(64),
+    });
+
+    const requestPayload = JSON.stringify({
+      chain: 'bitcoin',
+      txHash: 'a'.repeat(64),
+      idempotencyKey: 'idem-key-1',
+    });
+
+    const firstRequest = new Request('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': 'fetch-tx-route-test-suite',
+      },
+    });
+
+    const secondRequest = new Request('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': 'fetch-tx-route-test-suite',
+      },
+    });
+
+    const firstResponse = await POST(firstRequest as NextRequest);
+    const secondResponse = await POST(secondRequest as NextRequest);
+    const secondBody = (await secondResponse.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(409);
+    expect(secondBody.error.code).toBe('REPLAY_DETECTED');
   });
 });

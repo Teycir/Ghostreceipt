@@ -39,6 +39,16 @@ describe('ReplayProtection', () => {
     expect(result.reason).toBe('Signature expired');
   });
 
+  it('should block signatures too far in the future', () => {
+    const protection = new ReplayProtection(300000, 30000);
+    const futureTimestamp = Date.now() + 60000;
+
+    const result = protection.check('sig-123', futureTimestamp);
+
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('Signature timestamp is too far in the future');
+  });
+
   it('should allow different signatures', () => {
     const protection = new ReplayProtection(300000);
     const now = Date.now();
@@ -72,5 +82,15 @@ describe('ReplayProtection', () => {
     protection.cleanup();
 
     expect(protection['store'].size).toBe(1);
+  });
+
+  it('should dispose and clear tracked signatures', () => {
+    const protection = new ReplayProtection(300000);
+    const now = Date.now();
+
+    protection.check('sig-123', now);
+    protection.dispose();
+
+    expect(protection['store'].size).toBe(0);
   });
 });
