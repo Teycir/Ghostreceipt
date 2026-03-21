@@ -1,4 +1,4 @@
-.history
+/.history/
 
 # Local secrets (never commit)
 .env
@@ -12,11 +12,11 @@ wrangler.toml
 
 # Dependencies
 node_modules/
-package-lock.json
 
 # Next.js
 .next/
 out/
+.swc/
 
 # Production
 build/
@@ -45,11 +45,11 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
 
 # Misc
 .turbo
 .vercel
+.amazonq/
 
 # Cache
 .cache/
