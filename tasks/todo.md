@@ -96,3 +96,22 @@
 ## Review
 - Added ignores for `/.history/`, `.swc/`, and `.amazonq/`.
 - Removed ignores for `package-lock.json` and `next-env.d.ts` to match tracked-file intent.
+
+---
+
+# Task Plan: Implementation Control Follow-up
+
+- [x] Fix stale test fixtures to match current `OraclePayloadV1` fields.
+- [x] Re-run lint/typecheck/tests/build to verify implementation health.
+- [x] Align reuse/provenance wording with actual implementation state.
+- [x] Refresh implementation progress tracking for API endpoint tests.
+
+## Review
+- Updated schema fields in:
+  - `tests/integration/proof-generation.test.ts`
+  - `tests/unit/generator/witness-integration.test.ts`
+- `npm run check:secrets` passes.
+- `npm run lint` passes.
+- `npm run typecheck` passes.
+- `npm run test:coverage -- --ci --runInBand` passes (52 tests).
+- `npm run build` passes (required unsandboxed execution due Turbopack sandbox process constraints).

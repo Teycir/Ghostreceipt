@@ -65,7 +65,7 @@
 - [x] Integration tests for proof generation (6 tests)
 - [x] All existing tests pass (52 total)
 - [x] Core library coverage at 70%+
-- [ ] Unit tests for API endpoints
+- [x] Unit tests for API endpoints (`tests/unit/api/fetch-tx-route.test.ts`)
 - [ ] E2E tests with Playwright
 - [ ] Increase overall coverage to 70%
 
