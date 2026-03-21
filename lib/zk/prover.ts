@@ -140,7 +140,7 @@ export class ProofGenerator {
  */
 export function createProofGenerator(): ProofGenerator {
   return new ProofGenerator(
-    '/zk/receipt.wasm',
+    '/zk/receipt_js/receipt.wasm',
     '/zk/receipt_final.zkey',
     '/zk/verification_key.json'
   );

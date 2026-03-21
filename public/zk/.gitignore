@@ -1,0 +1,10 @@
+# Exclude large binary files from git
+*.ptau
+*.r1cs
+*.sym
+receipt_0000.zkey
+
+# Keep essential artifacts
+!receipt_final.zkey
+!verification_key.json
+!receipt_js/
