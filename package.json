@@ -11,6 +11,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "check:secrets": "bash scripts/check-secrets.sh",
     "compile:circuit": "bash scripts/compile-circuit.sh"
   },
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.58.2",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.5",
     "@types/qrcode": "^1.5.5",
@@ -46,6 +49,9 @@
     "tailwindcss": "^3.4.17",
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "underscore": "1.13.8"
   },
   "engines": {
     "node": ">=20.9.0",
