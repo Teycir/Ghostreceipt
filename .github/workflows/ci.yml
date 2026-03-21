@@ -5,20 +5,37 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   quality:
-    name: Code Quality
+    name: Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: '1'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Secret scan
+        run: npm run check:secrets
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install dependencies
@@ -36,9 +53,16 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Check for secrets
-        run: |
-          if grep -r "sk_live_\|pk_live_\|api_key" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git .; then
-            echo "Potential secrets found in code!"
-            exit 1
-          fi
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4

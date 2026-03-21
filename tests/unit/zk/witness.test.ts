@@ -88,7 +88,7 @@ describe('Witness Builder', () => {
       const result = validateWitness(witness);
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('Real value')
       );
     });
@@ -103,7 +103,7 @@ describe('Witness Builder', () => {
       const result = validateWitness(witness);
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('Real timestamp')
       );
     });
@@ -135,7 +135,7 @@ describe('Witness Builder', () => {
       const result = validateWitness(witness);
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('Oracle signature must have 8 chunks')
       );
     });
@@ -152,7 +152,7 @@ describe('Witness Builder', () => {
       const result = validateWitness(witness);
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
+      expect(result.errors).toContainEqual(
         expect.stringContaining('Transaction hash must have 8 chunks')
       );
     });

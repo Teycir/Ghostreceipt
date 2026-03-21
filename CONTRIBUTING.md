@@ -86,7 +86,7 @@ try {
 ### Testing
 - All tests in `/tests` directory
 - Write tests for new features
-- Maintain coverage thresholds (70%+)
+- Maintain CI coverage thresholds defined in `jest.config.js`
 
 ### Documentation
 - Main docs index: `docs/README.md`

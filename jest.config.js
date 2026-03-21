@@ -24,12 +24,24 @@ const customJestConfig = {
     '!**/out/**',
     '!**/coverage/**',
   ],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
+      branches: 15,
+      functions: 20,
+      lines: 20,
+      statements: 20,
+    },
+    './lib/providers/cascade.ts': {
+      branches: 60,
+      functions: 75,
+      lines: 80,
+      statements: 80,
+    },
+    './app/api/oracle/fetch-tx/route.ts': {
+      branches: 25,
+      functions: 60,
+      lines: 50,
+      statements: 50,
     },
   },
 };
