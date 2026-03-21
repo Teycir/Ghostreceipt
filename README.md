@@ -212,6 +212,50 @@ Only proof-related public claims and redacted receipt output, not raw sensitive 
 ### Is Monero supported?
 Planned as a dedicated track with separate constraints due to hidden amounts.
 
+## Complementary Projects
+
+GhostReceipt is part of a privacy-first toolkit. Check out these related projects:
+
+### [GhostChat](https://github.com/Teycir/GhostChat) | [Live Demo](https://ghost-chat.pages.dev)
+**True peer-to-peer encrypted messaging with zero server storage**
+- WebRTC-based P2P chat where messages travel directly between users
+- Self-destructing messages (5s, 30s, 1m, 5m timers)
+- Memory-only storage with no disk traces
+- Connection fingerprint verification to detect MITM attacks
+- Perfect for: Sharing payment receipt links securely without leaving traces
+
+**Use with GhostReceipt**: Share your generated receipt links via GhostChat to ensure the communication channel itself is private and ephemeral.
+
+### [TimeSeal](https://github.com/Teycir/Timeseal) | [Live Demo](https://timeseal.online)
+**Cryptographic time-locked vault and dead man's switch**
+- Send encrypted messages/files that unlock at a specific future date
+- Dead man's switch mode: auto-unlock if you stop checking in
+- Split-key architecture with server-enforced time locks
+- 30-day retention with grace period for recovery
+- Perfect for: Time-delayed payment proof disclosure or conditional receipt sharing
+
+**Use with GhostReceipt**: Seal a payment receipt that only unlocks after a milestone date, or set up a dead man's switch to auto-release payment evidence if you go silent.
+
+### [Sanctum](https://github.com/Teycir/Sanctum) | [Live Demo](https://sanctumvault.online)
+**Zero-trust encrypted vault with plausible deniability**
+- Duress-proof hidden layers (decoy/hidden/panic passphrases)
+- XChaCha20-Poly1305 encryption with IPFS storage
+- RAM-only key storage immune to forensic recovery
+- Perfect for: Storing sensitive payment receipts with cryptographic deniability under coercion
+
+**Use with GhostReceipt**: Store your generated receipt links and verification keys in Sanctum's hidden layer, protected by plausible deniability if device is seized.
+
+### [HoneypotScan](https://github.com/Teycir/honeypotscan)
+**Smart contract honeypot detector for DeFi safety**
+- Detects scam tokens that prevent selling after purchase
+- 13 specialized patterns across Ethereum, Polygon, Arbitrum
+- 98% sensitivity with 95%+ cache hit rate
+- Perfect for: Verifying token legitimacy before generating payment receipts for crypto transactions
+
+**Use with GhostReceipt**: Before proving payment for a token purchase, verify the token isn't a honeypot scam that would make your receipt meaningless.
+
+---
+
 ## References
 - Product plan: [Plan.md](./Plan.md)
 - Execution checklist: [ROADMAP.md](./ROADMAP.md)
