@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - GhostReceipt</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #0a0a0a;
+      color: #e5e5e5;
+    }
+    h1 { color: #fff; margin-bottom: 0.5rem; }
+    h2 { color: #fff; margin-top: 2rem; font-size: 1.2rem; }
+    a { color: #3b82f6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back-link { display: inline-block; margin-bottom: 2rem; }
+    .faq-item { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #222; }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link">← Back to GhostReceipt</a>
+  
+  <h1>Frequently Asked Questions</h1>
+
+  <div class="faq-item">
+    <h2>Is GhostReceipt custodial?</h2>
+    <p>No. Proof generation and sensitive witness data stay in the client-side flow. Your private keys and transaction details never leave your browser.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Do I need to connect a wallet?</h2>
+    <p>No. You only need to provide the transaction hash and your claim parameters. No wallet connection required.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Do I need API keys?</h2>
+    <p>No. API key entry is optional advanced mode only. The default flow works without any API keys.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Can this run without a credit card?</h2>
+    <p>Yes. Local setup and baseline flow are designed for no-card operation using public blockchain data providers.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>What does the verifier see?</h2>
+    <p>Only proof-related public claims and redacted receipt output. They cannot see the actual transaction amount, exact timestamp, sender address, receiver address, or transaction hash.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>How does zero-knowledge proof work?</h2>
+    <p>GhostReceipt uses Groth16 zk-SNARKs to prove statements about your transaction without revealing the underlying data. The proof is generated in your browser using Circom circuits and snarkjs.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Which blockchains are supported?</h2>
+    <p>Currently Bitcoin and Ethereum. Monero support is planned as a dedicated track with separate constraints due to hidden amounts.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Can receipts be forged?</h2>
+    <p>No. Each receipt includes an oracle signature over canonical blockchain data. The zero-knowledge proof cryptographically binds your claim to the oracle-signed transaction data.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>How long does proof generation take?</h2>
+    <p>Typically under 60 seconds on modern devices. The process includes fetching transaction data, validating constraints, and generating the zero-knowledge proof in your browser.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Can I use this for business/compliance?</h2>
+    <p>Yes. GhostReceipt is designed for freelancers, merchants, accounting teams, and DAO contributors who need verifiable payment evidence without exposing sensitive financial data.</p>
+  </div>
+
+  <footer style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #333; color: #888; font-size: 0.9em;">
+    <p>GhostReceipt - Zero-knowledge payment proofs | <a href="/">Home</a> | <a href="/docs/how-to-use.html">How to Use</a> | <a href="/docs/security.html">Security</a></p>
+  </footer>
+</body>
+</html>

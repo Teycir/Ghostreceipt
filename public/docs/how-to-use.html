@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Use - GhostReceipt</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #0a0a0a;
+      color: #e5e5e5;
+    }
+    h1 { color: #fff; margin-bottom: 0.5rem; }
+    h2 { color: #fff; margin-top: 2rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+    a { color: #3b82f6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { background: #1a1a1a; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+    .back-link { display: inline-block; margin-bottom: 2rem; }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link">← Back to GhostReceipt</a>
+  
+  <h1>How to Use GhostReceipt</h1>
+  <p>Generate zero-knowledge payment receipts in 3 simple steps.</p>
+
+  <h2>Step 1: Enter Transaction Details</h2>
+  <ul>
+    <li><strong>Chain:</strong> Select Bitcoin or Ethereum</li>
+    <li><strong>Transaction Hash:</strong> The on-chain transaction ID you want to prove</li>
+    <li><strong>Claimed Amount:</strong> Minimum amount to prove (in satoshis for Bitcoin, wei for Ethereum)</li>
+    <li><strong>Minimum Date:</strong> Earliest date the transaction could have occurred</li>
+  </ul>
+
+  <h2>Step 2: Generate Proof</h2>
+  <p>Click "Generate Receipt" and wait while:</p>
+  <ol>
+    <li>The oracle fetches canonical transaction data from the blockchain</li>
+    <li>Your browser validates the data against your claim</li>
+    <li>A zero-knowledge proof is generated locally (no data leaves your browser)</li>
+  </ol>
+
+  <h2>Step 3: Share Receipt</h2>
+  <p>Once generated, you can:</p>
+  <ul>
+    <li><strong>Copy Link:</strong> Share a verification URL with anyone</li>
+    <li><strong>Download QR:</strong> Save a QR code for offline sharing</li>
+    <li><strong>View Receipt:</strong> See the verified proof details</li>
+  </ul>
+
+  <h2>What Gets Proven?</h2>
+  <p>The receipt proves:</p>
+  <ul>
+    <li>✓ Transaction amount ≥ claimed amount</li>
+    <li>✓ Transaction timestamp ≥ minimum date</li>
+    <li>✓ Oracle signature is valid</li>
+  </ul>
+
+  <h2>What Stays Private?</h2>
+  <p>The receipt does NOT reveal:</p>
+  <ul>
+    <li>✗ Actual transaction amount (only proves minimum)</li>
+    <li>✗ Exact timestamp (only proves after date)</li>
+    <li>✗ Sender address</li>
+    <li>✗ Receiver address</li>
+    <li>✗ Transaction hash</li>
+  </ul>
+
+  <h2>Verification</h2>
+  <p>Anyone with the receipt link can verify the proof cryptographically without seeing sensitive details.</p>
+
+  <footer style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #333; color: #888; font-size: 0.9em;">
+    <p>GhostReceipt - Zero-knowledge payment proofs | <a href="/">Home</a> | <a href="/docs/faq.html">FAQ</a> | <a href="/docs/security.html">Security</a></p>
+  </footer>
+</body>
+</html>

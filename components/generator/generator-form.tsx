@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { ReceiptSuccess } from './receipt-success';
 import type { Chain } from '@/lib/validation/schemas';
 
 interface FormData {
@@ -22,6 +23,13 @@ interface FormErrors {
   minDate?: string;
 }
 
+interface ProofData {
+  proof: string;
+  chain: Chain;
+  claimedAmount: string;
+  minDate: string;
+}
+
 export function GeneratorForm(): React.JSX.Element {
   const [formData, setFormData] = useState<FormData>({
     chain: 'bitcoin',
@@ -32,6 +40,7 @@ export function GeneratorForm(): React.JSX.Element {
   const [state, setState] = useState<GeneratorState>('idle');
   const [errors, setErrors] = useState<FormErrors>({});
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [proofData, setProofData] = useState<ProofData | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -85,10 +94,37 @@ export function GeneratorForm(): React.JSX.Element {
       }
 
       setState('validating');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Build witness from oracle payload and user claim
+      const { buildWitness, validateWitness } = await import('@/lib/zk/witness');
+      const witness = buildWitness(data.data, {
+        claimedAmount: formData.claimedAmount,
+        minDate: Math.floor(new Date(formData.minDate).getTime() / 1000),
+      });
+      
+      // Validate witness constraints
+      const validation = validateWitness(witness);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
 
       setState('generating');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate proof
+      const { createProofGenerator } = await import('@/lib/zk/prover');
+      const prover = createProofGenerator();
+      const proofResult = await prover.generateProof(witness);
+      
+      // Export shareable proof
+      const shareableProof = prover.exportProof(proofResult);
+      
+      // Store proof for display
+      setProofData({
+        proof: shareableProof,
+        chain: formData.chain,
+        claimedAmount: formData.claimedAmount,
+        minDate: formData.minDate,
+      });
 
       setState('success');
     } catch (error) {
@@ -210,6 +246,15 @@ export function GeneratorForm(): React.JSX.Element {
             Retry
           </Button>
         </div>
+      )}
+
+      {state === 'success' && proofData && (
+        <ReceiptSuccess
+          proof={proofData.proof}
+          chain={proofData.chain}
+          claimedAmount={proofData.claimedAmount}
+          minDate={proofData.minDate}
+        />
       )}
 
       {(state === 'idle' || state === 'error') && (
