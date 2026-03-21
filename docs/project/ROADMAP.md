@@ -64,15 +64,15 @@ This roadmap is execution-first and checkbox-driven so progress is visible at ev
 - [ ] Add deterministic test vectors (valid/invalid)
 - [ ] Add proof serialization format for share links
 
-## Phase 5: Generator UX (Zero Friction)
-- [ ] Build primary generator form (chain, txHash, claimedAmount, minDate)
-- [ ] Add inline validation with immediate feedback
-- [ ] Add progress states:
-- [ ] Fetching transaction
-- [ ] Validating oracle data
-- [ ] Generating proof
+## Phase 3: Generator UX (Zero Friction)
+- [x] Build primary generator form (chain, txHash, claimedAmount, minDate)
+- [x] Add inline validation with immediate feedback
+- [x] Add progress states:
+- [x] Fetching transaction
+- [x] Validating oracle data
+- [x] Generating proof
 - [ ] Packaging receipt
-- [ ] Add recoverable error messages with one-click retry
+- [x] Add recoverable error messages with one-click retry
 - [ ] Add "advanced settings" collapse (off by default)
 - [ ] Add copy link + QR creation for proof payload
 - [ ] Verify mobile-first flow completes in <= 60s target
