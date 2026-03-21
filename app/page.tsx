@@ -1,3 +1,5 @@
+import { GeneratorForm } from '@/components/generator/generator-form';
+
 export default function HomePage(): React.JSX.Element {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -12,9 +14,7 @@ export default function HomePage(): React.JSX.Element {
         </div>
 
         <div className="rounded-lg border bg-card p-8 shadow-sm">
-          <p className="text-center text-muted-foreground">
-            Generator UI coming soon...
-          </p>
+          <GeneratorForm />
         </div>
       </div>
     </main>
