@@ -29,3 +29,50 @@
 - Docs are consolidated under `docs/` with `project/` and `runbooks/` groupings.
 - Main entry points updated: `README.md`, `CONTRIBUTING.md`, and `agents.md`.
 - Verified with `rg` scan that old root doc links are removed from active references.
+
+---
+
+# Task Plan: Review Follow-up Fixes
+
+- [x] Preserve structured provider errors from cascade all-failure path.
+- [x] Add real abort propagation for Ethereum public RPC provider calls.
+- [x] Return HTTP 400 for malformed JSON request bodies in oracle route.
+- [x] Fix Jest coverage threshold config key so CI enforces thresholds.
+- [x] Add tests for preserved provider error and malformed JSON handling.
+- [x] Run typecheck and targeted tests, then record results.
+
+## Review
+- `npm run typecheck` passes.
+- `npm test -- tests/unit/providers/cascade.test.ts tests/unit/api/fetch-tx-route.test.ts` passes (10 tests).
+- Jest coverage key typo fixed (`coverageThreshold`), and the previous config warning is gone.
+
+---
+
+# Task Plan: CI/CD Hardening
+
+- [x] Tighten workflow security controls (permissions, concurrency, timeout).
+- [x] Pin CI Node runtime to `.nvmrc` for env parity.
+- [x] Run secret scan via maintained script as an early gate.
+- [x] Add dependency-review gate for pull requests.
+- [x] Harden secret scan scope to include docs/workflows.
+- [x] Validate lint/typecheck/tests/build and summarize results.
+
+## Review
+- `npm run check:secrets` passes.
+- `npm run lint` passes.
+- `npm run typecheck` passes.
+- `npm run test:coverage -- --ci --runInBand` passes with enforced thresholds.
+- `npm run build` passes (required unsandboxed execution locally due Turbopack process restrictions).
+- Next.js config warnings are removed (`typedRoutes` moved to top-level and config renamed to `next.config.mjs`).
+
+---
+
+# Task Plan: Gitignore Hygiene
+
+- [x] Audit current `.gitignore` entries against actual local/generated files.
+- [x] Add missing ignore rules for local tool state directories.
+- [x] Remove ignore rules that conflict with intentionally tracked files.
+
+## Review
+- Added ignores for `/.history/`, `.swc/`, and `.amazonq/`.
+- Removed ignores for `package-lock.json` and `next-env.d.ts` to match tracked-file intent.
