@@ -3,14 +3,15 @@ import type { OraclePayloadV1 } from '@/lib/validation/schemas';
 
 describe('Generator Form Integration', () => {
   const mockOraclePayload: OraclePayloadV1 = {
-    version: '1',
     chain: 'bitcoin',
     txHash: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     valueAtomic: '100000000',
     timestampUnix: 1700000000,
     confirmations: 6,
+    messageHash: 'f4d7f13ec63de15f2f2db40f9f53d564f7f5f3f0e4c57d80460f95e5f5d58d10',
     oracleSignature: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    oraclePublicKeyId: 'test-key-1',
+    oraclePubKeyId: 'test-key-1',
+    schemaVersion: 'v1',
     signedAt: 1700000100,
   };
 

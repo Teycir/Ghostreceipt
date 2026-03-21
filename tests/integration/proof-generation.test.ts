@@ -4,14 +4,15 @@ import type { OraclePayloadV1 } from '@/lib/validation/schemas';
 
 describe('End-to-End Proof Generation', () => {
   const mockOraclePayload: OraclePayloadV1 = {
-    version: '1',
     chain: 'bitcoin',
     txHash: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
     valueAtomic: '100000000',
     timestampUnix: 1700000000,
     confirmations: 6,
+    messageHash: 'f4d7f13ec63de15f2f2db40f9f53d564f7f5f3f0e4c57d80460f95e5f5d58d10',
     oracleSignature: 'f1e2d3c4b5a69780123456789abcdef0123456789abcdef0123456789abcdef',
-    oraclePublicKeyId: 'test-key-1',
+    oraclePubKeyId: 'test-key-1',
+    schemaVersion: 'v1',
     signedAt: 1700000100,
   };
 
