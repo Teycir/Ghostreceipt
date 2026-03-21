@@ -5,7 +5,13 @@ import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { OracleSigner } from '@/lib/oracle/signer';
+import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import type { Provider, ProviderError } from '@/lib/providers/types';
+
+const rateLimiter = createRateLimiter({
+  windowMs: 60000,
+  maxRequests: 10,
+});
 
 function mapErrorToResponse(error: unknown): {
   code: ErrorResponse['error']['code'];
@@ -112,6 +118,25 @@ function mapErrorToResponse(error: unknown): {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    const clientId = getClientIdentifier(request);
+    const rateLimit = rateLimiter.check(clientId);
+
+    if (!rateLimit.allowed) {
+      const errorResponse: ErrorResponse = {
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many requests. Please try again later.',
+        },
+      };
+      return NextResponse.json(errorResponse, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': '10',
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
+        },
+      });
+    }
     // Parse request body
     let body: unknown;
     try {
