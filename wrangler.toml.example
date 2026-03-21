@@ -1,0 +1,39 @@
+name = "ghostreceipt-oracle"
+main = "workers/oracle.ts"
+compatibility_date = "2024-03-21"
+account_id = "YOUR_ACCOUNT_ID"  # Replace with your Cloudflare account ID
+
+# KV Namespaces for caching
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_KV_NAMESPACE_ID"  # Create with: wrangler kv:namespace create CACHE
+
+# Environment variables (secrets set via: wrangler secret put <KEY>)
+[vars]
+ENVIRONMENT = "development"
+
+# Production environment
+[env.production]
+name = "ghostreceipt-oracle-production"
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_PRODUCTION_KV_NAMESPACE_ID"  # Create with: wrangler kv:namespace create CACHE --env production
+
+# Staging environment
+[env.staging]
+name = "ghostreceipt-oracle-staging"
+vars = { ENVIRONMENT = "staging" }
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_STAGING_KV_NAMESPACE_ID"  # Create with: wrangler kv:namespace create CACHE --env staging
+
+# Build configuration
+[build]
+command = "npm run build:worker"
+
+# Observability
+[observability]
+enabled = true

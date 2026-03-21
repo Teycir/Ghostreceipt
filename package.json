@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "check:secrets": "bash scripts/check-secrets.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
