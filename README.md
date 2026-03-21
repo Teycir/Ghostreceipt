@@ -31,7 +31,7 @@ _Scan the QR code or copy the wallet address above._
 
 ### _"Prove the payment. Keep the privacy."_
 
-[Roadmap](./ROADMAP.md) | [Plan](./Plan.md) | [Report Bug](https://github.com/teycir/GhostReceipt/issues)
+[Roadmap](./docs/project/ROADMAP.md) | [Plan](./docs/project/PLAN.md) | [Report Bug](https://github.com/teycir/GhostReceipt/issues)
 
 </div>
 
@@ -165,6 +165,19 @@ sequenceDiagram
 - Provider/key cascade manager with immediate failover and bounded concurrency (smartcontractpatternfinder-style)
 
 ## Quick Start
+
+### Prerequisites
+
+- Node.js 20.9.0 or higher
+- npm 9.0.0 or higher
+
+```bash
+node --version  # Should be >= 20.9.0
+npm --version   # Should be >= 9.0.0
+```
+
+### Installation
+
 ```bash
 # 1) Clone
 git clone https://github.com/teycir/GhostReceipt.git
@@ -183,15 +196,18 @@ npm run dev
 Open `http://localhost:3000`.
 
 ## Configuration
-- No-credit-card mode:
-- Default local setup must work with free/public providers
-- No-user-API-key mode:
-- Users are not required to bring API keys
-- Optional BYOK:
-- Power users can add keys for higher throughput, but core UX must remain keyless
-- Server-managed keys:
-- Sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed
-- ETH managed keyed fallback is Etherscan-only for now; other provider keys will be added later without changing the UX contract
+- No-credit-card mode: default local setup must work with free/public providers.
+- No-user-API-key mode: users are not required to bring API keys.
+- Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
+- Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
+- ETH managed keyed fallback is Etherscan-only for now; other provider keys will be added later without changing the UX contract.
+
+## Documentation
+- Documentation hub: [docs/README.md](./docs/README.md)
+- Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
+- Execution roadmap: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
+- Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
+- Security runbook: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
 
 ## FAQ
 ### Is GhostReceipt custodial?
@@ -257,13 +273,12 @@ GhostReceipt is part of a privacy-first toolkit. Check out these related project
 ---
 
 ## References
-- Product plan: [Plan.md](./Plan.md)
-- Execution checklist: [ROADMAP.md](./ROADMAP.md)
-- Reuse sources:
-- `/home/teycir/Repos/xmrproof`
-- `/home/teycir/Repos/Timeseal`
-- `/home/teycir/Repos/Sanctum`
-- `/home/teycir/Repos/smartcontractpatternfinder`
+- Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
+- Execution checklist: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
+- Reuse source: `/home/teycir/Repos/xmrproof`
+- Reuse source: `/home/teycir/Repos/Timeseal`
+- Reuse source: `/home/teycir/Repos/Sanctum`
+- Reuse source: `/home/teycir/Repos/smartcontractpatternfinder`
 
 ## Contact
 - Creator: [Teycir Ben Soltane](https://teycirbensoltane.tn)

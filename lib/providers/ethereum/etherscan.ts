@@ -78,7 +78,10 @@ export class EtherscanProvider implements EthereumProvider {
     return key;
   }
 
-  async fetchTransaction(txHash: string): Promise<CanonicalTxData> {
+  async fetchTransaction(
+    txHash: string,
+    signal?: AbortSignal
+  ): Promise<CanonicalTxData> {
     // Validate hash format
     const validationResult = EthereumTxHashSchema.safeParse(txHash);
     if (!validationResult.success) {
@@ -92,13 +95,13 @@ export class EtherscanProvider implements EthereumProvider {
       const apiKey = this.getNextKey();
 
       try {
-        const data = await this.fetchWithKey(txHash, apiKey);
+        const data = await this.fetchWithKey(txHash, apiKey, signal);
         return this.normalize(data);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
 
         // If rate limited, try next key immediately
-        if (lastError.message.includes('rate limit')) {
+        if (lastError.message.toLowerCase().includes('rate limit')) {
           console.warn(`[${this.name}] Rate limited on key ${i + 1}, trying next`);
           continue;
         }
@@ -120,7 +123,8 @@ export class EtherscanProvider implements EthereumProvider {
    */
   private async fetchWithKey(
     txHash: string,
-    apiKey: string
+    apiKey: string,
+    signal?: AbortSignal
   ): Promise<EtherscanTxResponse['result']> {
     const url = new URL(this.baseUrl);
     url.searchParams.set('module', 'proxy');
@@ -130,6 +134,7 @@ export class EtherscanProvider implements EthereumProvider {
 
     const response = await fetch(url.toString(), {
       method: 'GET',
+      signal: signal ?? null,
       headers: {
         'Accept': 'application/json',
       },
@@ -145,7 +150,7 @@ export class EtherscanProvider implements EthereumProvider {
     const data = (await response.json()) as EtherscanTxResponse;
 
     if (data.status === '0') {
-      if (data.message.includes('rate limit')) {
+      if (data.message.toLowerCase().includes('rate limit')) {
         throw new Error('Rate limit exceeded');
       }
       throw new Error(`Etherscan error: ${data.message}`);

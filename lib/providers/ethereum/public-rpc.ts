@@ -21,7 +21,10 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     transport: http(),
   });
 
-  async fetchTransaction(txHash: string): Promise<CanonicalTxData> {
+  async fetchTransaction(
+    txHash: string,
+    _signal?: AbortSignal
+  ): Promise<CanonicalTxData> {
     // Validate hash format
     const validationResult = EthereumTxHashSchema.safeParse(txHash);
     if (!validationResult.success) {

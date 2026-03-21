@@ -61,7 +61,10 @@ export class MempoolSpaceProvider implements BitcoinProvider {
 
   private readonly baseUrl = 'https://mempool.space/api';
 
-  async fetchTransaction(txHash: string): Promise<CanonicalTxData> {
+  async fetchTransaction(
+    txHash: string,
+    signal?: AbortSignal
+  ): Promise<CanonicalTxData> {
     // Validate hash format
     const validationResult = BitcoinTxHashSchema.safeParse(txHash);
     if (!validationResult.success) {
@@ -72,6 +75,7 @@ export class MempoolSpaceProvider implements BitcoinProvider {
 
     const response = await fetch(url, {
       method: 'GET',
+      signal: signal ?? null,
       headers: {
         'Accept': 'application/json',
       },

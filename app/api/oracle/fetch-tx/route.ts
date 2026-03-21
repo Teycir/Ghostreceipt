@@ -5,7 +5,105 @@ import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { OracleSigner } from '@/lib/oracle/signer';
-import type { Provider } from '@/lib/providers/types';
+import type { Provider, ProviderError } from '@/lib/providers/types';
+
+function mapErrorToResponse(error: unknown): {
+  code: ErrorResponse['error']['code'];
+  message: string;
+  status: number;
+} {
+  const code: ErrorResponse['error']['code'] = 'INTERNAL_ERROR';
+  let message = 'Internal server error';
+  const status = 500;
+
+  if (!(error instanceof Error)) {
+    return { code, message, status };
+  }
+
+  message = error.message;
+  const normalizedMessage = message.toLowerCase();
+  const providerCode = (error as Partial<ProviderError>).code;
+
+  if (providerCode === 'NOT_FOUND') {
+    return {
+      code: 'TRANSACTION_NOT_FOUND',
+      message,
+      status: 404,
+    };
+  }
+
+  if (providerCode === 'TIMEOUT') {
+    return {
+      code: 'PROVIDER_TIMEOUT',
+      message,
+      status: 504,
+    };
+  }
+
+  if (providerCode === 'RATE_LIMIT') {
+    return {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message,
+      status: 429,
+    };
+  }
+
+  if (providerCode === 'PROVIDER_ERROR') {
+    return {
+      code: 'PROVIDER_ERROR',
+      message,
+      status: 502,
+    };
+  }
+
+  if (
+    normalizedMessage.includes('invalid') &&
+    normalizedMessage.includes('transaction hash')
+  ) {
+    return {
+      code: 'INVALID_HASH',
+      message,
+      status: 400,
+    };
+  }
+
+  if (normalizedMessage.includes('not found')) {
+    return {
+      code: 'TRANSACTION_NOT_FOUND',
+      message,
+      status: 404,
+    };
+  }
+
+  if (normalizedMessage.includes('timeout')) {
+    return {
+      code: 'PROVIDER_TIMEOUT',
+      message,
+      status: 504,
+    };
+  }
+
+  if (
+    normalizedMessage.includes('rate limit') ||
+    normalizedMessage.includes('too many requests')
+  ) {
+    return {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message,
+      status: 429,
+    };
+  }
+
+  if (normalizedMessage.includes('provider')) {
+    return {
+      code: 'PROVIDER_ERROR',
+      message,
+      status: 502,
+    };
+  }
+
+  return { code, message, status };
+}
 
 /**
  * POST /api/oracle/fetch-tx
@@ -100,31 +198,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('[Oracle API] Error:', error);
 
-    // Determine error code
-    let errorCode: ErrorResponse['error']['code'] = 'INTERNAL_ERROR';
-    let message = 'Internal server error';
-
-    if (error instanceof Error) {
-      message = error.message;
-
-      if (message.includes('not found')) {
-        errorCode = 'TRANSACTION_NOT_FOUND';
-      } else if (message.includes('timeout')) {
-        errorCode = 'PROVIDER_TIMEOUT';
-      } else if (message.includes('rate limit')) {
-        errorCode = 'RATE_LIMIT_EXCEEDED';
-      } else if (message.includes('provider')) {
-        errorCode = 'PROVIDER_ERROR';
-      }
-    }
+    const mapped = mapErrorToResponse(error);
 
     const errorResponse: ErrorResponse = {
       error: {
-        code: errorCode,
-        message,
+        code: mapped.code,
+        message: mapped.message,
       },
     };
 
-    return NextResponse.json(errorResponse, { status: 500 });
+    return NextResponse.json(errorResponse, { status: mapped.status });
   }
 }
+
+export { mapErrorToResponse };

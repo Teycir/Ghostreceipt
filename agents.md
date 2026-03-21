@@ -200,7 +200,7 @@ async function generateReceipt(oraclePayload, userClaim) {
 
 ## Development Workflow
 
-1. **Read documentation first**: Plan.md, ROADMAP.md, README.md
+1. **Read documentation first**: docs/project/PLAN.md, docs/project/ROADMAP.md, README.md
 2. **Check reuse sources**: xmrproof, Timeseal, Sanctum, smartcontractpatternfinder
 3. **Implement minimal solution**: No over-engineering
 4. **Test provider cascade**: Verify failover works
@@ -244,8 +244,8 @@ Before committing code:
 
 ## References
 
-- Product plan: [Plan.md](./Plan.md)
-- Execution checklist: [ROADMAP.md](./ROADMAP.md)
+- Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
+- Execution checklist: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
 - Reuse sources:
   - `/home/teycir/Repos/xmrproof`
   - `/home/teycir/Repos/Timeseal`

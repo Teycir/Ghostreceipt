@@ -44,7 +44,7 @@ export interface Provider {
   /**
    * Fetch transaction data
    */
-  fetchTransaction(txHash: string): Promise<CanonicalTxData>;
+  fetchTransaction(txHash: string, signal?: AbortSignal): Promise<CanonicalTxData>;
 
   /**
    * Health check

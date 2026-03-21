@@ -2,6 +2,31 @@
 
 Thank you for your interest in contributing to GhostReceipt!
 
+## Prerequisites
+
+- Node.js 20.9.0 or higher
+- npm 9.0.0 or higher
+
+### Check your versions
+
+```bash
+node --version  # Should be >= 20.9.0
+npm --version   # Should be >= 9.0.0
+```
+
+### Install Node.js 20
+
+If you need to upgrade:
+
+**Using nvm (recommended):**
+```bash
+nvm install 20
+nvm use 20
+```
+
+**Or download from:**
+https://nodejs.org/
+
 ## Development Setup
 
 1. **Clone the repository**
@@ -62,6 +87,12 @@ try {
 - All tests in `/tests` directory
 - Write tests for new features
 - Maintain coverage thresholds (70%+)
+
+### Documentation
+- Main docs index: `docs/README.md`
+- Planning docs: `docs/project/`
+- Operational runbooks: `docs/runbooks/`
+- Keep root docs minimal (`README.md`, `CONTRIBUTING.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`)
 
 ### Commit Messages
 Follow conventional commits:

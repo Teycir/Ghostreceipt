@@ -46,7 +46,7 @@ export class ProofGenerator {
    */
   async generateProof(witness: ReceiptWitness): Promise<ProofResult> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { proof, publicSignals } = await groth16.fullProve(
         witness as any,
         this.wasmPath,

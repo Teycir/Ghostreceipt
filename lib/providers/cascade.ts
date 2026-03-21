@@ -64,50 +64,77 @@ export class ProviderCascade {
     txHash: string
   ): Promise<ProviderResult<CanonicalTxData>> {
     const errors: ProviderError[] = [];
-    let lastError: Error | null = null;
+    let lastError: ProviderError | null = null;
+    const maxAttempts = Math.max(1, this.config.maxRetries + 1);
 
     for (const provider of this.providers) {
-      // Check capacity
-      if (!this.hasCapacity(provider.name)) {
-        console.warn(
-          `[Cascade] Provider ${provider.name} at capacity, skipping`
-        );
-        continue;
-      }
-
-      try {
-        this.incrementActive(provider.name);
-
-        // Fetch with timeout
-        const data = await this.fetchWithTimeout(provider, txHash);
-
-        console.info(`[Cascade] Success with provider: ${provider.name}`);
-
-        return {
-          data,
-          provider: provider.name,
-          cached: false,
-          fetchedAt: Date.now(),
-        };
-      } catch (error) {
-        const providerError = this.normalizeError(error, provider.name);
-        errors.push(providerError);
-        lastError = providerError;
-
-        console.warn(
-          `[Cascade] Provider ${provider.name} failed: ${providerError.message}`
-        );
-
-        // Immediate failover - no delay for rate limits or errors
-        if (providerError.retryable) {
-          continue;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (!this.hasCapacity(provider.name)) {
+          console.warn(
+            `[Cascade] Provider ${provider.name} at capacity, skipping`
+          );
+          break;
         }
 
-        // Non-retryable error, stop cascade
-        throw providerError;
-      } finally {
-        this.decrementActive(provider.name);
+        this.incrementActive(provider.name);
+        let providerError: ProviderError | null = null;
+
+        try {
+          // Fetch with timeout
+          const data = await this.fetchWithTimeout(provider, txHash);
+
+          console.info(`[Cascade] Success with provider: ${provider.name}`);
+
+          return {
+            data,
+            provider: provider.name,
+            cached: false,
+            fetchedAt: Date.now(),
+          };
+        } catch (error) {
+          providerError = this.normalizeError(error, provider.name);
+          errors.push(providerError);
+          lastError = providerError;
+
+          console.warn(
+            `[Cascade] Provider ${provider.name} failed (attempt ${attempt}/${maxAttempts}): ${providerError.message}`
+          );
+        } finally {
+          this.decrementActive(provider.name);
+        }
+
+        if (!providerError) {
+          break;
+        }
+
+        // Let other providers confirm missing transactions before failing.
+        if (providerError.code === 'NOT_FOUND') {
+          break;
+        }
+
+        // Non-retryable error, stop cascade immediately.
+        if (!providerError.retryable) {
+          throw providerError;
+        }
+
+        // Retryable error but no retries left, fail over to next provider.
+        if (attempt === maxAttempts) {
+          break;
+        }
+
+        if (this.config.retryDelayMs > 0) {
+          await this.delay(this.config.retryDelayMs);
+        }
       }
+    }
+
+    if (errors.length > 0 && errors.every((error) => error.code === 'NOT_FOUND')) {
+      throw this.createProviderError(
+        'Transaction not found in any provider',
+        'cascade',
+        'NOT_FOUND',
+        false
+      );
     }
 
     // All providers failed
@@ -124,15 +151,30 @@ export class ProviderCascade {
     provider: Provider,
     txHash: string
   ): Promise<CanonicalTxData> {
-    return Promise.race([
-      provider.fetchTransaction(txHash),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`Provider ${provider.name} timeout after ${this.config.timeoutMs}ms`)),
-          this.config.timeoutMs
-        )
-      ),
-    ]);
+    const controller = new AbortController();
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        controller.abort();
+        reject(
+          new Error(
+            `Provider ${provider.name} timeout after ${this.config.timeoutMs}ms`
+          )
+        );
+      }, this.config.timeoutMs);
+    });
+
+    try {
+      return await Promise.race([
+        provider.fetchTransaction(txHash, controller.signal),
+        timeoutPromise,
+      ]);
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
   }
 
   /**
@@ -144,37 +186,56 @@ export class ProviderCascade {
     }
 
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const providerError = new Error(message) as ProviderError;
-    providerError.provider = providerName;
-    providerError.code = 'PROVIDER_ERROR';
-    providerError.retryable = true;
+    const normalizedMessage = message.toLowerCase();
+    const providerError = this.createProviderError(
+      message,
+      providerName,
+      'PROVIDER_ERROR',
+      true
+    );
 
     // Check for rate limit indicators
     if (
-      message.includes('rate limit') ||
-      message.includes('429') ||
-      message.includes('too many requests')
+      normalizedMessage.includes('rate limit') ||
+      normalizedMessage.includes('429') ||
+      normalizedMessage.includes('too many requests')
     ) {
       providerError.code = 'RATE_LIMIT';
       providerError.retryable = true;
     }
 
     // Check for timeout
-    if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
+    if (
+      normalizedMessage.includes('timeout') ||
+      normalizedMessage.includes('etimedout')
+    ) {
       providerError.code = 'TIMEOUT';
       providerError.retryable = true;
     }
 
     // Check for not found
     if (
-      message.includes('not found') ||
-      message.includes('404') ||
-      message.includes('does not exist')
+      normalizedMessage.includes('not found') ||
+      normalizedMessage.includes('404') ||
+      normalizedMessage.includes('does not exist')
     ) {
       providerError.code = 'NOT_FOUND';
       providerError.retryable = false;
     }
 
+    return providerError;
+  }
+
+  private createProviderError(
+    message: string,
+    providerName: string,
+    code: string,
+    retryable: boolean
+  ): ProviderError {
+    const providerError = new Error(message) as ProviderError;
+    providerError.provider = providerName;
+    providerError.code = code;
+    providerError.retryable = retryable;
     return providerError;
   }
 
@@ -188,6 +249,10 @@ export class ProviderCascade {
       'code' in error &&
       'retryable' in error
     );
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

@@ -4,7 +4,7 @@ This roadmap is execution-first and checkbox-driven so progress is visible at ev
 
 ## Phase 0: Project Setup and Governance
 - [ ] Confirm product scope for v1 (BTC + ETH first, Monero as separate track)
-- [ ] Finalize architecture decisions from `Plan.md`
+- [ ] Finalize architecture decisions from `PLAN.md`
 - [ ] Define coding standards and contribution workflow
 - [ ] Create `THIRD_PARTY_NOTICES.md` for reusable code attribution
 - [ ] Add `LICENSE` and standard repo metadata files

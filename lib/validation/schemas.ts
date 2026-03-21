@@ -31,6 +31,28 @@ export const OracleFetchTxRequestSchema = z.object({
   chain: ChainSchema,
   txHash: z.string().min(1, 'Transaction hash is required'),
   idempotencyKey: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.chain === 'bitcoin') {
+    const parsed = BitcoinTxHashSchema.safeParse(data.txHash);
+    if (!parsed.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['txHash'],
+        message: 'Invalid Bitcoin transaction hash',
+      });
+    }
+  }
+
+  if (data.chain === 'ethereum') {
+    const parsed = EthereumTxHashSchema.safeParse(data.txHash);
+    if (!parsed.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['txHash'],
+        message: 'Invalid Ethereum transaction hash',
+      });
+    }
+  }
 });
 
 export type OracleFetchTxRequest = z.infer<typeof OracleFetchTxRequestSchema>;
