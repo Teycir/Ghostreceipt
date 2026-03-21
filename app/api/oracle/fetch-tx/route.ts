@@ -14,6 +14,11 @@ const rateLimiter = createRateLimiter({
   maxRequests: 10,
 });
 
+const globalRateLimiter = createRateLimiter({
+  windowMs: 60000,
+  maxRequests: 200,
+});
+
 function mapErrorToResponse(error: unknown): {
   code: ErrorResponse['error']['code'];
   message: string;
@@ -118,25 +123,48 @@ function mapErrorToResponse(error: unknown): {
  * Fetch canonical transaction data with oracle signature
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  let reservedReplayKey: string | null = null;
+
   try {
     const clientId = getClientIdentifier(request);
-    const rateLimit = rateLimiter.check(clientId);
+    const globalRateLimit = globalRateLimiter.check('global');
 
-    if (!rateLimit.allowed) {
+    if (!globalRateLimit.allowed) {
       const errorResponse: ErrorResponse = {
         error: {
           code: 'RATE_LIMIT_EXCEEDED',
-          message: 'Too many requests. Please try again later.',
+          message: 'Service is busy. Please try again later.',
         },
       };
       return NextResponse.json(errorResponse, {
         status: 429,
         headers: {
-          'X-RateLimit-Limit': '10',
+          'X-RateLimit-Limit': '200',
           'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
+          'X-RateLimit-Reset': new Date(globalRateLimit.resetAt).toISOString(),
         },
       });
+    }
+
+    if (clientId) {
+      const rateLimit = rateLimiter.check(clientId);
+
+      if (!rateLimit.allowed) {
+        const errorResponse: ErrorResponse = {
+          error: {
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many requests. Please try again later.',
+          },
+        };
+        return NextResponse.json(errorResponse, {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
+          },
+        });
+      }
     }
     // Parse request body
     let body: unknown;
@@ -170,10 +198,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const normalizedIdempotencyKey = idempotencyKey?.trim();
     if (normalizedIdempotencyKey) {
-      const replayCheck = replayProtection.check(
-        `${clientId}:${normalizedIdempotencyKey}`,
-        Date.now()
-      );
+      const replayKey = `${clientId ?? 'anon'}:${normalizedIdempotencyKey}`;
+      const replayCheck = replayProtection.check(replayKey, Date.now());
 
       if (!replayCheck.allowed) {
         const errorResponse: ErrorResponse = {
@@ -184,6 +210,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         };
         return NextResponse.json(errorResponse, { status: 409 });
       }
+
+      reservedReplayKey = replayKey;
     }
 
     // Initialize providers based on chain
@@ -253,6 +281,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       cached: result.cached,
     });
   } catch (error) {
+    if (reservedReplayKey) {
+      replayProtection.release(reservedReplayKey);
+    }
+
     console.error('[Oracle API] Error:', error);
 
     const mapped = mapErrorToResponse(error);

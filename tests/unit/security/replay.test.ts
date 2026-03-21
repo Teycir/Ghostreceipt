@@ -93,4 +93,15 @@ describe('ReplayProtection', () => {
 
     expect(protection['store'].size).toBe(0);
   });
+
+  it('should release tracked signature keys', () => {
+    const protection = new ReplayProtection(300000);
+    const now = Date.now();
+
+    protection.check('sig-123', now);
+    protection.release('sig-123');
+
+    const result = protection.check('sig-123', now + 1);
+    expect(result.allowed).toBe(true);
+  });
 });

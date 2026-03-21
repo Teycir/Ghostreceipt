@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import { isIP } from 'node:net';
 
 interface RateLimitConfig {
@@ -131,26 +130,10 @@ function extractTrustedProxyIp(request: Request): string | null {
   return null;
 }
 
-function buildHeaderFingerprint(request: Request): string | null {
-  const parts = [
-    request.headers.get('user-agent') ?? '',
-    request.headers.get('accept-language') ?? '',
-    request.headers.get('sec-ch-ua') ?? '',
-    request.headers.get('host') ?? '',
-  ].filter(Boolean);
-
-  if (parts.length === 0) {
-    return null;
-  }
-
-  const digest = createHash('sha256').update(parts.join('|')).digest('hex');
-  return digest.slice(0, 24);
-}
-
 export function getClientIdentifier(
   request: Request,
   options: ClientIdentifierOptions = {}
-): string {
+): string | null {
   const trustProxyHeaders =
     options.trustProxyHeaders ?? parseBooleanEnv(process.env['TRUST_PROXY_HEADERS']);
 
@@ -161,10 +144,5 @@ export function getClientIdentifier(
     }
   }
 
-  const fingerprint = buildHeaderFingerprint(request);
-  if (fingerprint) {
-    return `fp:${fingerprint}`;
-  }
-
-  return 'anon';
+  return null;
 }

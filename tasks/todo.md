@@ -1,3 +1,27 @@
+# Task Plan: Review Findings Remediation (Round 2)
+
+- [x] Replace spoofable rate-limit identity fallback with trusted-IP-only strategy.
+- [x] Add global API limiter fallback when client IP cannot be trusted.
+- [x] Release idempotency replay reservations on request failure to allow safe retries.
+- [x] Hide raw client error details in production error boundary UI.
+- [x] Add/update tests in `tests/` for rate-limit identity and idempotency retry semantics.
+- [x] Run typecheck and targeted tests; record verification results.
+
+## Review
+- `getClientIdentifier` now returns trusted proxy IP IDs only when `TRUST_PROXY_HEADERS=true`; otherwise returns `null` (no spoofable header fingerprint fallback).
+- Added global fallback limiter (`200 req/min`) in `/api/oracle/fetch-tx` while preserving strict per-client limiter (`10 req/min`) when trusted client IDs exist.
+- Added `ReplayProtection.release` and wired route failure cleanup so transient errors do not permanently consume `idempotencyKey`.
+- `ErrorBoundary` now suppresses raw error messages in production and keeps details only in non-production builds.
+- Updated tests:
+  - `tests/unit/security/rate-limit.test.ts`
+  - `tests/unit/security/replay.test.ts`
+  - `tests/unit/api/fetch-tx-route.test.ts`
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/security/rate-limit.test.ts tests/unit/security/replay.test.ts tests/unit/api/fetch-tx-route.test.ts` passes (28 tests).
+
+---
+
 # Task Plan: CVE-2025-59472 Scanner Finding Triage
 
 - [x] Validate advisory affected/fixed ranges from primary sources.

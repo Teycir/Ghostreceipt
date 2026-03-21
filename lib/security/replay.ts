@@ -54,6 +54,10 @@ export class ReplayProtection {
     }
   }
 
+  release(signatureId: string): void {
+    this.store.delete(signatureId);
+  }
+
   startCleanup(intervalMs: number = 60000): void {
     if (this.cleanupTimer !== null) {
       return;

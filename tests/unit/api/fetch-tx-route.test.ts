@@ -143,4 +143,56 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(secondResponse.status).toBe(409);
     expect(secondBody.error.code).toBe('REPLAY_DETECTED');
   });
+
+  it('allows retry with same idempotency key after transient failure', async () => {
+    let invocationCount = 0;
+    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockImplementation(async () => {
+      invocationCount += 1;
+
+      // The route config uses maxRetries=3, so first request can attempt up to 4 times.
+      if (invocationCount <= 4) {
+        throw new Error('Provider timeout');
+      }
+
+      return {
+        chain: 'bitcoin',
+        txHash: 'a'.repeat(64),
+        valueAtomic: '1000',
+        timestampUnix: 1700000000,
+        confirmations: 12,
+        blockNumber: 123456,
+        blockHash: 'b'.repeat(64),
+      };
+    });
+
+    const requestPayload = JSON.stringify({
+      chain: 'bitcoin',
+      txHash: 'a'.repeat(64),
+      idempotencyKey: 'idem-retry-1',
+    });
+
+    const firstRequest = new Request('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': 'fetch-tx-route-test-suite',
+      },
+    });
+
+    const secondRequest = new Request('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': 'fetch-tx-route-test-suite',
+      },
+    });
+
+    const firstResponse = await POST(firstRequest as NextRequest);
+    const secondResponse = await POST(secondRequest as NextRequest);
+
+    expect(firstResponse.status).toBe(504);
+    expect(secondResponse.status).toBe(200);
+  });
 });

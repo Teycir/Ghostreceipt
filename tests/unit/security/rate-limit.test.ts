@@ -117,10 +117,10 @@ describe('getClientIdentifier', () => {
     });
 
     const identifier = getClientIdentifier(request);
-    expect(identifier).toMatch(/^fp:[a-f0-9]{24}$/);
+    expect(identifier).toBeNull();
   });
 
-  it('should derive deterministic fingerprint when proxy headers are not trusted', () => {
+  it('should return null when proxy headers are not trusted', () => {
     const requestA = new Request('http://localhost', {
       headers: {
         'user-agent': 'unit-test-agent',
@@ -138,17 +138,17 @@ describe('getClientIdentifier', () => {
     const identifierB = getClientIdentifier(requestB);
 
     expect(identifierA).toBe(identifierB);
-    expect(identifierA).toMatch(/^fp:[a-f0-9]{24}$/);
+    expect(identifierA).toBeNull();
   });
 
-  it('should return anon when no identifying headers are present', () => {
+  it('should return null when no identifying headers are present', () => {
     const request = new Request('http://localhost');
 
     const identifier = getClientIdentifier(request);
-    expect(identifier).toBe('anon');
+    expect(identifier).toBeNull();
   });
 
-  it('should fallback to fingerprint when trusted headers are invalid', () => {
+  it('should return null when trusted headers are invalid', () => {
     const request = new Request('http://localhost', {
       headers: {
         'x-forwarded-for': 'not-an-ip',
@@ -157,6 +157,6 @@ describe('getClientIdentifier', () => {
     });
 
     const identifier = getClientIdentifier(request, { trustProxyHeaders: true });
-    expect(identifier).toMatch(/^fp:[a-f0-9]{24}$/);
+    expect(identifier).toBeNull();
   });
 });

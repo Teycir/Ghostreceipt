@@ -28,6 +28,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   override render(): ReactNode {
+    const showErrorDetails = process.env.NODE_ENV !== 'production';
+
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -42,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 An unexpected error occurred. Please try again.
               </p>
             </div>
-            {this.state.error && (
+            {this.state.error && showErrorDetails && (
               <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-4 text-left">
                 <p className="text-sm font-mono text-red-500">
                   {this.state.error.message}
