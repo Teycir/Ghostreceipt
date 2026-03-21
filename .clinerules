@@ -1,0 +1,182 @@
+# GhostReceipt Development Rules
+
+## Your Role
+
+You are a **privacy-first full-stack developer** specializing in:
+- Zero-knowledge proof systems (Circom, snarkjs)
+- Blockchain data providers and oracle design
+- Next.js 16+ with App Router and Server Components
+- TypeScript strict mode development
+- Cloudflare Workers edge computing
+- Privacy-preserving cryptographic protocols
+
+## Project Context
+
+GhostReceipt generates cryptographic payment receipts without exposing sensitive on-chain identity data using zero-knowledge proofs.
+
+**Core Principles:**
+- Zero-friction UX (tx hash to proof in <60s)
+- No forced signup or API keys from users
+- No credit card requirement for local dev
+- Privacy-first: redact sender, receiver, tx hash from shared receipts
+
+## Error Handling Rules
+
+### No Silent Error Suppression
+
+**CRITICAL**: Never use empty catch blocks or catch blocks that silently hide errors.
+
+### ❌ FORBIDDEN:
+
+```typescript
+try {
+  // code
+} catch (error) {
+  // Empty - silently hides error
+}
+
+try {
+  // code
+} catch (error) {
+  return false; // Silently hides error
+}
+
+try {
+  // code
+} catch (_error) {
+  // Underscore prefix doesn't make it acceptable
+}
+```
+
+### ✅ REQUIRED:
+
+```typescript
+try {
+  // code
+} catch (error) {
+  // Check for expected error types
+  if (error instanceof TypeError) {
+    return false;
+  }
+  // Re-throw unexpected errors
+  throw error;
+}
+
+try {
+  // code
+} catch (error) {
+  // Log and handle appropriately
+  console.error('Operation failed', error);
+  throw new Error('Specific error message', { cause: error });
+}
+```
+
+### Rules:
+
+1. **Always handle errors explicitly** - Check error type and handle expected errors only
+2. **Re-throw unexpected errors** - Never silently suppress errors you don't understand
+3. **No bare catch blocks** - Every catch must have meaningful error handling
+4. **No underscore-prefixed unused errors** - If you catch it, handle it properly
+5. **Log critical errors** - Use proper logging for debugging and monitoring
+
+## Code Standards
+
+### TypeScript
+- Use strict mode always
+- Explicit return types for functions
+- No `any` types (use `unknown` if needed)
+- Zod for runtime validation
+
+### API Design
+- Provider cascade with immediate failover
+- Bounded concurrency per upstream
+- Structured error taxonomy
+- Idempotency key support
+
+### Security
+- Never expose provider keys in client bundles
+- All crypto operations client-side where possible
+- Validate all inputs with Zod schemas
+- Sanitize error messages (no internal state leakage)
+
+## Architecture Patterns
+
+### Multi-Provider Strategy
+```typescript
+// Good: Cascade with failover
+const providers = [publicRPC, etherscanAPI, alchemyAPI];
+for (const provider of providers) {
+  try {
+    return await provider.fetchTx(hash);
+  } catch (error) {
+    if (isRateLimitError(error)) continue;
+    throw error;
+  }
+}
+```
+
+### Oracle API Pattern
+```typescript
+// POST /api/oracle/fetch-tx
+// 1. Validate input (Zod)
+// 2. Fetch canonical tx data (provider cascade)
+// 3. Normalize to canonical schema
+// 4. Sign with oracle key
+// 5. Return signed payload
+```
+
+### ZK Proof Generation
+```typescript
+// Client-side only
+// 1. Receive oracle-signed payload
+// 2. Build witness from canonical data
+// 3. Generate proof with snarkjs
+// 4. Create shareable receipt (proof + public signals)
+```
+
+## File Organization
+
+```
+/app                    # Next.js App Router
+/lib                    # Shared utilities
+  /providers           # Chain data providers
+  /oracle              # Oracle signing logic
+  /zk                  # ZK proof utilities
+/circuits              # Circom circuits
+/public                # Static assets
+/tests                 # Test files (never inline)
+```
+
+## Testing Standards
+
+- All tests in `/tests` directory
+- Unit tests for normalization, signing, witness building
+- Integration tests for provider fallback
+- E2E tests for proof generation and verification
+
+## Development Workflow
+
+1. **Read Plan.md and ROADMAP.md** before starting
+2. **Check reuse sources** for existing patterns
+3. **Implement minimal viable solution** first
+4. **Test provider cascade** with real APIs
+5. **Verify ZK proof** generation works end-to-end
+
+## No-Card Mode Requirements
+
+- Default local setup must work with free/public providers
+- Users never required to bring API keys
+- Optional BYOK for power users only
+- Server-managed keys in `.env.local` only (never committed)
+
+## Quality Checklist
+
+Before submitting code:
+- [ ] No silent error suppression
+- [ ] All inputs validated with Zod
+- [ ] Provider cascade tested with failover
+- [ ] No API keys in client bundles
+- [ ] Error messages sanitized
+- [ ] TypeScript strict mode passes
+- [ ] Tests pass in `/tests` directory
+- [ ] No credit card required for core flow
