@@ -45,26 +45,34 @@ npm run check:secrets # ✅ Detects secrets in .env.local
 
 ---
 
-## Phase 1: Oracle API (Fast + Correct) 🚧 NEXT
+## Phase 1: Oracle API (Fast + Correct) ✅ SHIPPED
 
-### Planned Deliverables
-- [ ] `POST /api/oracle/fetch-tx` endpoint
-- [ ] Input validation with Zod
-- [ ] BTC adapter (mempool.space + Blockchair fallback)
-- [ ] ETH adapter (public RPC + Etherscan fallback)
-- [ ] Canonical response schema
-- [ ] Oracle signing flow
-- [ ] Structured error taxonomy
-- [ ] Idempotency key support
-- [ ] KV caching (short TTL)
+**Completed:** 2026-03-22
 
-### Next Steps
-1. Create Zod validation schemas
-2. Implement provider cascade manager
-3. Build BTC adapter with fallback
-4. Build ETH adapter with fallback
-5. Implement oracle signing
-6. Add integration tests
+### Deliverables
+- ✅ `POST /api/oracle/fetch-tx` endpoint
+- ✅ Input validation with Zod
+- ✅ BTC adapter (mempool.space + Blockchair fallback path)
+- ✅ ETH adapter (public RPC + Etherscan fallback)
+- ✅ Canonical response schema enforcement
+- ✅ Oracle signing flow (commitment + signature metadata)
+- ✅ Structured error taxonomy and route-level mapping
+- ✅ Idempotency key support with session isolation
+- ⏳ KV caching (short TTL) deferred (non-blocker for Phase 1 shipment)
+
+### Verification Evidence
+- ✅ Type validation:
+  - `npm run typecheck` passes.
+- ✅ Live non-mocked route verification:
+  - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts` passes.
+  - BTC path now attempts fallback provider on primary failure.
+- ✅ Cascade failover tuning:
+  - Rate-limit errors now fail over immediately to next provider (no same-provider retry loop).
+
+### Immediate Next Phase
+1. Phase 2: ZK browser engine hardening + full ceremony provenance sign-off.
+2. End-to-end demo path (generator -> proof -> verifier) in live environment.
+3. Final metadata/release flips for `v0.1.0`.
 
 ---
 

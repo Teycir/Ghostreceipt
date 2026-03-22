@@ -112,6 +112,11 @@ export class ProviderCascade {
           break;
         }
 
+        // Rate-limited providers should fail over immediately to the next provider.
+        if (providerError.code === 'RATE_LIMIT') {
+          break;
+        }
+
         // Non-retryable error, stop cascade immediately.
         if (!providerError.retryable) {
           throw providerError;

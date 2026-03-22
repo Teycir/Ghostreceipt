@@ -7,6 +7,7 @@ import {
 } from '@/lib/validation/schemas';
 import { ProviderCascade } from '@/lib/providers/cascade';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
+import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { OracleSigner } from '@/lib/oracle/signer';
@@ -284,7 +285,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let cascade: ProviderCascade;
 
     if (chain === 'bitcoin') {
-      const providers = [new MempoolSpaceProvider()];
+      const blockchairApiKey = process.env['BLOCKCHAIR_API_KEY'];
+      const providers: Provider[] = [
+        new MempoolSpaceProvider(),
+        new BlockchairProvider(
+          blockchairApiKey ? { apiKey: blockchairApiKey } : undefined
+        ),
+      ];
+
       cascade = new ProviderCascade(providers, {
         maxRetries: 3,
         retryDelayMs: 50,

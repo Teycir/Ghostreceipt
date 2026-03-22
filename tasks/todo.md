@@ -356,3 +356,25 @@
 - Remaining external/manual actions:
   - Obtain security + cryptography reviewer sign-off fields in the provenance record.
   - Publish live demo URL and update GitHub repo metadata settings.
+
+---
+
+# Task Plan: Phase 1 Shipment Lock-in
+
+- [x] Run focused verification for `/api/oracle/fetch-tx` endpoint, BTC/ETH adapters, and signing flow.
+- [x] Confirm Zod request validation and structured error mapping behavior in tests.
+- [x] Update `docs/project/IMPLEMENTATION_PROGRESS.md` to mark Phase 1 as shipped.
+- [x] Record verification evidence and define immediate next phase.
+
+## Review
+- Implemented BTC fallback adapter integration in route:
+  - Added `BlockchairProvider` and wired it into BTC provider cascade.
+  - BTC fallback is now always attempted (API key optional).
+- Improved failover behavior in `ProviderCascade`:
+  - `RATE_LIMIT` now fails over immediately to the next provider (no repeated retries on the same limited provider).
+- Updated phase tracking:
+  - `docs/project/IMPLEMENTATION_PROGRESS.md` now marks Phase 1 as shipped and records deferred/non-blocking items.
+- Verification (non-mocked route flow):
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts` passes (10 tests).
+  - Console logs confirm BTC provider cascade attempts fallback on primary error.
