@@ -1,3 +1,35 @@
+# Task Plan: Re-Review Closure (Verify Route Signer Caching)
+
+- [x] Confirm any still-open bug deltas after prior remediation pass.
+- [x] Remove per-request signer instantiation in `/api/oracle/verify-signature` private-key path.
+- [x] Add regression test proving cache refresh when `ORACLE_PRIVATE_KEY` changes.
+- [x] Update `tasks/lessons.md` with closure-validation pattern.
+- [x] Run typecheck + targeted tests and document verification.
+
+## Review
+- Verified all previously reported critical/significant issues are now covered in current codebase; remaining actionable delta was signer instantiation symmetry between oracle routes.
+- Added key-aware signer cache to [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts), matching `/api/oracle/fetch-tx` behavior.
+- Added regression test in [`tests/unit/api/oracle-verify-signature-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-verify-signature-route.test.ts) to ensure cached signer refreshes correctly when `ORACLE_PRIVATE_KEY` changes.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/providers/mempool.test.ts tests/unit/security/ssrf.test.ts` passes (31 tests).
+
+# Task Plan: Re-Review Delta Hardening (Signer Instantiation + Verification)
+
+- [x] Verify current branch status against re-review claims and isolate true remaining work.
+- [x] Add key-aware module-level `OracleSigner` singleton for `/api/oracle/fetch-tx`.
+- [x] Update `tasks/lessons.md` with stale-review validation pattern.
+- [x] Run `npm run typecheck` and targeted route/security tests; capture outcomes.
+
+## Review
+- Re-validated the re-review findings against current branch state:
+  - Already resolved in codebase: Ed25519 signing, BTC confirmation depth computation, verify-signature rate limiting, SSRF range hardening, and in-memory limits documentation.
+  - Remaining practical improvement: avoid per-request `OracleSigner` instantiation in `/api/oracle/fetch-tx`.
+- Implemented key-aware module singleton for signer creation in [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts).
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/providers/mempool.test.ts tests/unit/security/ssrf.test.ts` passes (40 tests).
+
 # Task Plan: External Code Review Remediation (Signer, BTC, Security Hardening)
 
 # Task Plan: ETH API-First Cascade + Multi-User Stress Hardening

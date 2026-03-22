@@ -27,6 +27,26 @@ const globalRateLimiter = createRateLimiter({
 });
 
 const ANON_IDEMPOTENCY_COOKIE = 'gr_sid';
+let oracleSignerCache: { privateKey: string; signer: OracleSigner } | null = null;
+
+function getOracleSigner(): OracleSigner {
+  const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+  if (!oraclePrivateKey) {
+    throw new Error('Oracle private key not configured');
+  }
+
+  if (
+    oracleSignerCache === null ||
+    oracleSignerCache.privateKey !== oraclePrivateKey
+  ) {
+    oracleSignerCache = {
+      privateKey: oraclePrivateKey,
+      signer: new OracleSigner(oraclePrivateKey),
+    };
+  }
+
+  return oracleSignerCache.signer;
+}
 
 function createAnonymousSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -357,12 +377,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Sign canonical data
-    const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
-    if (!oraclePrivateKey) {
-      throw new Error('Oracle private key not configured');
-    }
-
-    const signer = new OracleSigner(oraclePrivateKey);
+    const signer = getOracleSigner();
     const messageHash = await computeOracleCommitment(canonicalDataResult.data);
     const signedPayload: OraclePayloadV1 = {
       ...canonicalDataResult.data,

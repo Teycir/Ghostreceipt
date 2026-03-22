@@ -14,6 +14,27 @@ const globalRateLimiter = createRateLimiter({
   maxRequests: 200,
 });
 
+let oracleSignerCache: { privateKey: string; signer: OracleSigner } | null = null;
+
+function getOracleSignerFromPrivateKey(): OracleSigner {
+  const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+  if (!oraclePrivateKey) {
+    throw new Error('Oracle key not configured (set ORACLE_PUBLIC_KEY or ORACLE_PRIVATE_KEY)');
+  }
+
+  if (
+    oracleSignerCache === null ||
+    oracleSignerCache.privateKey !== oraclePrivateKey
+  ) {
+    oracleSignerCache = {
+      privateKey: oraclePrivateKey,
+      signer: new OracleSigner(oraclePrivateKey),
+    };
+  }
+
+  return oracleSignerCache.signer;
+}
+
 const VerifySignatureRequestSchema = z.object({
   messageHash: z.string().min(1),
   oracleSignature: z.string().regex(/^[a-f0-9]{128}$/i),
@@ -102,8 +123,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   }
 
-  const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
-  if (!oraclePrivateKey) {
+  if (!process.env['ORACLE_PRIVATE_KEY']) {
     const errorResponse: ErrorResponse = {
       error: {
         code: 'INTERNAL_ERROR',
@@ -113,7 +133,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(errorResponse, { status: 500 });
   }
 
-  const signer = new OracleSigner(oraclePrivateKey);
+  const signer = getOracleSignerFromPrivateKey();
   return NextResponse.json({
     valid: signer.verifySignature(
       parsed.data.messageHash,

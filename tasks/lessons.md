@@ -1,5 +1,13 @@
 # Lessons Learned
 
+## 2026-03-22 - Route Symmetry For Security-Critical Paths
+- When we harden one oracle route (for example signer lifecycle caching in `fetch-tx`), immediately mirror the same pattern in sibling security-critical routes (for example `verify-signature`) unless there is a deliberate documented reason not to.
+- Add regression tests that cover runtime key-change behavior whenever signer/key caches are introduced.
+
+## 2026-03-22 - Stale Re-Review Validation
+- When a re-review report claims regressions, validate each claim against the live branch before planning remediation to avoid duplicate/redundant work.
+- Prioritize only true deltas after validation, and document which review items were already fixed so future passes stay aligned.
+
 ## 2026-03-22 - External Pattern Parity for Provider Strategy
 - When the user references an existing internal repo pattern (for example `smartcontractpatternfinder`, `honeypotscan`), treat it as an implementation source of truth and align behavior before finalizing.
 - Preserve explicit provider ordering requirements from user guidance (for example API-first and RPC-last) and avoid randomization that can violate that order.
