@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-22 - Defense-In-Depth For Sensitive Endpoints
+- Bound untrusted string inputs (length + charset/format) for security-critical routes to reduce abuse and memory pressure risk.
+- When caching signer/key state, avoid retaining duplicated raw secret material; prefer deterministic fingerprints for cache change detection.
+
 ## 2026-03-22 - Route Symmetry For Security-Critical Paths
 - When we harden one oracle route (for example signer lifecycle caching in `fetch-tx`), immediately mirror the same pattern in sibling security-critical routes (for example `verify-signature`) unless there is a deliberate documented reason not to.
 - Add regression tests that cover runtime key-change behavior whenever signer/key caches are introduced.

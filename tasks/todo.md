@@ -1,3 +1,26 @@
+# Task Plan: Sensitive Hardening Sweep (Defense In Depth)
+
+- [x] Tighten validation for oracle commitment and idempotency key inputs.
+- [x] Remove raw private key duplication in route-level signer caches (use fingerprint comparison).
+- [x] Add regression tests for tightened input validation and key-rotation-safe caches.
+- [x] Run typecheck + targeted tests and capture verification evidence.
+
+## Review
+- Tightened input validation:
+  - `OracleCommitmentSchema` now enforces numeric field-element format (`1..78` decimal digits).
+  - `idempotencyKey` now enforces `8..128` chars and safe token charset (`[A-Za-z0-9._:-]`).
+- Hardened key handling:
+  - Route-level signer caches now compare/store only SHA-256 private-key fingerprints instead of duplicating raw key strings.
+  - Applied consistently in both oracle routes: fetch and verify.
+- Added regression tests:
+  - invalid idempotency key format rejected in fetch route tests,
+  - cached signer refresh on key change in fetch route tests,
+  - non-numeric commitment rejected in verify route tests.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/security/rate-limit.test.ts tests/unit/security/ssrf.test.ts tests/unit/providers/mempool.test.ts tests/unit/oracle-signer.test.ts` passes (62 tests).
+  - `npm test -- tests/unit/zk/witness.test.ts tests/unit/generator/witness-integration.test.ts tests/integration/proof-generation.test.ts` passes (22 tests).
+
 # Task Plan: Re-Review Closure (Verify Route Signer Caching)
 
 - [x] Confirm any still-open bug deltas after prior remediation pass.

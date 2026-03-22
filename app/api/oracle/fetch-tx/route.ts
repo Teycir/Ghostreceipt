@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import {
   CanonicalTxDataSchema,
   type ErrorResponse,
@@ -27,20 +28,25 @@ const globalRateLimiter = createRateLimiter({
 });
 
 const ANON_IDEMPOTENCY_COOKIE = 'gr_sid';
-let oracleSignerCache: { privateKey: string; signer: OracleSigner } | null = null;
+let oracleSignerCache: { privateKeyFingerprint: string; signer: OracleSigner } | null = null;
+
+function fingerprintPrivateKey(privateKey: string): string {
+  return createHash('sha256').update(privateKey).digest('hex');
+}
 
 function getOracleSigner(): OracleSigner {
   const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
   if (!oraclePrivateKey) {
     throw new Error('Oracle private key not configured');
   }
+  const privateKeyFingerprint = fingerprintPrivateKey(oraclePrivateKey);
 
   if (
     oracleSignerCache === null ||
-    oracleSignerCache.privateKey !== oraclePrivateKey
+    oracleSignerCache.privateKeyFingerprint !== privateKeyFingerprint
   ) {
     oracleSignerCache = {
-      privateKey: oraclePrivateKey,
+      privateKeyFingerprint,
       signer: new OracleSigner(oraclePrivateKey),
     };
   }

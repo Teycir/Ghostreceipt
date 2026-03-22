@@ -121,6 +121,28 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(body.error.message).toBe('Invalid JSON request body');
   });
 
+  it('returns 400 for invalid idempotency key format', async () => {
+    const request = new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: JSON.stringify({
+        chain: 'bitcoin',
+        txHash: 'a'.repeat(64),
+        idempotencyKey: 'bad key with spaces',
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    const response = await POST(request);
+    const body = (await response.json()) as {
+      error: { code: string; message: string };
+    };
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('INVALID_HASH');
+  });
+
   it('returns 422 for reverted ethereum transactions', async () => {
     jest
       .spyOn(EtherscanProvider.prototype, 'fetchTransaction')
@@ -185,6 +207,57 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(response.status).toBe(200);
     expect(body.data.oracleSignature).toMatch(/^[a-f0-9]{128}$/i);
     expect(body.data.oraclePubKeyId).toMatch(/^[a-f0-9]{16}$/i);
+  });
+
+  it('refreshes cached signer when ORACLE_PRIVATE_KEY changes', async () => {
+    const canonicalTx = {
+      chain: 'bitcoin' as const,
+      txHash: 'a'.repeat(64),
+      valueAtomic: '1000',
+      timestampUnix: 1700000000,
+      confirmations: 12,
+      blockNumber: 123456,
+      blockHash: 'b'.repeat(64),
+    };
+
+    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
+    jest.spyOn(BlockchairProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
+
+    process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
+    const requestA = new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: JSON.stringify({
+        chain: 'bitcoin',
+        txHash: 'a'.repeat(64),
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+    const responseA = await POST(requestA);
+    const bodyA = (await responseA.json()) as {
+      data: { oraclePubKeyId: string };
+    };
+
+    process.env['ORACLE_PRIVATE_KEY'] = '2'.repeat(64);
+    const requestB = new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: JSON.stringify({
+        chain: 'bitcoin',
+        txHash: 'a'.repeat(64),
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+    const responseB = await POST(requestB);
+    const bodyB = (await responseB.json()) as {
+      data: { oraclePubKeyId: string };
+    };
+
+    expect(responseA.status).toBe(200);
+    expect(responseB.status).toBe(200);
+    expect(bodyA.data.oraclePubKeyId).not.toBe(bodyB.data.oraclePubKeyId);
   });
 
   it('returns 409 when the same idempotency key is replayed by the same client', async () => {

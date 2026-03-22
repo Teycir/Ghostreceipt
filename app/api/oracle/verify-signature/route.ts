@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { z } from 'zod';
-import type { ErrorResponse } from '@/lib/validation/schemas';
+import { OracleCommitmentSchema, type ErrorResponse } from '@/lib/validation/schemas';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 
@@ -14,20 +15,25 @@ const globalRateLimiter = createRateLimiter({
   maxRequests: 200,
 });
 
-let oracleSignerCache: { privateKey: string; signer: OracleSigner } | null = null;
+let oracleSignerCache: { privateKeyFingerprint: string; signer: OracleSigner } | null = null;
+
+function fingerprintPrivateKey(privateKey: string): string {
+  return createHash('sha256').update(privateKey).digest('hex');
+}
 
 function getOracleSignerFromPrivateKey(): OracleSigner {
   const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
   if (!oraclePrivateKey) {
     throw new Error('Oracle key not configured (set ORACLE_PUBLIC_KEY or ORACLE_PRIVATE_KEY)');
   }
+  const privateKeyFingerprint = fingerprintPrivateKey(oraclePrivateKey);
 
   if (
     oracleSignerCache === null ||
-    oracleSignerCache.privateKey !== oraclePrivateKey
+    oracleSignerCache.privateKeyFingerprint !== privateKeyFingerprint
   ) {
     oracleSignerCache = {
-      privateKey: oraclePrivateKey,
+      privateKeyFingerprint,
       signer: new OracleSigner(oraclePrivateKey),
     };
   }
@@ -36,7 +42,7 @@ function getOracleSignerFromPrivateKey(): OracleSigner {
 }
 
 const VerifySignatureRequestSchema = z.object({
-  messageHash: z.string().min(1),
+  messageHash: OracleCommitmentSchema,
   oracleSignature: z.string().regex(/^[a-f0-9]{128}$/i),
   oraclePubKeyId: z.string().regex(/^[a-f0-9]{16}$/i),
   signedAt: z.number().int().positive(),

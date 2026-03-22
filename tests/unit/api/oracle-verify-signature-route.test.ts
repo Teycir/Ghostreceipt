@@ -85,6 +85,23 @@ describe('POST /api/oracle/verify-signature', () => {
     expect(response.status).toBe(400);
   });
 
+  it('returns 400 for non-numeric messageHash commitment', async () => {
+    const signer = new OracleSigner('1'.repeat(64));
+    const request = new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+      method: 'POST',
+      body: JSON.stringify({
+        messageHash: 'not-a-field-element',
+        oracleSignature: signer.sign('12345678901234567890'),
+        oraclePubKeyId: signer.getPublicKeyId(),
+        signedAt: 1700000000,
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+  });
+
   it('verifies signatures using ORACLE_PUBLIC_KEY without private key', async () => {
     const privateKey = '1'.repeat(64);
     const signer = new OracleSigner(privateKey);

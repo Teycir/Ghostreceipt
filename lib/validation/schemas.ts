@@ -30,7 +30,13 @@ export const EthereumTxHashSchema = z
 export const OracleFetchTxRequestSchema = z.object({
   chain: ChainSchema,
   txHash: z.string().min(1, 'Transaction hash is required'),
-  idempotencyKey: z.string().optional(),
+  idempotencyKey: z
+    .string()
+    .trim()
+    .min(8, 'Idempotency key must be at least 8 characters')
+    .max(128, 'Idempotency key must be at most 128 characters')
+    .regex(/^[A-Za-z0-9._:-]+$/, 'Idempotency key contains invalid characters')
+    .optional(),
 }).superRefine((data, ctx) => {
   if (data.chain === 'bitcoin') {
     const parsed = BitcoinTxHashSchema.safeParse(data.txHash);
@@ -72,11 +78,15 @@ export const CanonicalTxDataSchema = z.object({
 
 export type CanonicalTxData = z.infer<typeof CanonicalTxDataSchema>;
 
+export const OracleCommitmentSchema = z
+  .string()
+  .regex(/^[0-9]{1,78}$/, 'Invalid oracle commitment format');
+
 /**
  * Oracle signed payload (v1)
  */
 export const OraclePayloadV1Schema = CanonicalTxDataSchema.extend({
-  messageHash: z.string(),
+  messageHash: OracleCommitmentSchema,
   oracleSignature: z.string(),
   oraclePubKeyId: z.string(),
   schemaVersion: z.literal('v1'),
