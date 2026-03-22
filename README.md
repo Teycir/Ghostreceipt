@@ -297,7 +297,7 @@ GhostReceipt is part of a privacy-first toolkit. Check out these related project
 
 **Use with GhostReceipt**: Store your generated receipt links and verification keys in Sanctum's hidden layer, protected by plausible deniability if device is seized.
 
-### [HoneypotScan](https://github.com/Teycir/honeypotscan)
+### [HoneypotScan](https://github.com/Teycir/honeypotscan) | [Live Demo](https://honeypotscan.pages.dev)
 **Smart contract honeypot detector for DeFi safety**
 - Detects scam tokens that prevent selling after purchase
 - 13 specialized patterns across Ethereum, Polygon, Arbitrum
