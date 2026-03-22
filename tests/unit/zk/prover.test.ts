@@ -58,4 +58,15 @@ describe('ProofGenerator share payload encoding', () => {
       'Failed to import proof'
     );
   });
+
+  it('rejects payloads containing prototype-pollution keys', () => {
+    const maliciousPayload =
+      '{"proof":{"pi_a":["1","2","3"],"pi_b":[["4","5"],["6","7"],["8","9"]],"pi_c":["10","11","12"],"protocol":"groth16","curve":"bn128"},"publicSignals":["1","2","3"],"oracleAuth":{"messageHash":"123","oracleSignature":"' +
+      'a'.repeat(128) +
+      '","oraclePubKeyId":"k1","signedAt":1700000000,"__proto__":{"polluted":true}}}';
+
+    expect(() => generator.importProof(maliciousPayload)).toThrow(
+      'Invalid proof format: potentially malicious structure'
+    );
+  });
 });

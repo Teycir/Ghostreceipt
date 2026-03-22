@@ -155,10 +155,8 @@ export class ProofGenerator {
       const parsed = JSON.parse(decoded);
 
       // Prevent prototype pollution
-      if (parsed && typeof parsed === 'object') {
-        if ('__proto__' in parsed || 'constructor' in parsed.proof || 'prototype' in parsed) {
-          throw new Error('Invalid proof format: potentially malicious structure');
-        }
+      if (hasDangerousKeys(parsed)) {
+        throw new Error('Invalid proof format: potentially malicious structure');
       }
 
       // Validate structure
@@ -188,6 +186,36 @@ export class ProofGenerator {
       throw new Error('Failed to import proof: Unknown error');
     }
   }
+}
+
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function hasDangerousKeys(value: unknown): boolean {
+  const stack: unknown[] = [value];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+
+    if (current === null || typeof current !== 'object') {
+      continue;
+    }
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        stack.push(item);
+      }
+      continue;
+    }
+
+    for (const [key, entryValue] of Object.entries(current)) {
+      if (DANGEROUS_KEYS.has(key)) {
+        return true;
+      }
+      stack.push(entryValue);
+    }
+  }
+
+  return false;
 }
 
 /**

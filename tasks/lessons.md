@@ -41,3 +41,7 @@
 ## 2026-03-22 - Multi-Item Fix Confirmation
 - When the user responds with numbered decisions, treat each item as pending until explicitly confirmed as fixed or skipped.
 - If priorities change mid-stream (for example, "item 1 also needs fix"), immediately include that item in implementation and verification scope before closing the plan.
+
+## 2026-03-22 - Prototype-Pollution Guard Precision
+- Do not use broad inherited-property checks (`in` on plain objects) to detect malicious keys in parsed JSON payloads; this creates false positives (`constructor` on `Object.prototype`).
+- For deserialization hardening, scan own enumerable keys recursively and block only explicit dangerous keys present in the payload shape.

@@ -596,3 +596,24 @@
 - Build warnings observed:
   - middleware convention deprecation (`middleware` -> `proxy`),
   - unsupported metadata `viewport` placement for `/`, `/_not-found`, and `/verify`.
+
+---
+
+# Task Plan: Prover Import False-Positive Fix
+
+- [x] Identify root cause in `ProofGenerator.importProof` malicious-structure check.
+- [x] Replace inherited-property check with own-key recursive scan for dangerous keys.
+- [x] Add regression test for payloads containing prototype-pollution keys.
+- [x] Re-run failing suites and full coverage verification.
+
+## Review
+- Root cause: `constructor in parsed.proof` treated inherited `Object.prototype.constructor` as malicious, causing false positives for normal payloads.
+- Updated `lib/zk/prover.ts`:
+  - replaced inline `'in'` checks with `hasDangerousKeys` recursive traversal over own enumerable keys only,
+  - retained blocking for `__proto__`, `constructor`, and `prototype` when present in parsed JSON payload keys.
+- Added regression in `tests/unit/zk/prover.test.ts` to assert rejection of payloads containing `__proto__` keys.
+- Verification:
+  - `npm test -- tests/unit/zk/prover.test.ts tests/integration/proof-generation.test.ts` passes (`11` tests).
+  - `npm run test:coverage -- --ci --runInBand` passes (`21` suites, `139` tests).
+  - `npm run lint` passes.
+  - `npm run typecheck` passes.
