@@ -237,6 +237,8 @@ Open `http://localhost:3000`.
 - Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./docs/project/REPO_METADATA_CHECKLIST.md)
 - Security runbook: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
 - Circuit provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)
+- Trusted setup provenance record (2026-03-22): [docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md)
+- Circuit self-review: [docs/runbooks/CIRCUIT_SELF_REVIEW.md](./docs/runbooks/CIRCUIT_SELF_REVIEW.md)
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
 ## FAQ

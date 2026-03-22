@@ -329,3 +329,30 @@
   - update GitHub repo topics in repository settings,
   - set repo website/live demo URL once deployed,
   - publish first tagged release notes on GitHub Releases.
+
+---
+
+# Task Plan: Cryptographic Execution Evidence
+
+- [x] Add a completed trusted-setup provenance record populated from current artifacts.
+- [x] Add a plain-language circuit self-review mapping product claims to enforced constraints.
+- [x] Link new evidence docs from `README.md` and `docs/README.md`.
+- [x] Verify references and record remaining external actions.
+
+## Review
+- Added completed provenance record:
+  - `docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md`
+  - includes versions, commit hash, artifact checksums, and verification command results (`Powers Of tau file OK`, `ZKey Ok`).
+- Added circuit self-review doc:
+  - `docs/runbooks/CIRCUIT_SELF_REVIEW.md`
+  - maps product claims to constraints and explicitly lists current trust/coverage limits.
+- Linked both docs from:
+  - `README.md`
+  - `docs/README.md`
+- Verification:
+  - `snarkjs powersoftau verify public/zk/pot14_final.ptau` passes.
+  - `snarkjs zkey verify public/zk/receipt.r1cs public/zk/pot14_final.ptau public/zk/receipt_final.zkey` passes.
+  - `rg` confirms link wiring in README/docs index.
+- Remaining external/manual actions:
+  - Obtain security + cryptography reviewer sign-off fields in the provenance record.
+  - Publish live demo URL and update GitHub repo metadata settings.
