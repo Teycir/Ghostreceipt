@@ -10,7 +10,7 @@ describe('Witness Builder', () => {
     timestampUnix: 1234567890,
     confirmations: 12,
     messageHash: '123456789012345678901234567890',
-    oracleSignature: 'c'.repeat(64),
+    oracleSignature: 'c'.repeat(128),
     oraclePubKeyId: 'd'.repeat(16),
     schemaVersion: 'v1',
     signedAt: 1234567890,

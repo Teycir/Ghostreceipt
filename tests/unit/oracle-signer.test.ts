@@ -1,8 +1,7 @@
 import { OracleSigner } from '@/lib/oracle/signer';
-import type { CanonicalTxData } from '@/lib/validation/schemas';
 
 describe('OracleSigner', () => {
-  const testPrivateKey = 'a'.repeat(64); // Valid 64 hex char key
+  const testPrivateKey = 'a'.repeat(64);
   let signer: OracleSigner;
 
   beforeEach(() => {
@@ -23,54 +22,44 @@ describe('OracleSigner', () => {
     });
   });
 
-  describe('createMessageHash', () => {
-    it('should create deterministic hash for same data', () => {
-      const data: CanonicalTxData = {
-        chain: 'bitcoin',
-        txHash: 'abc123',
-        valueAtomic: '100000000',
-        timestampUnix: 1234567890,
-        confirmations: 6,
-      };
+  describe('getPublicKeyId', () => {
+    it('should derive deterministic key ID for the same key', () => {
+      const signerA = new OracleSigner('1'.repeat(64));
+      const signerB = new OracleSigner('1'.repeat(64));
 
-      const hash1 = signer.createMessageHash(data);
-      const hash2 = signer.createMessageHash(data);
-
-      expect(hash1).toBe(hash2);
-      expect(hash1).toHaveLength(64); // SHA256 hex
+      expect(signerA.getPublicKeyId()).toBe(signerB.getPublicKeyId());
+      expect(signerA.getPublicKeyId()).toHaveLength(16);
     });
 
-    it('should create different hashes for different data', () => {
-      const data1: CanonicalTxData = {
-        chain: 'bitcoin',
-        txHash: 'abc123',
-        valueAtomic: '100000000',
-        timestampUnix: 1234567890,
-        confirmations: 6,
-      };
+    it('should derive different key IDs for different keys', () => {
+      const signerA = new OracleSigner('1'.repeat(64));
+      const signerB = new OracleSigner('2'.repeat(64));
 
-      const data2: CanonicalTxData = {
-        ...data1,
-        valueAtomic: '200000000',
-      };
+      expect(signerA.getPublicKeyId()).not.toBe(signerB.getPublicKeyId());
+    });
 
-      const hash1 = signer.createMessageHash(data1);
-      const hash2 = signer.createMessageHash(data2);
+    it('should derive same key ID from exported public key', () => {
+      const privateKey = '1'.repeat(64);
+      const signerInstance = new OracleSigner(privateKey);
+      const publicKeyHex = OracleSigner.derivePublicKeyHex(privateKey);
 
-      expect(hash1).not.toBe(hash2);
+      expect(OracleSigner.derivePublicKeyIdFromHex(publicKeyHex)).toBe(
+        signerInstance.getPublicKeyId()
+      );
     });
   });
 
   describe('sign', () => {
     it('should create signature for message hash', () => {
-      const messageHash = 'a'.repeat(64);
+      const messageHash = '12345678901234567890';
       const signature = signer.sign(messageHash);
 
-      expect(signature).toHaveLength(64); // HMAC-SHA256 hex
+      expect(signature).toHaveLength(128); // Ed25519 signature hex
+      expect(signature).toMatch(/^[a-f0-9]{128}$/i);
     });
 
     it('should create same signature for same hash', () => {
-      const messageHash = 'a'.repeat(64);
+      const messageHash = '12345678901234567890';
       const sig1 = signer.sign(messageHash);
       const sig2 = signer.sign(messageHash);
 
@@ -78,76 +67,58 @@ describe('OracleSigner', () => {
     });
   });
 
-  describe('signCanonicalData', () => {
-    it('should create valid signed payload', () => {
-      const data: CanonicalTxData = {
-        chain: 'ethereum',
-        txHash: '0x' + 'a'.repeat(64),
-        valueAtomic: '1000000000000000000',
-        timestampUnix: 1234567890,
-        confirmations: 12,
-        blockNumber: 12345,
-      };
-
-      const payload = signer.signCanonicalData(data);
-
-      expect(payload).toMatchObject(data);
-      expect(payload.messageHash).toHaveLength(64);
-      expect(payload.oracleSignature).toHaveLength(64);
-      expect(payload.oraclePubKeyId).toHaveLength(16);
-      expect(payload.schemaVersion).toBe('v1');
-      expect(payload.signedAt).toBeGreaterThan(0);
-    });
-  });
-
-  describe('verify', () => {
+  describe('verifySignature', () => {
     it('should verify valid signature', () => {
-      const data: CanonicalTxData = {
-        chain: 'bitcoin',
-        txHash: 'abc123',
-        valueAtomic: '100000000',
-        timestampUnix: 1234567890,
-        confirmations: 6,
-      };
-
-      const payload = signer.signCanonicalData(data);
-      const isValid = signer.verify(payload);
+      const messageHash = '12345678901234567890';
+      const signature = signer.sign(messageHash);
+      const isValid = signer.verifySignature(
+        messageHash,
+        signature,
+        signer.getPublicKeyId()
+      );
 
       expect(isValid).toBe(true);
     });
 
     it('should reject tampered signature', () => {
-      const data: CanonicalTxData = {
-        chain: 'bitcoin',
-        txHash: 'abc123',
-        valueAtomic: '100000000',
-        timestampUnix: 1234567890,
-        confirmations: 6,
-      };
-
-      const payload = signer.signCanonicalData(data);
-      payload.oracleSignature = 'b'.repeat(64); // Tamper
-
-      const isValid = signer.verify(payload);
+      const messageHash = '12345678901234567890';
+      const signature = signer.sign(messageHash);
+      const tampered = `${signature.slice(0, 127)}${signature[127] === 'a' ? 'b' : 'a'}`;
+      const isValid = signer.verifySignature(messageHash, tampered, signer.getPublicKeyId());
 
       expect(isValid).toBe(false);
     });
 
-    it('should reject tampered data', () => {
-      const data: CanonicalTxData = {
-        chain: 'bitcoin',
-        txHash: 'abc123',
-        valueAtomic: '100000000',
-        timestampUnix: 1234567890,
-        confirmations: 6,
-      };
-
-      const payload = signer.signCanonicalData(data);
-      payload.valueAtomic = '200000000'; // Tamper
-
-      const isValid = signer.verify(payload);
+    it('should reject tampered message hash', () => {
+      const messageHash = '12345678901234567890';
+      const signature = signer.sign(messageHash);
+      const isValid = signer.verifySignature(
+        '99999999999999999999',
+        signature,
+        signer.getPublicKeyId()
+      );
 
       expect(isValid).toBe(false);
+    });
+
+    it('should reject mismatched key IDs', () => {
+      const messageHash = '12345678901234567890';
+      const signature = signer.sign(messageHash);
+      const isValid = signer.verifySignature(messageHash, signature, 'f'.repeat(16));
+
+      expect(isValid).toBe(false);
+    });
+
+    it('should verify signatures with public key only', () => {
+      const privateKey = '1'.repeat(64);
+      const signerInstance = new OracleSigner(privateKey);
+      const publicKeyHex = OracleSigner.derivePublicKeyHex(privateKey);
+      const messageHash = '12345678901234567890';
+      const signature = signerInstance.sign(messageHash);
+
+      expect(
+        OracleSigner.verifySignatureWithPublicKey(messageHash, signature, publicKeyHex)
+      ).toBe(true);
     });
   });
 

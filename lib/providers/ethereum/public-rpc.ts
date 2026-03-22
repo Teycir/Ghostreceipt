@@ -12,7 +12,7 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
   readonly chain = 'ethereum' as const;
   readonly config: ProviderConfig = {
     name: 'ethereum-public-rpc',
-    priority: 1,
+    priority: 99,
     requiresApiKey: false,
   };
 

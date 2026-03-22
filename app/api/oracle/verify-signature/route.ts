@@ -1,25 +1,66 @@
-import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { ErrorResponse } from '@/lib/validation/schemas';
 import { OracleSigner } from '@/lib/oracle/signer';
+import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
+
+const rateLimiter = createRateLimiter({
+  windowMs: 60000,
+  maxRequests: 20,
+});
+
+const globalRateLimiter = createRateLimiter({
+  windowMs: 60000,
+  maxRequests: 200,
+});
 
 const VerifySignatureRequestSchema = z.object({
   messageHash: z.string().min(1),
-  oracleSignature: z.string().regex(/^[a-f0-9]{64}$/i),
+  oracleSignature: z.string().regex(/^[a-f0-9]{128}$/i),
   oraclePubKeyId: z.string().regex(/^[a-f0-9]{16}$/i),
   signedAt: z.number().int().positive(),
 });
 
-function safeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const clientId = getClientIdentifier(request);
+  const globalRateLimit = globalRateLimiter.check('global');
+  if (!globalRateLimit.allowed) {
+    const errorResponse: ErrorResponse = {
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Service is busy. Please try again later.',
+      },
+    };
+    return NextResponse.json(errorResponse, {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': '200',
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': new Date(globalRateLimit.resetAt).toISOString(),
+      },
+    });
   }
 
-  return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
-}
+  if (clientId) {
+    const rateLimit = rateLimiter.check(clientId);
+    if (!rateLimit.allowed) {
+      const errorResponse: ErrorResponse = {
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many requests. Please try again later.',
+        },
+      };
+      return NextResponse.json(errorResponse, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': '20',
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
+        },
+      });
+    }
+  }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
   let body: unknown;
   try {
     body = await request.json();
@@ -45,27 +86,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(errorResponse, { status: 400 });
   }
 
+  const oraclePublicKey = process.env['ORACLE_PUBLIC_KEY'];
+  if (oraclePublicKey) {
+    const expectedPubKeyId = OracleSigner.derivePublicKeyIdFromHex(oraclePublicKey);
+    if (expectedPubKeyId !== parsed.data.oraclePubKeyId) {
+      return NextResponse.json({ valid: false });
+    }
+
+    return NextResponse.json({
+      valid: OracleSigner.verifySignatureWithPublicKey(
+        parsed.data.messageHash,
+        parsed.data.oracleSignature,
+        oraclePublicKey
+      ),
+    });
+  }
+
   const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
   if (!oraclePrivateKey) {
     const errorResponse: ErrorResponse = {
       error: {
         code: 'INTERNAL_ERROR',
-        message: 'Oracle private key not configured',
+        message: 'Oracle key not configured (set ORACLE_PUBLIC_KEY or ORACLE_PRIVATE_KEY)',
       },
     };
     return NextResponse.json(errorResponse, { status: 500 });
   }
 
   const signer = new OracleSigner(oraclePrivateKey);
-  const expectedPubKeyId = signer.getPublicKeyId();
-  if (expectedPubKeyId !== parsed.data.oraclePubKeyId) {
-    return NextResponse.json({ valid: false });
-  }
-
-  const expectedSignature = signer.sign(parsed.data.messageHash).toLowerCase();
-  const providedSignature = parsed.data.oracleSignature.toLowerCase();
-
   return NextResponse.json({
-    valid: safeCompare(expectedSignature, providedSignature),
+    valid: signer.verifySignature(
+      parsed.data.messageHash,
+      parsed.data.oracleSignature,
+      parsed.data.oraclePubKeyId
+    ),
   });
 }

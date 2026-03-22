@@ -132,6 +132,7 @@ This project currently operates a centralized oracle signing key for canonical t
 
 ### Key Custody
 - The oracle private key must exist only in secret stores (`.env.local` for local dev, deployment secret manager for hosted envs).
+- If running verification in an isolated environment, prefer `ORACLE_PUBLIC_KEY` without private key access.
 - Never place oracle private key material in source files, commit history, issue trackers, screenshots, or CI logs.
 - Limit write access to production secret stores to a minimal maintainer set.
 
@@ -151,7 +152,28 @@ This project currently operates a centralized oracle signing key for canonical t
 
 ### Verification Endpoint Usage
 - The verifier path checks oracle-authenticated payloads via `POST /api/oracle/verify-signature`.
+- Oracle signatures are Ed25519 (`64` bytes, hex-encoded as `128` chars).
 - Ensure `oraclePubKeyId` in generated payloads maps to the active key ID after rotation.
+- Keep route-level rate limiting enabled for this endpoint to reduce probing/oracle abuse risk.
+
+### Runtime Storage Limits (Important)
+- Current replay protection and API rate limit stores are in-memory maps.
+- In serverless environments (Cloudflare Workers, Vercel functions, etc.), this state is instance-local and ephemeral.
+- Consequences:
+  - Limits can reset on cold starts.
+  - Cross-instance requests can bypass per-instance counters.
+- Production guidance:
+  - Cloudflare target: move these protections to Durable Objects or KV-backed coordination.
+  - Node target: use a shared external store (for example Redis) for distributed rate/replay controls.
+
+### CSP Trade-offs
+- Current CSP includes `script-src 'unsafe-eval'` because `snarkjs`/witness tooling requires dynamic evaluation in browser flows.
+- Current CSP also includes `script-src 'unsafe-inline'`, which broadens XSS exposure.
+- Plan to replace inline allowances with nonce/hash-based scripts when framework/runtime support is finalized for this app path.
+
+### Bitcoin Canonical Value Semantics
+- Bitcoin `valueAtomic` currently represents total transaction output value (`sum(vout)` / `output_total`), not recipient-specific net received value.
+- This is intentional for the current privacy model (recipient redacted), but must be documented in product/release notes so claim interpretation is unambiguous.
 
 ### Incident Response Addendum (Oracle Key Compromise)
 1. Rotate `ORACLE_PRIVATE_KEY` immediately in all environments.

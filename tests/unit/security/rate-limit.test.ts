@@ -82,6 +82,22 @@ describe('RateLimiter', () => {
 
     expect(limiter['store'].size).toBe(0);
   });
+
+  it('should bound store growth for high-cardinality traffic', () => {
+    const limiter = new RateLimiter({
+      windowMs: 60000,
+      maxRequests: 2,
+      maxStoreSize: 10,
+      cleanupIntervalMs: 600000,
+    });
+
+    for (let i = 0; i < 25; i++) {
+      limiter.check(`client-${i}`);
+    }
+
+    limiter.check('final-client');
+    expect(limiter['store'].size).toBeLessThanOrEqual(10);
+  });
 });
 
 describe('getClientIdentifier', () => {

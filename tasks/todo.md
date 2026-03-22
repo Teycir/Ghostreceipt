@@ -1,3 +1,53 @@
+# Task Plan: External Code Review Remediation (Signer, BTC, Security Hardening)
+
+# Task Plan: ETH API-First Cascade + Multi-User Stress Hardening
+
+- [x] Inspect `smartcontractpatternfinder` and align Etherscan key cascade behavior (shuffle + rolling attempts + short delay).
+- [x] Inspect `honeypotscan` and port high-stress in-memory rate-limit protections (bounded store + throttled cleanup).
+- [x] Set ETH provider strategy to API-first with RPC as last fallback attempt.
+- [x] Make provider cascade ordering priority-driven (shuffle only within same priority).
+- [x] Expand Etherscan env key loading to support primary + up to 6 key slots.
+- [x] Update tests/docs to match new ETH cascade and stress-tuned limiter behavior.
+- [x] Run typecheck + impacted unit suites and record results.
+
+## Review
+- ETH route now prefers Etherscan API key cascade and keeps `ethereum-public-rpc` as final fallback.
+- Provider ordering is deterministic by `config.priority`; randomized load distribution now happens only within equal-priority groups.
+- Etherscan key loading now supports `ETHERSCAN_API_KEY` and optional `_1` through `_6`.
+- `EtherscanProvider` now follows rolling key attempts with `50ms` delay between keys, aligned to the reference implementation style.
+- `RateLimiter` now includes:
+  - throttled cleanup cycles,
+  - bounded store size with eviction under high-cardinality load,
+  - optional tuning knobs via config (`cleanupIntervalMs`, `maxStoreSize`).
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/providers/cascade.test.ts tests/unit/security/rate-limit.test.ts tests/unit/providers/mempool.test.ts tests/unit/oracle-signer.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts` passes (61 tests).
+
+# Task Plan: External Code Review Remediation (Signer, BTC, Security Hardening)
+
+- [x] Replace HMAC-based oracle signing with Ed25519 asymmetric signatures.
+- [x] Remove duplicate signer-side hashing path and enforce commitment hash as single source of truth.
+- [x] Fix mempool BTC confirmation depth using current tip height.
+- [x] Add rate limiting to `/api/oracle/verify-signature`.
+- [x] Harden SSRF private/local address blocklist coverage.
+- [x] Update `.env.example` and security docs for `TRUST_PROXY_HEADERS`, in-memory limiter/replay limits, CSP trade-offs, and BTC value semantics.
+- [x] Add/update tests under `tests/` for signer behavior, verify route, mempool confirmations, and SSRF ranges.
+- [x] Run typecheck and targeted tests; capture outcomes in review section.
+
+## Review
+- Oracle signing now uses Ed25519 (asymmetric) with deterministic `oraclePubKeyId` derived from public key material.
+- Removed signer-side competing message hash path (`createMessageHash` / `signCanonicalData` / payload-reshash verify path), so the route commitment hash is the single signing input.
+- `MempoolSpaceProvider` now fetches `/api/blocks/tip/height` and computes real confirmation depth (`tip - block + 1`).
+- Added per-client/global rate limits to `POST /api/oracle/verify-signature`.
+- Expanded SSRF block coverage for `0.0.0.0/8`, `100.64.0.0/10`, `127.0.0.0/8`, and `169.254.0.0/16`.
+- Updated ops docs:
+  - `.env.example` documents trusted proxy behavior and now defaults `TRUST_PROXY_HEADERS=true` for proxied deployments.
+  - `docs/runbooks/SECURITY.md` now documents in-memory limiter/replay limits, CSP trade-offs, and BTC value semantics.
+  - `README.md` now documents Ed25519 signing and BTC `valueAtomic` semantics.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/oracle-signer.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/providers/mempool.test.ts tests/unit/security/ssrf.test.ts tests/unit/api/fetch-tx-route.test.ts` passes (42 tests).
+
 # Task Plan: Review Findings Remediation (Round 2)
 
 - [x] Replace spoofable rate-limit identity fallback with trusted-IP-only strategy.

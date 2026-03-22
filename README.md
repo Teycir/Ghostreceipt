@@ -112,11 +112,11 @@ GhostReceipt uses four API types so the product stays reliable while keeping UX 
 
 1. Public no-key data APIs (default path):
 - BTC reads from `mempool.space` first.
-- ETH reads from public RPC endpoints via `viem`.
+- ETH prefers managed Etherscan API key cascade, with public RPC as final fallback.
 - Used first to keep onboarding keyless and no-card friendly.
 
-2. Managed keyed provider APIs (server-side fallback path):
-- For ETH, keyed fallback uses only Etherscan keys provided by project maintainers.
+2. Managed keyed provider APIs (server-side preferred path):
+- For ETH, provider access uses only Etherscan keys provided by project maintainers.
 - Current ETH managed key pool is the internal Etherscan set (primary + fallback keys) configured via server env vars.
 - Keys are platform-managed in server environment variables and never exposed in client code.
 - Multiple managed keys are rotated through a cascade manager for resilience (same pattern as smartcontractpatternfinder).
@@ -143,6 +143,7 @@ What the oracle cannot do:
 
 Current trust assumptions:
 - The oracle signing key is kept server-side only (`ORACLE_PRIVATE_KEY`) and never exposed to the client.
+- Oracle signatures use Ed25519 over the canonical oracle commitment (`messageHash`).
 - Receipt verification checks both ZK validity and oracle signature integrity.
 - Oracle trust is centralized today; if the oracle is offline, new receipt generation is degraded.
 
@@ -186,7 +187,7 @@ sequenceDiagram
 - Circom 2 + snarkjs
 - Data:
 - BTC: mempool.space primary, Blockchair fallback
-- ETH: public RPC (viem) primary, Etherscan fallback via managed server-side key pool (Etherscan-only keyed source)
+- ETH: Etherscan API first (rolling managed key cascade), public RPC last fallback
 - Reliability:
 - Provider/key cascade manager with immediate failover and bounded concurrency (smartcontractpatternfinder-style)
 
@@ -226,7 +227,7 @@ Open `http://localhost:3000`.
 - No-user-API-key mode: users are not required to bring API keys.
 - Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
 - Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
-- ETH managed keyed fallback is Etherscan-only for now; other provider keys will be added later without changing the UX contract.
+- ETH provider path is API-first (Etherscan key cascade) with RPC as the last fallback attempt.
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)
@@ -256,6 +257,9 @@ Yes. Local setup and baseline flow are designed for no-card operation.
 
 ### What does the verifier see?
 Only proof-related public claims and redacted receipt output, not raw sensitive identities.
+
+### What BTC value does `valueAtomic` represent?
+Current BTC canonicalization uses total tx output value (`sum(vout)`), not recipient-specific net received value.
 
 ### Is Monero supported?
 Planned as a dedicated track with separate constraints due to hidden amounts.

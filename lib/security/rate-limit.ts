@@ -3,6 +3,8 @@ import { isIP } from 'node:net';
 interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
+  cleanupIntervalMs?: number;
+  maxStoreSize?: number;
 }
 
 interface ClientIdentifierOptions {
@@ -18,15 +20,22 @@ export class RateLimiter {
   private store: Map<string, RateLimitEntry>;
   private config: RateLimitConfig;
   private cleanupTimer: ReturnType<typeof setInterval> | null;
+  private readonly cleanupIntervalMs: number;
+  private readonly maxStoreSize: number;
+  private lastCleanupAt: number;
 
   constructor(config: RateLimitConfig) {
     this.store = new Map();
     this.config = config;
     this.cleanupTimer = null;
+    this.cleanupIntervalMs = config.cleanupIntervalMs ?? config.windowMs;
+    this.maxStoreSize = config.maxStoreSize ?? 5000;
+    this.lastCleanupAt = Date.now();
   }
 
   check(identifier: string): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now();
+    this.maybeCleanup(now);
     const entry = this.store.get(identifier);
 
     if (!entry || now >= entry.resetAt) {
@@ -55,8 +64,7 @@ export class RateLimiter {
     };
   }
 
-  cleanup(): void {
-    const now = Date.now();
+  cleanup(now: number = Date.now()): void {
     for (const [key, entry] of this.store.entries()) {
       if (now >= entry.resetAt) {
         this.store.delete(key);
@@ -64,7 +72,32 @@ export class RateLimiter {
     }
   }
 
-  startCleanup(intervalMs: number = this.config.windowMs): void {
+  private maybeCleanup(now: number): void {
+    const shouldRunIntervalCleanup = now - this.lastCleanupAt >= this.cleanupIntervalMs;
+    const shouldRunSizeCleanup = this.store.size >= this.maxStoreSize;
+
+    if (!shouldRunIntervalCleanup && !shouldRunSizeCleanup) {
+      return;
+    }
+
+    this.cleanup(now);
+    this.lastCleanupAt = now;
+
+    if (this.store.size <= this.maxStoreSize) {
+      return;
+    }
+
+    const sortedByReset = Array.from(this.store.entries())
+      .sort((a, b) => a[1].resetAt - b[1].resetAt);
+    const overflowCount = this.store.size - this.maxStoreSize;
+    const evictionCount = Math.max(overflowCount, Math.floor(this.maxStoreSize * 0.2));
+
+    for (const [key] of sortedByReset.slice(0, evictionCount)) {
+      this.store.delete(key);
+    }
+  }
+
+  startCleanup(intervalMs: number = this.cleanupIntervalMs): void {
     if (this.cleanupTimer !== null) {
       return;
     }

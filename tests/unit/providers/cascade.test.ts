@@ -44,10 +44,10 @@ describe('ProviderCascade', () => {
     jest.restoreAllMocks();
   });
 
-  it('retries retryable provider errors up to maxRetries', async () => {
+  it('retries retryable non-rate-limit provider errors up to maxRetries', async () => {
     const fetchTransaction = jest
       .fn<ReturnType<Provider['fetchTransaction']>, Parameters<Provider['fetchTransaction']>>()
-      .mockRejectedValueOnce(new Error('Rate limit exceeded'))
+      .mockRejectedValueOnce(new Error('HTTP 500: Internal Server Error'))
       .mockResolvedValueOnce(sampleTx);
 
     const cascade = new ProviderCascade(

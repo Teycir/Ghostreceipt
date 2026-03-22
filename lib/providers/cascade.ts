@@ -16,21 +16,39 @@ export class ProviderCascade {
   private activeRequests: Map<string, number>;
 
   constructor(providers: Provider[], config: CascadeConfig) {
-    this.providers = this.shuffleProviders(providers);
+    this.providers = this.orderProviders(providers);
     this.config = config;
     this.activeRequests = new Map();
   }
 
   /**
-   * Shuffle providers on startup to distribute load
+   * Order providers by priority; shuffle only within equal-priority groups.
    */
-  private shuffleProviders(providers: Provider[]): Provider[] {
-    const shuffled = [...providers];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  private orderProviders(providers: Provider[]): Provider[] {
+    const buckets = new Map<number, Provider[]>();
+    for (const provider of providers) {
+      const priority = provider.config.priority;
+      const bucket = buckets.get(priority) ?? [];
+      bucket.push(provider);
+      buckets.set(priority, bucket);
     }
-    return shuffled;
+
+    const priorities = Array.from(buckets.keys()).sort((a, b) => a - b);
+    const ordered: Provider[] = [];
+
+    for (const priority of priorities) {
+      const bucket = buckets.get(priority) ?? [];
+      const shuffledBucket = [...bucket];
+
+      for (let i = shuffledBucket.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledBucket[i], shuffledBucket[j]] = [shuffledBucket[j]!, shuffledBucket[i]!];
+      }
+
+      ordered.push(...shuffledBucket);
+    }
+
+    return ordered;
   }
 
   /**

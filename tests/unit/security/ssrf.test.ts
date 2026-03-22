@@ -10,9 +10,13 @@ describe('SSRF Protection', () => {
     });
 
     it('should block private IP ranges', () => {
+      expect(isPrivateOrLocalhost('0.1.2.3')).toBe(true);
       expect(isPrivateOrLocalhost('10.0.0.1')).toBe(true);
       expect(isPrivateOrLocalhost('172.16.0.1')).toBe(true);
       expect(isPrivateOrLocalhost('192.168.1.1')).toBe(true);
+      expect(isPrivateOrLocalhost('100.64.10.1')).toBe(true);
+      expect(isPrivateOrLocalhost('127.10.20.30')).toBe(true);
+      expect(isPrivateOrLocalhost('169.254.1.5')).toBe(true);
     });
 
     it('should block cloud metadata endpoints', () => {

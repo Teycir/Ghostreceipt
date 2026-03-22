@@ -32,7 +32,7 @@ This roadmap is execution-first and checkbox-driven so progress is visible at ev
 - [ ] Add strict input validation (Zod)
 - [ ] Implement chain adapters:
 - [ ] BTC adapter (mempool.space primary, Blockchair fallback)
-- [ ] ETH adapter (public RPC primary, explorer fallback)
+- [ ] ETH adapter (API-first Etherscan cascade, RPC last fallback)
 - [ ] Define and enforce canonical response schema
 - [ ] Add deterministic message hashing for oracle payload
 - [ ] Add oracle signing flow (server-side secret only)

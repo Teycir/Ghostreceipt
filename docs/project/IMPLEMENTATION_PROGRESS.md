@@ -53,7 +53,7 @@ npm run check:secrets # ✅ Detects secrets in .env.local
 - ✅ `POST /api/oracle/fetch-tx` endpoint
 - ✅ Input validation with Zod
 - ✅ BTC adapter (mempool.space + Blockchair fallback path)
-- ✅ ETH adapter (public RPC + Etherscan fallback)
+- ✅ ETH adapter (Etherscan rolling key cascade + RPC last fallback)
 - ✅ Canonical response schema enforcement
 - ✅ Oracle signing flow (commitment + signature metadata)
 - ✅ Structured error taxonomy and route-level mapping

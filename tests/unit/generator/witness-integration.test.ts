@@ -9,7 +9,7 @@ describe('Generator Form Integration', () => {
     timestampUnix: 1700000000,
     confirmations: 6,
     messageHash: '12345678901234567890',
-    oracleSignature: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    oracleSignature: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     oraclePubKeyId: 'test-key-1',
     schemaVersion: 'v1',
     signedAt: 1700000100,

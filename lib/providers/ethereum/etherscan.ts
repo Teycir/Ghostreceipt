@@ -32,7 +32,7 @@ export class EtherscanProvider implements EthereumProvider {
   readonly chain = 'ethereum' as const;
   readonly config: ProviderConfig = {
     name: 'etherscan',
-    priority: 2,
+    priority: 1,
     requiresApiKey: true,
     rateLimit: {
       requestsPerSecond: 5,
@@ -93,6 +93,10 @@ export class EtherscanProvider implements EthereumProvider {
     let lastError: Error | null = null;
 
     for (let i = 0; i < this.apiKeys.length; i++) {
+      if (i > 0) {
+        await this.delay(50);
+      }
+
       const apiKey = this.getNextKey();
 
       try {
@@ -100,15 +104,21 @@ export class EtherscanProvider implements EthereumProvider {
         return this.normalize(data);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
+        const normalizedMessage = lastError.message.toLowerCase();
 
-        // If rate limited, try next key immediately
-        if (lastError.message.toLowerCase().includes('rate limit')) {
-          console.warn(`[${this.name}] Rate limited on key ${i + 1}, trying next`);
-          continue;
+        // Non-retryable transaction-level failures should stop key cascade immediately.
+        if (
+          normalizedMessage.includes('transaction not found') ||
+          normalizedMessage.includes('transaction reverted') ||
+          normalizedMessage.includes('invalid ethereum transaction hash')
+        ) {
+          throw lastError;
         }
 
-        // Non-retryable error, throw immediately
-        throw lastError;
+        console.warn(
+          `[${this.name}] Key ${i + 1} failed (${lastError.message}), trying next key`
+        );
+        continue;
       }
     }
 
@@ -221,5 +231,9 @@ export class EtherscanProvider implements EthereumProvider {
       console.error(`[${this.name}] Health check failed:`, error);
       return false;
     }
+  }
+
+  private async delay(ms: number): Promise<void> {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
   }
 }

@@ -2,6 +2,28 @@ import { POST } from '@/app/api/oracle/fetch-tx/route';
 import { NextRequest } from 'next/server';
 
 describe('Oracle API - /api/oracle/fetch-tx', () => {
+  const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+  const originalEtherscanKey1 = process.env['ETHERSCAN_API_KEY_1'];
+
+  beforeEach(() => {
+    process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
+    process.env['ETHERSCAN_API_KEY_1'] = 'test-etherscan-key';
+  });
+
+  afterEach(() => {
+    if (originalOraclePrivateKey === undefined) {
+      delete process.env['ORACLE_PRIVATE_KEY'];
+    } else {
+      process.env['ORACLE_PRIVATE_KEY'] = originalOraclePrivateKey;
+    }
+
+    if (originalEtherscanKey1 === undefined) {
+      delete process.env['ETHERSCAN_API_KEY_1'];
+    } else {
+      process.env['ETHERSCAN_API_KEY_1'] = originalEtherscanKey1;
+    }
+  });
+
   describe('Input Validation', () => {
     it('should reject missing chain parameter', async () => {
       const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
@@ -92,7 +114,7 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
 
       const response = await POST(request);
 
-      expect([200, 404, 502, 504]).toContain(response.status);
+      expect([200, 404, 429, 502, 504]).toContain(response.status);
     });
 
     it('should accept valid Ethereum request', async () => {
@@ -106,7 +128,7 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
 
       const response = await POST(request);
 
-      expect([200, 404, 502, 504]).toContain(response.status);
+      expect([200, 404, 422, 429, 502, 504]).toContain(response.status);
     });
   });
 

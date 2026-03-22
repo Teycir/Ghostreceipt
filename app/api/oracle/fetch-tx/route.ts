@@ -8,8 +8,8 @@ import {
 import { ProviderCascade } from '@/lib/providers/cascade';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
-import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
+import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { replayProtection } from '@/lib/security/replay';
@@ -171,6 +171,22 @@ function mapErrorToResponse(error: unknown): {
   return { code, message, status };
 }
 
+function loadEtherscanKeysFromEnv(): string[] {
+  const candidates = [
+    process.env['ETHERSCAN_API_KEY'],
+    process.env['ETHERSCAN_API_KEY_1'],
+    process.env['ETHERSCAN_API_KEY_2'],
+    process.env['ETHERSCAN_API_KEY_3'],
+    process.env['ETHERSCAN_API_KEY_4'],
+    process.env['ETHERSCAN_API_KEY_5'],
+    process.env['ETHERSCAN_API_KEY_6'],
+  ]
+    .map((value) => value?.trim() ?? '')
+    .filter((value) => value.length > 0);
+
+  return Array.from(new Set(candidates));
+}
+
 /**
  * POST /api/oracle/fetch-tx
  * 
@@ -300,17 +316,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         concurrencyLimit: 5,
       });
     } else if (chain === 'ethereum') {
-      const providers: Provider[] = [
-        new EthereumPublicRpcProvider(),
-      ];
+      const etherscanKeys = loadEtherscanKeysFromEnv();
+      const providers: Provider[] = [];
 
-      // Add Etherscan fallback if keys available
-      const etherscanKeys = [
-        process.env['ETHERSCAN_API_KEY_1'],
-        process.env['ETHERSCAN_API_KEY_2'],
-        process.env['ETHERSCAN_API_KEY_3'],
-      ].filter((key): key is string => Boolean(key));
-
+      // API-first strategy for multi-user reliability under RPC instability.
       if (etherscanKeys.length > 0) {
         providers.push(
           new EtherscanProvider({
@@ -320,6 +329,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           })
         );
       }
+
+      // RPC is intentionally the final fallback attempt.
+      providers.push(new EthereumPublicRpcProvider());
 
       cascade = new ProviderCascade(providers, {
         maxRetries: 3,

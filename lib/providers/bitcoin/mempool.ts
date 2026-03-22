@@ -97,20 +97,27 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     }
 
     const data = (await response.json()) as MempoolTxResponse;
+    let currentTipHeight: number | undefined;
+    if (data.status.confirmed) {
+      currentTipHeight = await this.fetchCurrentBlockHeight(signal);
+    }
 
-    return this.normalize(data);
+    return this.normalize(data, currentTipHeight);
   }
 
   /**
    * Normalize mempool.space response to canonical format
    */
-  private normalize(data: MempoolTxResponse): CanonicalTxData {
-    // Calculate total output value (in satoshis)
+  private normalize(
+    data: MempoolTxResponse,
+    currentTipHeight?: number
+  ): CanonicalTxData {
+    // Design choice: we commit transaction total output value (includes change outputs).
     const totalValue = data.vout.reduce((sum, output) => sum + output.value, 0);
 
     // Get confirmations (0 if unconfirmed)
     const confirmations = data.status.confirmed
-      ? this.calculateConfirmations(data.status.block_height)
+      ? this.calculateConfirmations(data.status.block_height, currentTipHeight)
       : 0;
 
     // Get timestamp (use block time if confirmed, otherwise current time)
@@ -130,15 +137,44 @@ export class MempoolSpaceProvider implements BitcoinProvider {
   /**
    * Calculate confirmations from block height
    */
-  private calculateConfirmations(blockHeight: number | undefined): number {
+  private calculateConfirmations(
+    blockHeight: number | undefined,
+    currentTipHeight: number | undefined
+  ): number {
     if (!blockHeight) {
       return 0;
     }
 
-    // Note: In production, fetch current block height from mempool.space
-    // For now, return a placeholder
-    // TODO: Implement current block height fetching
-    return 1;
+    if (typeof currentTipHeight !== 'number') {
+      throw new Error('Missing current block height for confirmation calculation');
+    }
+
+    return Math.max(currentTipHeight - blockHeight + 1, 1);
+  }
+
+  private async fetchCurrentBlockHeight(signal?: AbortSignal): Promise<number> {
+    const tipUrl = `${this.baseUrl}/blocks/tip/height`;
+    const tipUrlValidation = validateUrl(tipUrl);
+    if (!tipUrlValidation.valid) {
+      throw new Error(`Blocked provider URL: ${tipUrlValidation.error ?? 'invalid URL'}`);
+    }
+
+    const response = await fetch(tipUrl, {
+      method: 'GET',
+      signal: signal ?? null,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch current block height: HTTP ${response.status}`);
+    }
+
+    const rawBody = await response.text();
+    const currentTipHeight = Number.parseInt(rawBody, 10);
+    if (!Number.isFinite(currentTipHeight)) {
+      throw new Error('Invalid block height response from mempool.space');
+    }
+
+    return currentTipHeight;
   }
 
   async isHealthy(): Promise<boolean> {

@@ -36,7 +36,7 @@ GhostReceipt intentionally uses multiple API categories so users are never block
 
 Type A: Public no-key read APIs (default happy path)
 - BTC: `mempool.space` first.
-- ETH: public RPC endpoints via `viem`.
+- ETH: Etherscan API first with rolling server-side key cascade; public RPC as final fallback.
 - Reason: zero-friction onboarding and no forced API key flow.
 
 Type B: Managed keyed third-party APIs (fallback path)
@@ -81,7 +81,7 @@ Operational guardrails for all API types:
 ### Chain Data
 - Multi-provider strategy from day 1 (avoid single API dependency):
   - BTC: mempool.space first, Blockchair fallback.
-  - ETH: public RPC via viem first, Etherscan API fallback (Etherscan is the only keyed ETH source).
+  - ETH: Etherscan API first with rolling key cascade; public RPC is the last fallback attempt.
 - Provider Cascade Policy (based on smartcontractpatternfinder pattern):
   - Immediate failover to next provider/key on any request error or rate-limit response.
   - Shuffle managed keys at startup to distribute load and avoid hot-spotting.

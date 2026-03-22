@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-22 - External Pattern Parity for Provider Strategy
+- When the user references an existing internal repo pattern (for example `smartcontractpatternfinder`, `honeypotscan`), treat it as an implementation source of truth and align behavior before finalizing.
+- Preserve explicit provider ordering requirements from user guidance (for example API-first and RPC-last) and avoid randomization that can violate that order.
+- For multi-user stress scenarios, include high-cardinality limiter safeguards (bounded in-memory store and throttled cleanup), not just per-window counters.
+
 ## 2026-03-22 - Scanner Exception Policy
 - Do not add vulnerability scanner exception files by default when the user asks for clean scanning posture.
 - For dependency CVEs, first attempt latest stable upgrades and verify with scanner output without exceptions.

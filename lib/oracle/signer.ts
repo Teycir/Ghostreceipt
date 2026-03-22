@@ -1,20 +1,28 @@
-import { createHash, createHmac, randomBytes } from 'crypto';
-import type { CanonicalTxData, OraclePayloadV1 } from '@/lib/validation/schemas';
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  randomBytes,
+  sign,
+  verify,
+  type KeyObject,
+} from 'crypto';
+
+const ED25519_PKCS8_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
 /**
- * Oracle signer for canonical transaction data
+ * Oracle signer using asymmetric Ed25519 signatures.
  */
 export class OracleSigner {
-  private privateKey: string;
+  private privateKey: KeyObject;
+  private publicKey: KeyObject;
   private pubKeyId: string;
 
-  constructor(privateKey: string) {
-    if (!privateKey || privateKey.length !== 64 || !/^[a-f0-9]{64}$/i.test(privateKey)) {
-      throw new Error('Invalid oracle private key: must be 64 hex characters');
-    }
-
-    this.privateKey = privateKey;
-    this.pubKeyId = this.derivePublicKeyId(privateKey);
+  constructor(privateKeyHex: string) {
+    this.privateKey = OracleSigner.createPrivateKeyFromHex(privateKeyHex);
+    this.publicKey = createPublicKey(this.privateKey);
+    this.pubKeyId = this.derivePublicKeyId(this.publicKey);
   }
 
   getPublicKeyId(): string {
@@ -22,70 +30,128 @@ export class OracleSigner {
   }
 
   /**
-   * Derive public key ID from private key (for identification)
+   * Derive stable key ID from the public key material.
    */
-  private derivePublicKeyId(privateKey: string): string {
-    const hash = createHash('sha256').update(privateKey).digest('hex');
+  private derivePublicKeyId(publicKey: KeyObject): string {
+    const rawPublicKey = OracleSigner.exportRawPublicKey(publicKey);
+    const hash = createHash('sha256').update(rawPublicKey).digest('hex');
     return hash.substring(0, 16); // First 16 chars as ID
   }
 
   /**
-   * Create deterministic message hash from canonical data
+   * Export 32-byte Ed25519 public key from SPKI DER.
    */
-  createMessageHash(data: CanonicalTxData): string {
-    // Deterministic serialization
-    const message = [
-      data.chain,
-      data.txHash,
-      data.valueAtomic,
-      data.timestampUnix.toString(),
-      data.confirmations.toString(),
-      data.blockNumber?.toString() || '',
-      data.blockHash || '',
-    ].join('|');
+  private static exportRawPublicKey(publicKey: KeyObject): Buffer {
+    const spkiDer = publicKey.export({
+      format: 'der',
+      type: 'spki',
+    }) as Buffer;
 
-    return createHash('sha256').update(message).digest('hex');
+    if (spkiDer.subarray(0, ED25519_SPKI_PREFIX.length).equals(ED25519_SPKI_PREFIX)) {
+      return spkiDer.subarray(ED25519_SPKI_PREFIX.length);
+    }
+
+    return spkiDer;
+  }
+
+  private static createPrivateKeyFromHex(privateKeyHex: string): KeyObject {
+    if (!privateKeyHex || privateKeyHex.length !== 64 || !/^[a-f0-9]{64}$/i.test(privateKeyHex)) {
+      throw new Error('Invalid oracle private key: must be 64 hex characters');
+    }
+
+    const seed = Buffer.from(privateKeyHex, 'hex');
+    const privateKeyDer = Buffer.concat([ED25519_PKCS8_PREFIX, seed]);
+    return createPrivateKey({
+      key: privateKeyDer,
+      format: 'der',
+      type: 'pkcs8',
+    });
+  }
+
+  private static createPublicKeyFromHex(publicKeyHex: string): KeyObject {
+    if (!publicKeyHex || publicKeyHex.length !== 64 || !/^[a-f0-9]{64}$/i.test(publicKeyHex)) {
+      throw new Error('Invalid oracle public key: must be 64 hex characters');
+    }
+
+    const publicKeyRaw = Buffer.from(publicKeyHex, 'hex');
+    const spkiDer = Buffer.concat([ED25519_SPKI_PREFIX, publicKeyRaw]);
+    return createPublicKey({
+      key: spkiDer,
+      format: 'der',
+      type: 'spki',
+    });
+  }
+
+  static derivePublicKeyHex(privateKeyHex: string): string {
+    const privateKey = OracleSigner.createPrivateKeyFromHex(privateKeyHex);
+    const publicKey = createPublicKey(privateKey);
+    return OracleSigner.exportRawPublicKey(publicKey).toString('hex');
+  }
+
+  static derivePublicKeyIdFromHex(publicKeyHex: string): string {
+    if (!publicKeyHex || publicKeyHex.length !== 64 || !/^[a-f0-9]{64}$/i.test(publicKeyHex)) {
+      throw new Error('Invalid oracle public key: must be 64 hex characters');
+    }
+
+    const hash = createHash('sha256').update(Buffer.from(publicKeyHex, 'hex')).digest('hex');
+    return hash.substring(0, 16);
+  }
+
+  static verifySignatureWithPublicKey(
+    messageHash: string,
+    signatureHex: string,
+    publicKeyHex: string
+  ): boolean {
+    if (!/^[a-f0-9]{128}$/i.test(signatureHex)) {
+      return false;
+    }
+
+    try {
+      const publicKey = OracleSigner.createPublicKeyFromHex(publicKeyHex);
+      return verify(
+        null,
+        Buffer.from(messageHash, 'utf8'),
+        publicKey,
+        Buffer.from(signatureHex, 'hex')
+      );
+    } catch {
+      return false;
+    }
   }
 
   /**
-   * Sign message hash with HMAC-SHA256
+   * Sign message hash with Ed25519.
    */
   sign(messageHash: string): string {
-    const hmac = createHmac('sha256', Buffer.from(this.privateKey, 'hex'));
-    hmac.update(messageHash);
-    return hmac.digest('hex');
+    const signature = sign(null, Buffer.from(messageHash, 'utf8'), this.privateKey);
+    return signature.toString('hex');
   }
 
   /**
-   * Sign canonical transaction data and create Oracle payload
+   * Verify a provided signature over a message hash.
    */
-  signCanonicalData(data: CanonicalTxData): OraclePayloadV1 {
-    const messageHash = this.createMessageHash(data);
-    const signature = this.sign(messageHash);
-    const signedAt = Math.floor(Date.now() / 1000);
+  verifySignature(
+    messageHash: string,
+    signatureHex: string,
+    oraclePubKeyId?: string
+  ): boolean {
+    if (oraclePubKeyId && oraclePubKeyId !== this.pubKeyId) {
+      return false;
+    }
 
-    return {
-      ...data,
-      messageHash,
-      oracleSignature: signature,
-      oraclePubKeyId: this.pubKeyId,
-      schemaVersion: 'v1',
-      signedAt,
-    };
-  }
+    if (!/^[a-f0-9]{128}$/i.test(signatureHex)) {
+      return false;
+    }
 
-  /**
-   * Verify signature (for testing)
-   */
-  verify(payload: OraclePayloadV1): boolean {
-    const expectedHash = this.createMessageHash(payload);
-    const expectedSignature = this.sign(expectedHash);
-
-    return (
-      payload.messageHash === expectedHash &&
-      payload.oracleSignature === expectedSignature &&
-      payload.oraclePubKeyId === this.pubKeyId
-    );
+    try {
+      return OracleSigner.verifySignatureWithPublicKey(
+        messageHash,
+        signatureHex,
+        OracleSigner.exportRawPublicKey(this.publicKey).toString('hex')
+      );
+    } catch {
+      return false;
+    }
   }
 
   /**

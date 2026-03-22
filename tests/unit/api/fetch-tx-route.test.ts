@@ -1,6 +1,7 @@
 import { POST, mapErrorToResponse } from '@/app/api/oracle/fetch-tx/route';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
-import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
+import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
+import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { NextRequest } from 'next/server';
 
 describe('mapErrorToResponse', () => {
@@ -56,9 +57,11 @@ describe('mapErrorToResponse', () => {
 
 describe('POST /api/oracle/fetch-tx', () => {
   const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+  const originalEtherscanKey1 = process.env['ETHERSCAN_API_KEY_1'];
 
   beforeEach(() => {
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
+    process.env['ETHERSCAN_API_KEY_1'] = 'test-etherscan-key';
   });
 
   afterEach(() => {
@@ -66,6 +69,12 @@ describe('POST /api/oracle/fetch-tx', () => {
       delete process.env['ORACLE_PRIVATE_KEY'];
     } else {
       process.env['ORACLE_PRIVATE_KEY'] = originalOraclePrivateKey;
+    }
+
+    if (originalEtherscanKey1 === undefined) {
+      delete process.env['ETHERSCAN_API_KEY_1'];
+    } else {
+      process.env['ETHERSCAN_API_KEY_1'] = originalEtherscanKey1;
     }
 
     jest.restoreAllMocks();
@@ -114,10 +123,10 @@ describe('POST /api/oracle/fetch-tx', () => {
 
   it('returns 422 for reverted ethereum transactions', async () => {
     jest
-      .spyOn(EthereumPublicRpcProvider.prototype, 'fetchTransaction')
+      .spyOn(EtherscanProvider.prototype, 'fetchTransaction')
       .mockRejectedValue(
         Object.assign(new Error('Transaction reverted: 0x' + 'a'.repeat(64)), {
-          provider: 'ethereum-public-rpc',
+          provider: 'etherscan',
           code: 'REVERTED',
           retryable: false,
         })
@@ -141,6 +150,41 @@ describe('POST /api/oracle/fetch-tx', () => {
 
     expect(response.status).toBe(422);
     expect(body.error.code).toBe('TRANSACTION_REVERTED');
+  });
+
+  it('returns Ed25519 oracle signatures on successful fetch', async () => {
+    const canonicalTx = {
+      chain: 'bitcoin' as const,
+      txHash: 'a'.repeat(64),
+      valueAtomic: '1000',
+      timestampUnix: 1700000000,
+      confirmations: 12,
+      blockNumber: 123456,
+      blockHash: 'b'.repeat(64),
+    };
+
+    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
+    jest.spyOn(BlockchairProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
+
+    const request = new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: JSON.stringify({
+        chain: 'bitcoin',
+        txHash: 'a'.repeat(64),
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    const response = await POST(request);
+    const body = (await response.json()) as {
+      data: { oracleSignature: string; oraclePubKeyId: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.data.oracleSignature).toMatch(/^[a-f0-9]{128}$/i);
+    expect(body.data.oraclePubKeyId).toMatch(/^[a-f0-9]{16}$/i);
   });
 
   it('returns 409 when the same idempotency key is replayed by the same client', async () => {
@@ -214,6 +258,9 @@ describe('POST /api/oracle/fetch-tx', () => {
         blockHash: 'b'.repeat(64),
       };
     });
+    jest.spyOn(BlockchairProvider.prototype, 'fetchTransaction').mockRejectedValue(
+      new Error('Provider timeout')
+    );
 
     const requestPayload = JSON.stringify({
       chain: 'bitcoin',

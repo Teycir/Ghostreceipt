@@ -4,9 +4,12 @@ import { OracleSigner } from '@/lib/oracle/signer';
 
 describe('POST /api/oracle/verify-signature', () => {
   const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+  const originalOraclePublicKey = process.env['ORACLE_PUBLIC_KEY'];
+  const originalTrustProxyHeaders = process.env['TRUST_PROXY_HEADERS'];
 
   beforeEach(() => {
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
+    process.env['TRUST_PROXY_HEADERS'] = 'true';
   });
 
   afterEach(() => {
@@ -14,6 +17,18 @@ describe('POST /api/oracle/verify-signature', () => {
       delete process.env['ORACLE_PRIVATE_KEY'];
     } else {
       process.env['ORACLE_PRIVATE_KEY'] = originalOraclePrivateKey;
+    }
+
+    if (originalTrustProxyHeaders === undefined) {
+      delete process.env['TRUST_PROXY_HEADERS'];
+    } else {
+      process.env['TRUST_PROXY_HEADERS'] = originalTrustProxyHeaders;
+    }
+
+    if (originalOraclePublicKey === undefined) {
+      delete process.env['ORACLE_PUBLIC_KEY'];
+    } else {
+      process.env['ORACLE_PUBLIC_KEY'] = originalOraclePublicKey;
     }
   });
 
@@ -68,5 +83,55 @@ describe('POST /api/oracle/verify-signature', () => {
     const response = await POST(request);
 
     expect(response.status).toBe(400);
+  });
+
+  it('verifies signatures using ORACLE_PUBLIC_KEY without private key', async () => {
+    const privateKey = '1'.repeat(64);
+    const signer = new OracleSigner(privateKey);
+    const messageHash = '12345678901234567890';
+    process.env['ORACLE_PUBLIC_KEY'] = OracleSigner.derivePublicKeyHex(privateKey);
+    delete process.env['ORACLE_PRIVATE_KEY'];
+
+    const request = new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+      method: 'POST',
+      body: JSON.stringify({
+        messageHash,
+        oracleSignature: signer.sign(messageHash),
+        oraclePubKeyId: signer.getPublicKeyId(),
+        signedAt: 1700000000,
+      }),
+    });
+
+    const response = await POST(request);
+    const data = (await response.json()) as { valid: boolean };
+
+    expect(response.status).toBe(200);
+    expect(data.valid).toBe(true);
+  });
+
+  it('returns 429 when per-client verify limit is exceeded', async () => {
+    const signer = new OracleSigner('1'.repeat(64));
+    const messageHash = '12345678901234567890';
+    let lastStatus = 0;
+
+    for (let i = 0; i < 21; i++) {
+      const request = new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+        method: 'POST',
+        body: JSON.stringify({
+          messageHash,
+          oracleSignature: signer.sign(messageHash),
+          oraclePubKeyId: signer.getPublicKeyId(),
+          signedAt: 1700000000,
+        }),
+        headers: {
+          'x-forwarded-for': '198.51.100.10',
+        },
+      });
+
+      const response = await POST(request);
+      lastStatus = response.status;
+    }
+
+    expect(lastStatus).toBe(429);
   });
 });
