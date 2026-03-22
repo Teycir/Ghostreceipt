@@ -24,6 +24,15 @@ describe('SSRF Protection', () => {
       expect(isPrivateOrLocalhost('metadata.google.internal')).toBe(true);
     });
 
+    it('should block obfuscated/private host representations', () => {
+      expect(isPrivateOrLocalhost('2130706433')).toBe(true); // 127.0.0.1 dword
+      expect(isPrivateOrLocalhost('0x7f.0x0.0x0.0x1')).toBe(true); // hex dotted
+      expect(isPrivateOrLocalhost('0177.0.0.1')).toBe(true); // octal dotted
+      expect(isPrivateOrLocalhost('api.internal.local')).toBe(true);
+      expect(isPrivateOrLocalhost('LOCALHOST.')).toBe(true);
+      expect(isPrivateOrLocalhost('::ffff:127.0.0.1')).toBe(true);
+    });
+
     it('should allow public IPs', () => {
       expect(isPrivateOrLocalhost('8.8.8.8')).toBe(false);
       expect(isPrivateOrLocalhost('1.1.1.1')).toBe(false);
@@ -71,6 +80,12 @@ describe('SSRF Protection', () => {
       const result = validateUrl('not-a-url');
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Invalid URL format');
+    });
+
+    it('should block obfuscated localhost/private URL hosts', () => {
+      expect(validateUrl('https://2130706433/api').valid).toBe(false);
+      expect(validateUrl('https://0x7f.0x0.0x0.0x1/api').valid).toBe(false);
+      expect(validateUrl('https://service.local/api').valid).toBe(false);
     });
 
     it('should block file protocol', () => {

@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-22 - Cross-Repo Deprecation Parity
+- When the user points to an already-fixed issue in a sibling repo (for example `smartcontractpatternfinder`), pull that implementation pattern first instead of re-deriving from scratch.
+- For provider/API hardening, validate against live endpoint behavior (not assumptions) before closing review findings, especially around versioned API migrations like Etherscan v1 -> v2.
+
 ## 2026-03-22 - Defense-In-Depth For Sensitive Endpoints
 - Bound untrusted string inputs (length + charset/format) for security-critical routes to reduce abuse and memory pressure risk.
 - When caching signer/key state, avoid retaining duplicated raw secret material; prefer deterministic fingerprints for cache change detection.

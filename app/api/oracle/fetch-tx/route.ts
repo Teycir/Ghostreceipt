@@ -272,10 +272,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
       body = await parseSecureJson(request, { maxSize: 1024 * 10 }); // 10KB limit
     } catch (error) {
+      const message =
+        error instanceof Error &&
+        (
+          error.message.startsWith('Payload too large') ||
+          error.message.startsWith('Invalid Content-Type') ||
+          error.message.startsWith('Empty request body') ||
+          error.message.startsWith('JSON object too complex') ||
+          error.message.startsWith('JSON nesting too deep')
+        )
+          ? error.message
+          : 'Invalid JSON request body';
       const errorResponse: ErrorResponse = {
         error: {
           code: 'INVALID_HASH',
-          message: error instanceof Error ? error.message : 'Invalid JSON request body',
+          message,
         },
       };
       return withSession(NextResponse.json(errorResponse, { status: 400 }));

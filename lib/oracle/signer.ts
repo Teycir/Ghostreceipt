@@ -7,6 +7,7 @@ import {
   verify,
   type KeyObject,
 } from 'crypto';
+import { safeHexEqual } from '@/lib/security/safe-compare';
 
 const ED25519_PKCS8_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
@@ -135,7 +136,7 @@ export class OracleSigner {
     signatureHex: string,
     oraclePubKeyId?: string
   ): boolean {
-    if (oraclePubKeyId && oraclePubKeyId !== this.pubKeyId) {
+    if (oraclePubKeyId && !safeHexEqual(oraclePubKeyId, this.pubKeyId)) {
       return false;
     }
 

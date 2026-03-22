@@ -5,6 +5,7 @@ import { OracleCommitmentSchema, type ErrorResponse } from '@/lib/validation/sch
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { parseSecureJson } from '@/lib/security/secure-json';
+import { safeHexEqual } from '@/lib/security/safe-compare';
 
 const rateLimiter = createRateLimiter({
   windowMs: 60000,
@@ -93,10 +94,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = await parseSecureJson(request, { maxSize: 1024 * 5 }); // 5KB limit
   } catch (error) {
+    const message =
+      error instanceof Error &&
+      (
+        error.message.startsWith('Payload too large') ||
+        error.message.startsWith('Invalid Content-Type') ||
+        error.message.startsWith('Empty request body') ||
+        error.message.startsWith('JSON object too complex') ||
+        error.message.startsWith('JSON nesting too deep')
+      )
+        ? error.message
+        : 'Invalid JSON request body';
     const errorResponse: ErrorResponse = {
       error: {
         code: 'INVALID_HASH',
-        message: error instanceof Error ? error.message : 'Invalid JSON request body',
+        message,
       },
     };
     return NextResponse.json(errorResponse, { status: 400 });
@@ -117,7 +129,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const oraclePublicKey = process.env['ORACLE_PUBLIC_KEY'];
   if (oraclePublicKey) {
     const expectedPubKeyId = OracleSigner.derivePublicKeyIdFromHex(oraclePublicKey);
-    if (expectedPubKeyId !== parsed.data.oraclePubKeyId) {
+    if (!safeHexEqual(expectedPubKeyId, parsed.data.oraclePubKeyId)) {
       return NextResponse.json({ valid: false });
     }
 

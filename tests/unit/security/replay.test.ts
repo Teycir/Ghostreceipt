@@ -104,4 +104,15 @@ describe('ReplayProtection', () => {
     const result = protection.check('sig-123', now + 1);
     expect(result.allowed).toBe(true);
   });
+
+  it('should bound store growth under high-cardinality signatures', () => {
+    const protection = new ReplayProtection(300000, 30000, 10, 600000);
+    const now = Date.now();
+
+    for (let i = 0; i < 50; i++) {
+      protection.check(`sig-${i}`, now + i);
+    }
+
+    expect(protection['store'].size).toBeLessThanOrEqual(10);
+  });
 });

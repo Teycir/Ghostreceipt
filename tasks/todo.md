@@ -1,3 +1,32 @@
+# Task Plan: Etherscan V2 Robustness + Live Validation
+
+- [x] Confirm live Etherscan API behavior via Exa/Fetch docs + direct network calls.
+- [x] Replace deprecated Etherscan v1 provider flow with v2 proxy flow and strict hex parsing.
+- [x] Add regression tests for v2 URL usage, response normalization, and reverted tx handling.
+- [x] Validate end-to-end route behavior with real chain data (no mocked validation path).
+
+## Review
+- Updated [`lib/providers/ethereum/etherscan.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/ethereum/etherscan.ts) to:
+  - use `https://api.etherscan.io/v2/api` with `chainid=1`,
+  - fetch tx + receipt + tip block + block timestamp via proxy actions,
+  - parse/normalize hex quantities safely before producing canonical data.
+- Added regression coverage in [`tests/unit/providers/etherscan.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/etherscan.test.ts) for v2 URL semantics, normalization, and reverted receipt status.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/providers/etherscan.test.ts tests/unit/providers/ssrf-enforcement.test.ts tests/unit/security/secure-json.test.ts tests/unit/security/safe-compare.test.ts tests/unit/security/ssrf.test.ts tests/unit/security/replay.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts` passes (56 tests).
+  - Live network validation:
+    - `curl https://api.etherscan.io/v2/api?...` returns real `{"status":"0","message":"NOTOK","result":"Missing/Invalid API Key"}` on invalid key and is now handled cleanly.
+    - Real `POST /api/oracle/fetch-tx` (ethereum tx) succeeded and server logs show Etherscan attempted/fell back safely to `ethereum-public-rpc`.
+    - Real `POST /api/oracle/verify-signature` with returned payload verifies `{"valid":true}`.
+
+# Task Plan: DDEP Robustness Re-Review (Real-Data Validation)
+
+- [x] Harden request deserialization against nested prototype-pollution payloads and byte-size ambiguity.
+- [x] Harden SSRF hostname checks against obfuscated numeric/IPv6-mapped forms.
+- [x] Harden signature key-id comparison with timing-safe equality.
+- [x] Add bounded replay-store growth protections.
+- [x] Validate with real external data and live endpoint calls (no mocked provider responses).
+
 # Task Plan: Re-Review Sync (Open-Issue Verification)
 
 - [x] Verify re-review "still open" claims directly in current code.
