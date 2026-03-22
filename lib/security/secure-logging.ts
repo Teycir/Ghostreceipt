@@ -43,19 +43,18 @@ export function sanitizeForLog(value: unknown): string {
  * Sanitize a string by removing/encoding dangerous characters
  */
 function sanitizeString(str: string): string {
-  return str
+  const normalized = str
     // Replace newlines with escaped versions to prevent log forging
     .replace(/\r\n/g, '\\r\\n')
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')
     // Replace tabs
-    .replace(/\t/g, '\\t')
-    // Remove other control characters (0x00-0x1F except newline/tab)
-    .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '')
-    // Remove ANSI escape sequences that could manipulate terminal output
-    .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
-    // Truncate very long strings to prevent log flooding
-    .slice(0, 10000);
+    .replace(/\t/g, '\\t');
+
+  const withoutUnsafeChars = stripUnsafeChars(normalized);
+
+  // Truncate very long strings to prevent log flooding
+  return withoutUnsafeChars.slice(0, 10000);
 }
 
 /**
@@ -63,7 +62,7 @@ function sanitizeString(str: string): string {
  */
 export function secureLog(message: string, ...args: unknown[]): void {
   const sanitizedArgs = args.map(sanitizeForLog);
-  console.log(sanitizeForLog(message), ...sanitizedArgs);
+  console.info(sanitizeForLog(message), ...sanitizedArgs);
 }
 
 /**
@@ -112,6 +111,53 @@ export function structuredLog(
     }),
   };
 
-  const logFn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
+  const logFn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.info;
   logFn(JSON.stringify(entry));
+}
+
+function stripUnsafeChars(str: string): string {
+  let sanitized = '';
+
+  for (let i = 0; i < str.length; i += 1) {
+    const code = str.charCodeAt(i);
+
+    if (code === 0x1b) {
+      i = skipAnsiEscapeSequence(str, i);
+      continue;
+    }
+
+    if (isUnsafeControlCode(code)) {
+      continue;
+    }
+
+    sanitized += str[i];
+  }
+
+  return sanitized;
+}
+
+function isUnsafeControlCode(code: number): boolean {
+  const isControlCharacter = code >= 0x00 && code <= 0x1f;
+  const isAllowedWhitespace = code === 0x09 || code === 0x0a || code === 0x0d;
+
+  return isControlCharacter && !isAllowedWhitespace;
+}
+
+function skipAnsiEscapeSequence(str: string, startIndex: number): number {
+  if (str[startIndex + 1] !== '[') {
+    return startIndex;
+  }
+
+  for (let i = startIndex + 2; i < str.length; i += 1) {
+    const code = str.charCodeAt(i);
+    const isTerminalByte =
+      (code >= 0x41 && code <= 0x5a) || // A-Z
+      (code >= 0x61 && code <= 0x7a); // a-z
+
+    if (isTerminalByte) {
+      return i;
+    }
+  }
+
+  return str.length - 1;
 }

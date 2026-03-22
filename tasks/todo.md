@@ -526,3 +526,73 @@
   - `npm run typecheck` passes.
   - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts` passes (10 tests).
   - Console logs confirm BTC provider cascade attempts fallback on primary error.
+
+---
+
+# Task Plan: Continue Full Run Validation
+
+- [x] Run `npm run check:secrets`.
+- [x] Run `npm run lint`.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm run test:coverage -- --ci --runInBand`.
+- [x] Run `npm run build`.
+- [x] Record outcomes in a `Review` section.
+
+## Review
+- `npm run check:secrets` passes (`No secrets detected`).
+- `npm run lint` fails with `4` issues in `lib/security/secure-logging.ts`:
+  - `no-control-regex` errors at lines `54` and `56`,
+  - `no-console` warnings at lines `66` and `115` (and `--max-warnings=0` is enforced).
+- `npm run typecheck` passes.
+- `npm run test:coverage -- --ci --runInBand` fails:
+  - `2` failing suites, `4` failing tests total:
+    - `tests/unit/zk/prover.test.ts` (`3` failures),
+    - `tests/integration/proof-generation.test.ts` (`1` failure),
+  - all failures rooted at `lib/zk/prover.ts` import validation path with error:
+    - `Failed to import proof: Invalid proof format: potentially malicious structure`.
+- `npm run build`:
+  - fails in sandbox due Turbopack process restriction (`Operation not permitted (os error 1)` while binding a port),
+  - passes when rerun outside sandbox.
+- Build warnings observed:
+  - Next.js middleware deprecation warning (`middleware` -> `proxy` convention),
+  - metadata warning about unsupported `viewport` placement on `/`, `/_not-found`, and `/verify`.
+
+---
+
+# Task Plan: Lint Remediation (secure-logging)
+
+- [x] Remove `no-control-regex` violations in `lib/security/secure-logging.ts`.
+- [x] Remove `no-console` warnings in `lib/security/secure-logging.ts`.
+- [x] Run `npm run lint` and document final status.
+
+## Review
+- Replaced control-character and ANSI-stripping regex literals with explicit char-code sanitization helpers in `lib/security/secure-logging.ts`.
+- Switched info-level logging paths from `console.log` to `console.info` in `secureLog` and `structuredLog`.
+- Verification:
+  - `npm run lint` passes with `--max-warnings=0`.
+
+---
+
+# Task Plan: Full Validation Rerun
+
+- [x] Run `npm run check:secrets`.
+- [x] Run `npm run lint`.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm run test:coverage -- --ci --runInBand` (outside sandbox).
+- [x] Run `npm run build` (outside sandbox).
+- [x] Record outcomes in a `Review` section.
+
+## Review
+- `npm run check:secrets` passes (`No secrets detected`).
+- `npm run lint` passes (`--max-warnings=0`).
+- `npm run typecheck` passes.
+- `npm run test:coverage -- --ci --runInBand` fails:
+  - `2` failing suites, `4` failing tests total:
+    - `tests/unit/zk/prover.test.ts` (`3` failures),
+    - `tests/integration/proof-generation.test.ts` (`1` failure),
+  - all failures are in `ProofGenerator.importProof` (`lib/zk/prover.ts`) returning:
+    - `Failed to import proof: Invalid proof format: potentially malicious structure`.
+- `npm run build` passes when run outside sandbox.
+- Build warnings observed:
+  - middleware convention deprecation (`middleware` -> `proxy`),
+  - unsupported metadata `viewport` placement for `/`, `/_not-found`, and `/verify`.
