@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.JSX.Element {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen antialiased">
         <ErrorBoundary>
           {children}

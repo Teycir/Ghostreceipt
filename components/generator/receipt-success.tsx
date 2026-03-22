@@ -77,44 +77,44 @@ export function ReceiptSuccess({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-6">
+      <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-xl">
+          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-xl text-green-400">
             ✓
           </div>
           <div>
-            <h3 className="text-lg font-bold text-green-500">Receipt Generated</h3>
-            <p className="text-xs text-muted-foreground">
+            <h3 className="text-lg font-bold text-green-400">Receipt Generated</h3>
+            <p className="text-xs text-white/40">
               Your zero-knowledge payment proof is ready
             </p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <div className="p-3 bg-background/50 rounded-md">
-            <div className="text-xs text-muted-foreground mb-1">Chain</div>
-            <div className="text-sm font-semibold capitalize">{chain}</div>
+          <div className="p-3 bg-white/5 rounded-lg border border-white/8">
+            <div className="text-xs text-white/40 mb-1">Chain</div>
+            <div className="text-sm font-semibold capitalize text-white">{chain}</div>
           </div>
 
-          <div className="p-3 bg-background/50 rounded-md">
-            <div className="text-xs text-muted-foreground mb-1">
+          <div className="p-3 bg-white/5 rounded-lg border border-white/8">
+            <div className="text-xs text-white/40 mb-1">
               Claimed Amount {chain === 'bitcoin' ? '(satoshis)' : '(wei)'}
             </div>
-            <div className="text-sm font-semibold font-mono">{claimedAmount}</div>
+            <div className="text-sm font-semibold font-mono text-white">{claimedAmount}</div>
           </div>
 
-          <div className="p-3 bg-background/50 rounded-md">
-            <div className="text-xs text-muted-foreground mb-1">Minimum Date</div>
-            <div className="text-sm font-semibold">{minDate}</div>
+          <div className="p-3 bg-white/5 rounded-lg border border-white/8">
+            <div className="text-xs text-white/40 mb-1">Minimum Date</div>
+            <div className="text-sm font-semibold text-white">{minDate}</div>
           </div>
         </div>
       </div>
 
       {qrCode && (
-        <div className="rounded-lg border bg-card p-6 text-center">
-          <p className="text-sm font-medium mb-4">Scan to verify receipt</p>
+        <div className="glass-card rounded-xl p-6 text-center">
+          <p className="text-sm font-medium mb-4 text-white/70">Scan to verify receipt</p>
           <div className="flex justify-center mb-4">
-            <div className="p-4 bg-white rounded-lg">
+            <div className="p-3 bg-white rounded-xl">
               <img src={qrCode} alt="Receipt QR Code" className="w-48 h-48" />
             </div>
           </div>
@@ -125,7 +125,7 @@ export function ReceiptSuccess({
       )}
 
       {qrError && (
-        <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 text-sm text-amber-600">
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-400">
           {qrError}
         </div>
       )}

@@ -204,7 +204,7 @@ export function GeneratorForm(): React.JSX.Element {
             onClick={() => {
               void pasteFromClipboard('txHash');
             }}
-            className="px-2 py-1 text-xs bg-primary/10 border border-primary/30 rounded text-primary hover:bg-primary/20 transition-colors"
+            className="px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
           >
             📋 Paste
           </button>
@@ -239,20 +239,20 @@ export function GeneratorForm(): React.JSX.Element {
       />
 
       {(state === 'fetching' || state === 'validating' || state === 'generating') && (
-        <div className="rounded-md bg-blue-500/10 border border-blue-500/30 p-4 text-sm text-blue-500">
+        <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4 text-sm text-blue-300">
           {getStateMessage()}
         </div>
       )}
 
       {state === 'success' && (
-        <div className="rounded-md bg-green-500/10 border border-green-500/30 p-4 text-sm text-green-500">
+        <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-4 text-sm text-green-400">
           {getStateMessage()}
         </div>
       )}
 
       {state === 'error' && (
         <div className="space-y-3">
-          <div className="rounded-md bg-red-500/10 border border-red-500/30 p-4 text-sm text-red-500">
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
             {errorMessage}
           </div>
           <Button type="button" onClick={handleRetry} variant="secondary" className="w-full">
