@@ -14,6 +14,8 @@ import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { replayProtection } from '@/lib/security/replay';
+import { parseSecureJson } from '@/lib/security/secure-json';
+import { secureError } from '@/lib/security/secure-logging';
 import type { Provider, ProviderError } from '@/lib/providers/types';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 
@@ -265,15 +267,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }));
       }
     }
-    // Parse request body
+    // Parse request body with security controls
     let body: unknown;
     try {
-      body = await request.json();
-    } catch {
+      body = await parseSecureJson(request, { maxSize: 1024 * 10 }); // 10KB limit
+    } catch (error) {
       const errorResponse: ErrorResponse = {
         error: {
           code: 'INVALID_HASH',
-          message: 'Invalid JSON request body',
+          message: error instanceof Error ? error.message : 'Invalid JSON request body',
         },
       };
       return withSession(NextResponse.json(errorResponse, { status: 400 }));
@@ -404,7 +406,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       replayProtection.release(reservedReplayKey);
     }
 
-    console.error('[Oracle API] Error:', error);
+    secureError('[Oracle API] Error:', error);
 
     const mapped = mapErrorToResponse(error);
 

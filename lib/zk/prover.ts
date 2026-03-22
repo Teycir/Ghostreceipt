@@ -47,6 +47,17 @@ export class ProofGenerator {
     zkeyPath: string,
     vkeyPath: string
   ) {
+    // Validate paths are within expected /zk/ directory (defense-in-depth)
+    if (!wasmPath.startsWith('/zk/') || wasmPath.includes('..')) {
+      throw new Error('Invalid WASM path: must be within /zk/ directory');
+    }
+    if (!zkeyPath.startsWith('/zk/') || zkeyPath.includes('..')) {
+      throw new Error('Invalid zkey path: must be within /zk/ directory');
+    }
+    if (!vkeyPath.startsWith('/zk/') || vkeyPath.includes('..')) {
+      throw new Error('Invalid verification key path: must be within /zk/ directory');
+    }
+
     this.wasmPath = wasmPath;
     this.zkeyPath = zkeyPath;
     this.vkeyPath = vkeyPath;
@@ -128,10 +139,27 @@ export class ProofGenerator {
   importProof(exported: string): ShareableProofPayload {
     const rawInput = exported.trim();
 
+    // Size limit for imported proofs (100KB)
+    if (rawInput.length > 1024 * 100) {
+      throw new Error('Proof payload too large');
+    }
+
     try {
-      const parsed = JSON.parse(
-        rawInput.startsWith('{') ? rawInput : decodeSharePayload(rawInput)
-      );
+      const decoded = rawInput.startsWith('{') ? rawInput : decodeSharePayload(rawInput);
+      
+      // Additional size check after decoding
+      if (decoded.length > 1024 * 100) {
+        throw new Error('Decoded proof payload too large');
+      }
+
+      const parsed = JSON.parse(decoded);
+
+      // Prevent prototype pollution
+      if (parsed && typeof parsed === 'object') {
+        if ('__proto__' in parsed || 'constructor' in parsed.proof || 'prototype' in parsed) {
+          throw new Error('Invalid proof format: potentially malicious structure');
+        }
+      }
 
       // Validate structure
       if (!parsed.proof || !Array.isArray(parsed.publicSignals)) {

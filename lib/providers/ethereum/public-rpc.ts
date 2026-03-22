@@ -3,6 +3,7 @@ import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { createPublicClient, http, type Hash } from 'viem';
 import { mainnet } from 'viem/chains';
+import { secureError } from '@/lib/security/secure-logging';
 
 /**
  * Ethereum public RPC provider (no API key required)
@@ -147,7 +148,7 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
       await this.client.getBlockNumber();
       return true;
     } catch (error) {
-      console.error(`[${this.name}] Health check failed:`, error);
+      secureError(`[${this.name}] Health check failed:`, error);
       return false;
     }
   }

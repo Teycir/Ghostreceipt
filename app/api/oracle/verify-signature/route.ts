@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { OracleCommitmentSchema, type ErrorResponse } from '@/lib/validation/schemas';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
+import { parseSecureJson } from '@/lib/security/secure-json';
 
 const rateLimiter = createRateLimiter({
   windowMs: 60000,
@@ -90,12 +91,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
+    body = await parseSecureJson(request, { maxSize: 1024 * 5 }); // 5KB limit
+  } catch (error) {
     const errorResponse: ErrorResponse = {
       error: {
         code: 'INVALID_HASH',
-        message: 'Invalid JSON request body',
+        message: error instanceof Error ? error.message : 'Invalid JSON request body',
       },
     };
     return NextResponse.json(errorResponse, { status: 400 });

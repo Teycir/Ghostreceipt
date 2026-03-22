@@ -5,6 +5,7 @@ import type {
   CascadeConfig,
 } from './types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
+import { secureWarn, secureInfo } from '@/lib/security/secure-logging';
 
 /**
  * Provider cascade manager with immediate failover
@@ -88,7 +89,7 @@ export class ProviderCascade {
     for (const provider of this.providers) {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         if (!this.hasCapacity(provider.name)) {
-          console.warn(
+          secureWarn(
             `[Cascade] Provider ${provider.name} at capacity, skipping`
           );
           break;
@@ -101,7 +102,7 @@ export class ProviderCascade {
           // Fetch with timeout
           const data = await this.fetchWithTimeout(provider, txHash);
 
-          console.info(`[Cascade] Success with provider: ${provider.name}`);
+          secureInfo(`[Cascade] Success with provider: ${provider.name}`);
 
           return {
             data,
@@ -114,7 +115,7 @@ export class ProviderCascade {
           errors.push(providerError);
           lastError = providerError;
 
-          console.warn(
+          secureWarn(
             `[Cascade] Provider ${provider.name} failed (attempt ${attempt}/${maxAttempts}): ${providerError.message}`
           );
         } finally {

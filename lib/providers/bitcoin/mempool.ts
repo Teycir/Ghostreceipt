@@ -2,6 +2,7 @@ import type { BitcoinProvider, ProviderConfig } from '../types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { BitcoinTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
+import { secureError } from '@/lib/security/secure-logging';
 
 /**
  * Mempool.space API response types
@@ -190,7 +191,7 @@ export class MempoolSpaceProvider implements BitcoinProvider {
       });
       return response.ok;
     } catch (error) {
-      console.error(`[${this.name}] Health check failed:`, error);
+      secureError(`[${this.name}] Health check failed:`, error);
       return false;
     }
   }

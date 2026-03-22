@@ -2,6 +2,7 @@
 
 import { Component, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { secureError } from '@/lib/security/secure-logging';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -24,7 +25,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error('ErrorBoundary caught error:', error, errorInfo);
+    secureError('ErrorBoundary caught error:', error, errorInfo);
   }
 
   override render(): ReactNode {

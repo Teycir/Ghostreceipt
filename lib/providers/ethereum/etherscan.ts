@@ -2,6 +2,7 @@ import type { EthereumProvider, ProviderConfig, ApiKeyConfig } from '../types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
+import { secureWarn, secureError } from '@/lib/security/secure-logging';
 
 /**
  * Etherscan API response types
@@ -115,7 +116,7 @@ export class EtherscanProvider implements EthereumProvider {
           throw lastError;
         }
 
-        console.warn(
+        secureWarn(
           `[${this.name}] Key ${i + 1} failed (${lastError.message}), trying next key`
         );
         continue;
@@ -228,7 +229,7 @@ export class EtherscanProvider implements EthereumProvider {
 
       return response.ok;
     } catch (error) {
-      console.error(`[${this.name}] Health check failed:`, error);
+      secureError(`[${this.name}] Health check failed:`, error);
       return false;
     }
   }

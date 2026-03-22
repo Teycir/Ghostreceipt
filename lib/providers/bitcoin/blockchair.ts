@@ -2,6 +2,7 @@ import type { BitcoinProvider, ProviderConfig } from '../types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { BitcoinTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
+import { secureError } from '@/lib/security/secure-logging';
 
 interface BlockchairTransaction {
   block_id: number;
@@ -148,7 +149,7 @@ export class BlockchairProvider implements BitcoinProvider {
       const response = await fetch(healthUrl.toString(), { method: 'GET' });
       return response.ok;
     } catch (error) {
-      console.error(`[${this.name}] Health check failed:`, error);
+      secureError(`[${this.name}] Health check failed:`, error);
       return false;
     }
   }
