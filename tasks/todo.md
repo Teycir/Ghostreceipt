@@ -301,3 +301,31 @@
   - `README.md` documentation section.
 - Validation:
   - `rg` confirms new links and trust-model references are present.
+
+---
+
+# Task Plan: Release Artifact & Discoverability Follow-up
+
+- [x] Add `CHANGELOG.md` with an initial structured release history.
+- [x] Add a repo metadata checklist covering GitHub topics typo fix and live demo URL publication.
+- [x] Update `README.md` to expose GhostReceipt release/demo status transparently.
+- [x] Update docs index links for new release/discoverability docs.
+- [x] Verify references and summarize follow-up items that require GitHub settings access.
+
+## Review
+- Added `CHANGELOG.md` with an `Unreleased` section covering recent security/ZK/oracle pipeline updates.
+- Added `docs/project/REPO_METADATA_CHECKLIST.md` for repository-level actions that require GitHub settings access:
+  - topic typo fix (`payement` -> `payment`),
+  - live demo URL publication,
+  - first-tag release metadata hygiene.
+- Updated `README.md`:
+  - added explicit status line (`Unreleased`, live demo not yet published),
+  - added links to metadata checklist and changelog.
+- Updated `docs/README.md`:
+  - added links to metadata checklist and changelog.
+- Validation:
+  - `rg` confirms the new references are present in README/docs index.
+- Remaining manual actions (outside repo files):
+  - update GitHub repo topics in repository settings,
+  - set repo website/live demo URL once deployed,
+  - publish first tagged release notes on GitHub Releases.

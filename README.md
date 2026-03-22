@@ -31,6 +31,10 @@ _Scan the QR code or copy the wallet address above._
 
 ### _"Prove the payment. Keep the privacy."_
 
+Status:
+- Release: `Unreleased` (pre-`v0.1.0`)
+- Live demo: `Not published yet`
+
 [Roadmap](./docs/project/ROADMAP.md) | [Plan](./docs/project/PLAN.md) | [Report Bug](https://github.com/teycir/GhostReceipt/issues)
 
 </div>
@@ -230,8 +234,10 @@ Open `http://localhost:3000`.
 - Execution roadmap: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
 - Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md)
+- Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./docs/project/REPO_METADATA_CHECKLIST.md)
 - Security runbook: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
 - Circuit provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)
+- Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
 ## FAQ
 ### Is GhostReceipt custodial?

@@ -8,6 +8,7 @@ This directory is the central home for project documentation.
 - Execution roadmap: [docs/project/ROADMAP.md](./project/ROADMAP.md)
 - Implementation status: [docs/project/IMPLEMENTATION_PROGRESS.md](./project/IMPLEMENTATION_PROGRESS.md)
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./project/RELEASE_READINESS_CHECKLIST.md)
+- Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./project/REPO_METADATA_CHECKLIST.md)
 
 ## Runbooks
 
@@ -19,6 +20,7 @@ This directory is the central home for project documentation.
 ## Repo-Level Docs (Root)
 
 - Project overview and setup: [`README.md`](../README.md)
+- Changelog: [`CHANGELOG.md`](../CHANGELOG.md)
 - Contributing guide: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
 - License: [`LICENSE`](../LICENSE)
 - Third-party attributions: [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)
