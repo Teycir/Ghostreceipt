@@ -1,3 +1,17 @@
+# Task Plan: Re-Review Sync (Open-Issue Verification)
+
+- [x] Verify re-review "still open" claims directly in current code.
+- [x] Patch any genuinely missing hardening/documentation item.
+- [x] Record final status with file-level evidence.
+
+## Review
+- Verified both signer-instantiation concerns are already fixed with route-level signer caches:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- Verified serverless in-memory limits were already documented in [`docs/runbooks/SECURITY.md`](/home/teycir/Repos/GhostReceipt/docs/runbooks/SECURITY.md) under "Runtime Storage Limits".
+- Added the same operational warning to [`.env.example`](/home/teycir/Repos/GhostReceipt/.env.example) near `TRUST_PROXY_HEADERS` for setup-time visibility.
+- No runtime code changes required in this pass; tests were not re-run because this change is documentation-only.
+
 # Task Plan: Sensitive Hardening Sweep (Defense In Depth)
 
 - [x] Tighten validation for oracle commitment and idempotency key inputs.
