@@ -35,6 +35,24 @@ describe('ProofGenerator share payload encoding', () => {
     expect(imported).toEqual(sampleProof);
   });
 
+  it('round-trips oracle authentication metadata in share payloads', () => {
+    const exported = generator.exportProof(sampleProof, {
+      messageHash: '123456789',
+      oracleSignature: 'a'.repeat(64),
+      oraclePubKeyId: 'b'.repeat(16),
+      signedAt: 1700000000,
+    });
+
+    const imported = generator.importProof(exported);
+
+    expect(imported.oracleAuth).toEqual({
+      messageHash: '123456789',
+      oracleSignature: 'a'.repeat(64),
+      oraclePubKeyId: 'b'.repeat(16),
+      signedAt: 1700000000,
+    });
+  });
+
   it('rejects malformed payloads', () => {
     expect(() => generator.importProof('not-a-valid-proof')).toThrow(
       'Failed to import proof'

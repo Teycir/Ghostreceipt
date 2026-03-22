@@ -19,6 +19,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@tanstack/react-query": "^5.62.11",
+    "circomlibjs": "^0.1.7",
     "geist": "^1.7.0",
     "next": "^16.2.1",
     "qrcode": "^1.5.4",

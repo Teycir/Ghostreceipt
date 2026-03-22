@@ -7,12 +7,13 @@ export interface ReceiptWitness {
   // Public inputs
   claimedAmount: string;
   minDate: string;
-  oracleSignature: string[];
+  oracleCommitment: string;
   
   // Private inputs
   realValue: string;
   realTimestamp: string;
   txHash: string[];
+  chainId: string;
 }
 
 /**
@@ -30,9 +31,6 @@ export function buildWitness(
   oraclePayload: OraclePayloadV1,
   userClaim: UserClaim
 ): ReceiptWitness {
-  // Convert oracle signature to array of 32-bit chunks
-  const signatureChunks = hexToChunks(oraclePayload.oracleSignature, 8);
-  
   // Convert tx hash to array of 32-bit chunks
   const txHashChunks = hexToChunks(oraclePayload.txHash, 8);
   
@@ -40,12 +38,13 @@ export function buildWitness(
     // Public inputs
     claimedAmount: userClaim.claimedAmount,
     minDate: userClaim.minDate.toString(),
-    oracleSignature: signatureChunks,
+    oracleCommitment: oraclePayload.messageHash,
     
     // Private inputs (from oracle)
     realValue: oraclePayload.valueAtomic,
     realTimestamp: oraclePayload.timestampUnix.toString(),
     txHash: txHashChunks,
+    chainId: oraclePayload.chain === 'bitcoin' ? '0' : '1',
   };
 }
 
@@ -100,24 +99,18 @@ export function validateWitness(witness: ReceiptWitness): {
   }
   
   // Check signature is non-zero
-  const signatureSum = witness.oracleSignature.reduce(
-    (sum, chunk) => sum + BigInt(chunk),
-    BigInt(0)
-  );
-  
-  if (signatureSum === BigInt(0)) {
-    errors.push('Oracle signature is zero');
+  const oracleCommitment = BigInt(witness.oracleCommitment);
+  if (oracleCommitment <= BigInt(0)) {
+    errors.push('Oracle commitment must be positive');
   }
   
   // Check array lengths
-  if (witness.oracleSignature.length !== 8) {
-    errors.push(
-      `Oracle signature must have 8 chunks, got ${witness.oracleSignature.length}`
-    );
-  }
-  
   if (witness.txHash.length !== 8) {
     errors.push(`Transaction hash must have 8 chunks, got ${witness.txHash.length}`);
+  }
+
+  if (!['0', '1'].includes(witness.chainId)) {
+    errors.push(`Chain ID must be 0 (bitcoin) or 1 (ethereum), got ${witness.chainId}`);
   }
   
   return {
@@ -133,6 +126,6 @@ export function extractPublicSignals(witness: ReceiptWitness): string[] {
   return [
     witness.claimedAmount,
     witness.minDate,
-    ...witness.oracleSignature,
+    witness.oracleCommitment,
   ];
 }

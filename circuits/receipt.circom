@@ -1,20 +1,20 @@
 pragma circom 2.0.0;
 
 include "../node_modules/circomlib/circuits/comparators.circom";
-include "../node_modules/circomlib/circuits/bitify.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
 
 /**
  * Receipt verification circuit
  * 
  * Proves:
- * 1. Oracle signature is valid
+ * 1. Oracle commitment matches private tx facts
  * 2. realValue >= claimedAmount
  * 3. realTimestamp >= minDate
  * 
  * Public inputs:
  * - claimedAmount: Amount user claims to have paid
  * - minDate: Minimum timestamp user claims
- * - oracleSignature: Oracle's signature (for verification)
+ * - oracleCommitment: Poseidon commitment over oracle tx facts
  * 
  * Private inputs:
  * - realValue: Actual transaction value (from oracle)
@@ -25,12 +25,13 @@ template Receipt() {
     // Public inputs
     signal input claimedAmount;
     signal input minDate;
-    signal input oracleSignature[8]; // 256-bit signature as 8x32-bit chunks
+    signal input oracleCommitment;
     
     // Private inputs (witness)
     signal input realValue;
     signal input realTimestamp;
     signal input txHash[8]; // 256-bit hash as 8x32-bit chunks
+    signal input chainId; // 0 = bitcoin, 1 = ethereum
     
     // Constraint 1: realValue >= claimedAmount
     component valueCheck = GreaterEqThan(252); // 252-bit comparison
@@ -44,21 +45,25 @@ template Receipt() {
     timestampCheck.in[1] <== minDate;
     timestampCheck.out === 1;
     
-    // Constraint 3: Oracle signature verification
-    // Note: In production, implement full HMAC-SHA256 verification
-    // For now, we verify signature is non-zero (placeholder)
-    signal signatureSum;
-    signatureSum <== oracleSignature[0] + oracleSignature[1] + oracleSignature[2] + 
-                     oracleSignature[3] + oracleSignature[4] + oracleSignature[5] + 
-                     oracleSignature[6] + oracleSignature[7];
-    
-    component signatureCheck = IsZero();
-    signatureCheck.in <== signatureSum;
-    signatureCheck.out === 0; // Signature must be non-zero
+    // Constraint 3: Chain ID must be boolean (0/1)
+    chainId * (chainId - 1) === 0;
+
+    // Constraint 4: Oracle commitment must match private tx facts.
+    component txHashPoseidon = Poseidon(8);
+    for (var i = 0; i < 8; i++) {
+        txHashPoseidon.inputs[i] <== txHash[i];
+    }
+
+    component oracleCommitmentPoseidon = Poseidon(4);
+    oracleCommitmentPoseidon.inputs[0] <== realValue;
+    oracleCommitmentPoseidon.inputs[1] <== realTimestamp;
+    oracleCommitmentPoseidon.inputs[2] <== txHashPoseidon.out;
+    oracleCommitmentPoseidon.inputs[3] <== chainId;
+    oracleCommitmentPoseidon.out === oracleCommitment;
     
     // Output public signals for verification
     signal output valid;
     valid <== 1;
 }
 
-component main {public [claimedAmount, minDate, oracleSignature]} = Receipt();
+component main {public [claimedAmount, minDate, oracleCommitment]} = Receipt();

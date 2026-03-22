@@ -9,12 +9,16 @@ export class OracleSigner {
   private pubKeyId: string;
 
   constructor(privateKey: string) {
-    if (!privateKey || privateKey.length !== 64) {
+    if (!privateKey || privateKey.length !== 64 || !/^[a-f0-9]{64}$/i.test(privateKey)) {
       throw new Error('Invalid oracle private key: must be 64 hex characters');
     }
 
     this.privateKey = privateKey;
     this.pubKeyId = this.derivePublicKeyId(privateKey);
+  }
+
+  getPublicKeyId(): string {
+    return this.pubKeyId;
   }
 
   /**

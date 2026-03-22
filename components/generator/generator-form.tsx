@@ -120,7 +120,12 @@ export function GeneratorForm(): React.JSX.Element {
       const proofResult = await prover.generateProof(witness);
       
       // Export shareable proof
-      const shareableProof = prover.exportProof(proofResult);
+      const shareableProof = prover.exportProof(proofResult, {
+        messageHash: data.data.messageHash,
+        oracleSignature: data.data.oracleSignature,
+        oraclePubKeyId: data.data.oraclePubKeyId,
+        signedAt: data.data.signedAt,
+      });
       
       // Store proof for display
       setProofData({

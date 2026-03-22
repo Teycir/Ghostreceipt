@@ -8,7 +8,7 @@ describe('Generator Form Integration', () => {
     valueAtomic: '100000000',
     timestampUnix: 1700000000,
     confirmations: 6,
-    messageHash: 'f4d7f13ec63de15f2f2db40f9f53d564f7f5f3f0e4c57d80460f95e5f5d58d10',
+    messageHash: '12345678901234567890',
     oracleSignature: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     oraclePubKeyId: 'test-key-1',
     schemaVersion: 'v1',
@@ -24,19 +24,20 @@ describe('Generator Form Integration', () => {
 
       expect(witness.claimedAmount).toBe('50000000');
       expect(witness.minDate).toBe('1699999000');
+      expect(witness.oracleCommitment).toBe(mockOraclePayload.messageHash);
       expect(witness.realValue).toBe('100000000');
       expect(witness.realTimestamp).toBe('1700000000');
-      expect(witness.oracleSignature).toHaveLength(8);
       expect(witness.txHash).toHaveLength(8);
+      expect(witness.chainId).toBe('0');
     });
 
-    it('should convert hex strings to decimal chunks', () => {
+    it('should convert tx hash hex string to decimal chunks', () => {
       const witness = buildWitness(mockOraclePayload, {
         claimedAmount: '1000',
         minDate: 1000000,
       });
 
-      witness.oracleSignature.forEach(chunk => {
+      witness.txHash.forEach(chunk => {
         expect(typeof chunk).toBe('string');
         expect(Number.isNaN(Number(chunk))).toBe(false);
       });
@@ -82,13 +83,13 @@ describe('Generator Form Integration', () => {
       expect(validation.errors[0]).toContain('before minimum date');
     });
 
-    it('should reject witness with zero signature', () => {
-      const zeroSigPayload: OraclePayloadV1 = {
+    it('should reject witness with non-positive oracle commitment', () => {
+      const invalidCommitmentPayload: OraclePayloadV1 = {
         ...mockOraclePayload,
-        oracleSignature: '0000000000000000000000000000000000000000000000000000000000000000',
+        messageHash: '0',
       };
 
-      const witness = buildWitness(zeroSigPayload, {
+      const witness = buildWitness(invalidCommitmentPayload, {
         claimedAmount: '50000000',
         minDate: 1699999000,
       });
@@ -96,7 +97,7 @@ describe('Generator Form Integration', () => {
       const validation = validateWitness(witness);
 
       expect(validation.valid).toBe(false);
-      expect(validation.errors.some(e => e.includes('signature is zero'))).toBe(true);
+      expect(validation.errors.some(e => e.includes('Oracle commitment must be positive'))).toBe(true);
     });
 
     it('should validate witness at boundary conditions', () => {

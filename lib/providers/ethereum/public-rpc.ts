@@ -1,4 +1,4 @@
-import type { EthereumProvider, ProviderConfig } from '../types';
+import type { EthereumProvider, ProviderConfig, ProviderError } from '../types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { createPublicClient, http, type Hash } from 'viem';
@@ -36,6 +36,27 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     });
   }
 
+  private createProviderError(
+    message: string,
+    code: string,
+    retryable: boolean
+  ): ProviderError {
+    const providerError = new Error(message) as ProviderError;
+    providerError.provider = this.name;
+    providerError.code = code;
+    providerError.retryable = retryable;
+    return providerError;
+  }
+
+  private isProviderError(error: unknown): error is ProviderError {
+    return (
+      error instanceof Error &&
+      'provider' in error &&
+      'code' in error &&
+      'retryable' in error
+    );
+  }
+
   async fetchTransaction(
     txHash: string,
     signal?: AbortSignal
@@ -63,6 +84,14 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
         hash: txHash as Hash,
       });
 
+      if (receipt.status !== 'success') {
+        throw this.createProviderError(
+          `Transaction reverted: ${txHash}`,
+          'REVERTED',
+          false
+        );
+      }
+
       // Fetch current block number for confirmations
       const currentBlock = await client.getBlockNumber();
 
@@ -73,8 +102,15 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
 
       return this.normalize(tx, receipt, block, currentBlock);
     } catch (error) {
+      if (this.isProviderError(error)) {
+        throw error;
+      }
+
       if (error instanceof Error) {
-        if (error.message.includes('not found')) {
+        if (
+          error.message.includes('not found') ||
+          error.message.includes('could not be found')
+        ) {
           throw new Error(`Transaction not found: ${txHash}`);
         }
         throw error;

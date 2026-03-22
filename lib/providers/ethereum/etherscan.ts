@@ -166,6 +166,18 @@ export class EtherscanProvider implements EthereumProvider {
       throw new Error(`Transaction not found: ${txHash}`);
     }
 
+    if (data.result.txreceipt_status === '0' || data.result.isError === '1') {
+      const revertedError = new Error(`Transaction reverted: ${txHash}`) as Error & {
+        provider?: string;
+        code?: string;
+        retryable?: boolean;
+      };
+      revertedError.provider = this.name;
+      revertedError.code = 'REVERTED';
+      revertedError.retryable = false;
+      throw revertedError;
+    }
+
     return data.result;
   }
 

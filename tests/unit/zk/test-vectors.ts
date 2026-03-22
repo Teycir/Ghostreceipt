@@ -11,16 +11,7 @@ export const validVector: ReceiptWitness = {
   // Public inputs
   claimedAmount: '1000000000000000000', // 1 ETH
   minDate: '1234567890',
-  oracleSignature: [
-    '3149642683', // 0xbbbbbbbb
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-  ],
+  oracleCommitment: '3149642683',
   
   // Private inputs
   realValue: '2000000000000000000', // 2 ETH (more than claimed)
@@ -35,6 +26,7 @@ export const validVector: ReceiptWitness = {
     '2863311530',
     '2863311530',
   ],
+  chainId: '1',
 };
 
 /**
@@ -43,16 +35,7 @@ export const validVector: ReceiptWitness = {
 export const invalidValueVector: ReceiptWitness = {
   claimedAmount: '3000000000000000000', // 3 ETH (more than real)
   minDate: '1234567890',
-  oracleSignature: [
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-  ],
+  oracleCommitment: '3149642683',
   realValue: '2000000000000000000', // 2 ETH
   realTimestamp: '1234567900',
   txHash: [
@@ -65,6 +48,7 @@ export const invalidValueVector: ReceiptWitness = {
     '2863311530',
     '2863311530',
   ],
+  chainId: '1',
 };
 
 /**
@@ -73,16 +57,7 @@ export const invalidValueVector: ReceiptWitness = {
 export const invalidTimestampVector: ReceiptWitness = {
   claimedAmount: '1000000000000000000',
   minDate: '1234567900', // After real timestamp
-  oracleSignature: [
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-  ],
+  oracleCommitment: '3149642683',
   realValue: '2000000000000000000',
   realTimestamp: '1234567890', // Before minDate
   txHash: [
@@ -95,15 +70,16 @@ export const invalidTimestampVector: ReceiptWitness = {
     '2863311530',
     '2863311530',
   ],
+  chainId: '1',
 };
 
 /**
- * Invalid vector - zero signature
+ * Invalid vector - zero commitment
  */
 export const invalidSignatureVector: ReceiptWitness = {
   claimedAmount: '1000000000000000000',
   minDate: '1234567890',
-  oracleSignature: ['0', '0', '0', '0', '0', '0', '0', '0'], // All zeros
+  oracleCommitment: '0',
   realValue: '2000000000000000000',
   realTimestamp: '1234567900',
   txHash: [
@@ -116,6 +92,7 @@ export const invalidSignatureVector: ReceiptWitness = {
     '2863311530',
     '2863311530',
   ],
+  chainId: '1',
 };
 
 /**
@@ -124,16 +101,7 @@ export const invalidSignatureVector: ReceiptWitness = {
 export const exactMatchVector: ReceiptWitness = {
   claimedAmount: '1000000000000000000',
   minDate: '1234567890',
-  oracleSignature: [
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-  ],
+  oracleCommitment: '3149642683',
   realValue: '1000000000000000000', // Exact match
   realTimestamp: '1234567890', // Exact match
   txHash: [
@@ -146,6 +114,7 @@ export const exactMatchVector: ReceiptWitness = {
     '2863311530',
     '2863311530',
   ],
+  chainId: '1',
 };
 
 /**
@@ -154,16 +123,7 @@ export const exactMatchVector: ReceiptWitness = {
 export const bitcoinVector: ReceiptWitness = {
   claimedAmount: '100000000', // 1 BTC in satoshis
   minDate: '1234567890',
-  oracleSignature: [
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-    '3149642683',
-  ],
+  oracleCommitment: '3149642683',
   realValue: '200000000', // 2 BTC
   realTimestamp: '1234567900',
   txHash: [
@@ -176,4 +136,5 @@ export const bitcoinVector: ReceiptWitness = {
     '2863311530',
     '2863311530',
   ],
+  chainId: '0',
 };

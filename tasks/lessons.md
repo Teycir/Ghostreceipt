@@ -16,3 +16,7 @@
 ## 2026-03-21 - Test Fixture Schema Drift
 - Keep test fixtures synced with schema field renames (`schemaVersion`, `oraclePubKeyId`, `messageHash`) when typed contracts evolve.
 - Run `npm run typecheck` as a mandatory gate after schema changes before marking implementation as controlled.
+
+## 2026-03-22 - Multi-Item Fix Confirmation
+- When the user responds with numbered decisions, treat each item as pending until explicitly confirmed as fixed or skipped.
+- If priorities change mid-stream (for example, "item 1 also needs fix"), immediately include that item in implementation and verification scope before closing the plan.

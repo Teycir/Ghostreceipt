@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OracleFetchTxRequestSchema, type ErrorResponse } from '@/lib/validation/schemas';
+import {
+  CanonicalTxDataSchema,
+  type ErrorResponse,
+  type OraclePayloadV1,
+  OracleFetchTxRequestSchema,
+} from '@/lib/validation/schemas';
 import { ProviderCascade } from '@/lib/providers/cascade';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
@@ -8,6 +13,7 @@ import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { replayProtection } from '@/lib/security/replay';
 import type { Provider, ProviderError } from '@/lib/providers/types';
+import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 
 const rateLimiter = createRateLimiter({
   windowMs: 60000,
@@ -18,6 +24,37 @@ const globalRateLimiter = createRateLimiter({
   windowMs: 60000,
   maxRequests: 200,
 });
+
+const ANON_IDEMPOTENCY_COOKIE = 'gr_sid';
+
+function createAnonymousSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function withAnonymousSessionCookie(
+  response: NextResponse,
+  anonymousSessionId: string | null
+): NextResponse {
+  if (!anonymousSessionId) {
+    return response;
+  }
+
+  response.cookies.set({
+    name: ANON_IDEMPOTENCY_COOKIE,
+    value: anonymousSessionId,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env['NODE_ENV'] === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  return response;
+}
 
 function mapErrorToResponse(error: unknown): {
   code: ErrorResponse['error']['code'];
@@ -57,6 +94,14 @@ function mapErrorToResponse(error: unknown): {
       code: 'RATE_LIMIT_EXCEEDED',
       message,
       status: 429,
+    };
+  }
+
+  if (providerCode === 'REVERTED') {
+    return {
+      code: 'TRANSACTION_REVERTED',
+      message,
+      status: 422,
     };
   }
 
@@ -106,6 +151,14 @@ function mapErrorToResponse(error: unknown): {
     };
   }
 
+  if (normalizedMessage.includes('revert')) {
+    return {
+      code: 'TRANSACTION_REVERTED',
+      message,
+      status: 422,
+    };
+  }
+
   if (normalizedMessage.includes('provider')) {
     return {
       code: 'PROVIDER_ERROR',
@@ -124,9 +177,12 @@ function mapErrorToResponse(error: unknown): {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let reservedReplayKey: string | null = null;
+  let anonymousSessionIdToSet: string | null = null;
 
   try {
     const clientId = getClientIdentifier(request);
+    const withSession = (response: NextResponse): NextResponse =>
+      withAnonymousSessionCookie(response, anonymousSessionIdToSet);
     const globalRateLimit = globalRateLimiter.check('global');
 
     if (!globalRateLimit.allowed) {
@@ -136,14 +192,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           message: 'Service is busy. Please try again later.',
         },
       };
-      return NextResponse.json(errorResponse, {
+      return withSession(NextResponse.json(errorResponse, {
         status: 429,
         headers: {
           'X-RateLimit-Limit': '200',
           'X-RateLimit-Remaining': '0',
           'X-RateLimit-Reset': new Date(globalRateLimit.resetAt).toISOString(),
         },
-      });
+      }));
     }
 
     if (clientId) {
@@ -156,14 +212,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             message: 'Too many requests. Please try again later.',
           },
         };
-        return NextResponse.json(errorResponse, {
+        return withSession(NextResponse.json(errorResponse, {
           status: 429,
           headers: {
             'X-RateLimit-Limit': '10',
             'X-RateLimit-Remaining': '0',
             'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
           },
-        });
+        }));
       }
     }
     // Parse request body
@@ -177,7 +233,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           message: 'Invalid JSON request body',
         },
       };
-      return NextResponse.json(errorResponse, { status: 400 });
+      return withSession(NextResponse.json(errorResponse, { status: 400 }));
     }
 
     // Validate request body
@@ -191,14 +247,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           details: validationResult.error.flatten(),
         },
       };
-      return NextResponse.json(errorResponse, { status: 400 });
+      return withSession(NextResponse.json(errorResponse, { status: 400 }));
     }
 
     const { chain, txHash, idempotencyKey } = validationResult.data;
 
     const normalizedIdempotencyKey = idempotencyKey?.trim();
     if (normalizedIdempotencyKey) {
-      const replayKey = `${clientId ?? 'anon'}:${normalizedIdempotencyKey}`;
+      const anonymousSessionIdFromCookie =
+        request.cookies.get(ANON_IDEMPOTENCY_COOKIE)?.value ?? null;
+      const anonymousSessionId =
+        anonymousSessionIdFromCookie ?? createAnonymousSessionId();
+      const idempotencyScope = clientId ?? `sid:${anonymousSessionId}`;
+
+      if (!clientId && !anonymousSessionIdFromCookie) {
+        anonymousSessionIdToSet = anonymousSessionId;
+      }
+
+      const replayKey = `${idempotencyScope}:${normalizedIdempotencyKey}`;
       const replayCheck = replayProtection.check(replayKey, Date.now());
 
       if (!replayCheck.allowed) {
@@ -208,7 +274,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             message: replayCheck.reason ?? 'Duplicate idempotency key',
           },
         };
-        return NextResponse.json(errorResponse, { status: 409 });
+        return withSession(NextResponse.json(errorResponse, { status: 409 }));
       }
 
       reservedReplayKey = replayKey;
@@ -260,11 +326,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           message: `Unsupported chain: ${chain}`,
         },
       };
-      return NextResponse.json(errorResponse, { status: 400 });
+      return withSession(NextResponse.json(errorResponse, { status: 400 }));
     }
 
     // Fetch transaction with cascade
     const result = await cascade.fetchTransaction(txHash);
+    const canonicalDataResult = CanonicalTxDataSchema.safeParse(result.data);
+    if (!canonicalDataResult.success) {
+      throw new Error('Provider returned invalid canonical data');
+    }
 
     // Sign canonical data
     const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
@@ -273,13 +343,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const signer = new OracleSigner(oraclePrivateKey);
-    const signedPayload = signer.signCanonicalData(result.data);
+    const messageHash = await computeOracleCommitment(canonicalDataResult.data);
+    const signedPayload: OraclePayloadV1 = {
+      ...canonicalDataResult.data,
+      messageHash,
+      oracleSignature: signer.sign(messageHash),
+      oraclePubKeyId: signer.getPublicKeyId(),
+      schemaVersion: 'v1',
+      signedAt: Math.floor(Date.now() / 1000),
+    };
 
     // Return signed payload
-    return NextResponse.json({
+    return withSession(NextResponse.json({
       data: signedPayload,
       cached: result.cached,
-    });
+    }));
   } catch (error) {
     if (reservedReplayKey) {
       replayProtection.release(reservedReplayKey);
@@ -296,7 +374,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     };
 
-    return NextResponse.json(errorResponse, { status: mapped.status });
+    return withAnonymousSessionCookie(
+      NextResponse.json(errorResponse, { status: mapped.status }),
+      anonymousSessionIdToSet
+    );
   }
 }
 

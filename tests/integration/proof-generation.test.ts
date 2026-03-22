@@ -9,7 +9,7 @@ describe('End-to-End Proof Generation', () => {
     valueAtomic: '100000000',
     timestampUnix: 1700000000,
     confirmations: 6,
-    messageHash: 'f4d7f13ec63de15f2f2db40f9f53d564f7f5f3f0e4c57d80460f95e5f5d58d10',
+    messageHash: '12345678901234567890',
     oracleSignature: 'f1e2d3c4b5a69780123456789abcdef0123456789abcdef0123456789abcdef',
     oraclePubKeyId: 'test-key-1',
     schemaVersion: 'v1',
@@ -110,7 +110,7 @@ describe('End-to-End Proof Generation', () => {
         minDate: 1699999000,
       });
 
-      witness.oracleSignature = ['1', '2', '3'];
+      witness.txHash = ['1', '2', '3'];
 
       const validation = validateWitness(witness);
       expect(validation.valid).toBe(false);

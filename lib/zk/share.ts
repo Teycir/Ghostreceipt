@@ -7,7 +7,7 @@ export interface VerifiedReceiptClaims {
 /**
  * Extract verified user-claim fields from circuit public signals.
  * Signal order is defined in witness.extractPublicSignals:
- * [claimedAmount, minDate, ...oracleSignatureChunks]
+ * [claimedAmount, minDate, oracleCommitment]
  */
 export function extractVerifiedClaims(
   publicSignals: string[]

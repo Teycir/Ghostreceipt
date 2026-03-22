@@ -194,11 +194,58 @@
 
 # Task Plan: Dependency Vulnerability Triage & Remediation
 
-- [ ] Capture current dependency vulnerability inventory from local tooling.
-- [ ] Normalize and prioritize findings by severity and direct/transitive upgrade path.
-- [ ] Apply the minimal safe dependency updates in `package.json`/`package-lock.json`.
-- [ ] Run verification checks (`lint`, `typecheck`, targeted tests) after upgrades.
-- [ ] Summarize resolved findings, remaining risk, and follow-up recommendations.
+- [x] Capture current dependency vulnerability inventory from local tooling.
+- [x] Normalize and prioritize findings by severity and direct/transitive upgrade path.
+- [x] Apply the minimal safe dependency updates in `package.json`/`package-lock.json`.
+- [x] Run verification checks (`lint`, `typecheck`, targeted tests) after upgrades.
+- [x] Summarize resolved findings, remaining risk, and follow-up recommendations.
 
 ## Review
-- Pending.
+- Vulnerability inventory:
+  - `npm audit --json` reports `0` vulnerabilities (info/low/moderate/high/critical all zero).
+  - Dependency set totals from audit metadata: `772` total (`101` prod, `635` dev, `63` optional).
+- Prioritization results:
+  - No security findings to remediate, so no direct or transitive vulnerability upgrade path is required.
+  - `npm outdated --json` shows only major-version availability for a subset of packages (feature/compatibility upgrades, not security-critical based on current audit output).
+- Dependency updates applied:
+  - None required. `package.json` and `package-lock.json` intentionally unchanged to avoid unnecessary major-version churn.
+- Verification:
+  - `npm run lint` passes.
+  - `npm run typecheck` passes.
+  - `npm test -- tests/unit/security/rate-limit.test.ts tests/unit/security/replay.test.ts tests/unit/providers/ssrf-enforcement.test.ts tests/unit/api/fetch-tx-route.test.ts` passes (30 tests).
+- Remaining risk and follow-up:
+  - Risk remains low at time of scan with current lockfile.
+  - Follow-up recommendation: keep periodic `npm audit` checks in CI cadence and evaluate major-version upgrades separately as planned compatibility work.
+
+---
+
+# Task Plan: Reverted Tx Rejection & Anonymous Idempotency Isolation
+
+- [x] Reject reverted Ethereum transactions in providers and surface a deterministic API error.
+- [x] Isolate idempotency replay scope for anonymous clients using server-issued session identity.
+- [x] Add/update tests under `tests/` for reverted tx mapping and anonymous idempotency behavior.
+- [x] Run verification (`lint`, `typecheck`, targeted tests) and summarize outcomes.
+
+## Review
+- Reverted Ethereum transactions are now rejected at provider level and mapped to deterministic API error handling:
+  - `lib/providers/ethereum/public-rpc.ts` throws provider error code `REVERTED` when receipt status indicates revert.
+  - `lib/providers/ethereum/etherscan.ts` also maps reverted status to `REVERTED`.
+  - `app/api/oracle/fetch-tx/route.ts` maps `REVERTED` to API code `TRANSACTION_REVERTED` with HTTP `422`.
+- Anonymous idempotency replay scope is isolated by server-issued session identity in `app/api/oracle/fetch-tx/route.ts`:
+  - Introduced secure `gr_sid` cookie flow for anonymous callers.
+  - Replay keys now use `sid:<session>` scope instead of global anonymous scope.
+- Added/updated tests:
+  - `tests/unit/api/fetch-tx-route.test.ts`
+  - `tests/unit/api/oracle-verify-signature-route.test.ts`
+  - `tests/unit/providers/public-rpc-reverted.test.ts`
+  - `tests/unit/zk/oracle-commitment.test.ts`
+  - `tests/unit/zk/witness.test.ts`
+  - `tests/unit/zk/prover.test.ts`
+  - `tests/unit/generator/witness-integration.test.ts`
+  - `tests/integration/proof-generation.test.ts`
+  - `tests/unit/zk/test-vectors.ts` (migrated fixtures to `oracleCommitment` and `chainId`)
+- Verification:
+  - `npm run lint` passes.
+  - `npm run typecheck` passes.
+  - Targeted tests pass (`8` suites, `42` tests).
+  - Full coverage pass: `npm run test:coverage -- --ci --runInBand` (`17` suites, `113` tests).

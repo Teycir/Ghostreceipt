@@ -15,6 +15,17 @@ export interface ProofResult {
   publicSignals: string[];
 }
 
+export interface OracleAuthData {
+  messageHash: string;
+  oracleSignature: string;
+  oraclePubKeyId: string;
+  signedAt: number;
+}
+
+export interface ShareableProofPayload extends ProofResult {
+  oracleAuth?: OracleAuthData;
+}
+
 /**
  * Verification result
  */
@@ -103,14 +114,18 @@ export class ProofGenerator {
   /**
    * Export proof to shareable format
    */
-  exportProof(result: ProofResult): string {
-    return encodeSharePayload(JSON.stringify(result));
+  exportProof(result: ProofResult, oracleAuth?: OracleAuthData): string {
+    const payload: ShareableProofPayload = {
+      ...result,
+      ...(oracleAuth ? { oracleAuth } : {}),
+    };
+    return encodeSharePayload(JSON.stringify(payload));
   }
 
   /**
    * Import proof from shareable format
    */
-  importProof(exported: string): ProofResult {
+  importProof(exported: string): ShareableProofPayload {
     const rawInput = exported.trim();
 
     try {
@@ -123,7 +138,19 @@ export class ProofGenerator {
         throw new Error('Invalid proof format');
       }
 
-      return parsed as ProofResult;
+      if (
+        parsed.oracleAuth &&
+        (
+          typeof parsed.oracleAuth.messageHash !== 'string' ||
+          typeof parsed.oracleAuth.oracleSignature !== 'string' ||
+          typeof parsed.oracleAuth.oraclePubKeyId !== 'string' ||
+          typeof parsed.oracleAuth.signedAt !== 'number'
+        )
+      ) {
+        throw new Error('Invalid proof format');
+      }
+
+      return parsed as ShareableProofPayload;
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to import proof: ${error.message}`, {

@@ -12,6 +12,28 @@ interface VerificationResult {
   error?: string | undefined;
 }
 
+async function verifyOracleSignature(oracleAuth: {
+  messageHash: string;
+  oracleSignature: string;
+  oraclePubKeyId: string;
+  signedAt: number;
+}): Promise<boolean> {
+  const response = await fetch('/api/oracle/verify-signature', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(oracleAuth),
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const payload = (await response.json()) as { valid?: boolean };
+  return payload.valid === true;
+}
+
 function VerifyContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const [result, setResult] = useState<VerificationResult | null>(null);
@@ -46,6 +68,59 @@ function VerifyContent(): React.JSX.Element {
         proofData.publicSignals,
         proofData.proof
       );
+
+      if (!verification.valid) {
+        setResult({
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: verification.error,
+        });
+        return;
+      }
+
+      const oracleAuth = proofData.oracleAuth;
+      if (!oracleAuth) {
+        setResult({
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Missing oracle authentication data in shared receipt',
+        });
+        return;
+      }
+
+      if (proofData.publicSignals.length < 3) {
+        setResult({
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Invalid proof: missing oracle commitment signal',
+        });
+        return;
+      }
+
+      const oracleCommitmentSignal = proofData.publicSignals[2];
+      if (oracleCommitmentSignal !== oracleAuth.messageHash) {
+        setResult({
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Oracle commitment mismatch detected',
+        });
+        return;
+      }
+
+      const oracleSignatureValid = await verifyOracleSignature(oracleAuth);
+      if (!oracleSignatureValid) {
+        setResult({
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Oracle signature verification failed',
+        });
+        return;
+      }
 
       const claims = verification.valid
         ? extractVerifiedClaims(proofData.publicSignals)
