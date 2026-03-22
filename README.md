@@ -44,6 +44,7 @@ _Scan the QR code or copy the wallet address above._
 - [Use Cases](#use-cases)
 - [Architecture](#architecture)
 - [API Model](#api-model)
+- [Oracle Trust Model](#oracle-trust-model)
 - [Logic Flow](#logic-flow)
 - [Tech Stack](#tech-stack)
 - [Quick Start](#quick-start)
@@ -124,6 +125,27 @@ GhostReceipt uses four API types so the product stays reliable while keeping UX 
 - Users may add their own provider keys for higher throughput.
 - BYOK is optional and never required for receipt generation or verification.
 - For non-ETH providers, GhostReceipt uses the same cascade/failover system now and can attach managed keys later as they are provided.
+
+## Oracle Trust Model
+GhostReceipt currently uses a single first-party oracle signing key as the trust anchor for canonical transaction facts.
+
+What the oracle can do:
+- Confirm canonical transaction facts (`valueAtomic`, `timestampUnix`, `txHash`, `chain`) after provider fetch and normalization.
+- Sign the deterministic commitment used by witness/proof generation.
+
+What the oracle cannot do:
+- Forge valid on-chain state without also compromising provider integrity.
+- Bypass proof verification rules; proofs must still satisfy circuit constraints.
+
+Current trust assumptions:
+- The oracle signing key is kept server-side only (`ORACLE_PRIVATE_KEY`) and never exposed to the client.
+- Receipt verification checks both ZK validity and oracle signature integrity.
+- Oracle trust is centralized today; if the oracle is offline, new receipt generation is degraded.
+
+Operational controls:
+- Key-management and rotation procedures are documented in [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md).
+- Trusted setup/provenance checklist template is documented in [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md).
+- First release/demo hardening checklist is documented in [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md).
 
 ## Logic Flow
 ```mermaid
@@ -207,7 +229,9 @@ Open `http://localhost:3000`.
 - Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
 - Execution roadmap: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
 - Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
+- Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md)
 - Security runbook: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
+- Circuit provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)
 
 ## FAQ
 ### Is GhostReceipt custodial?

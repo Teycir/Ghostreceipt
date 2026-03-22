@@ -25,11 +25,12 @@ These files contain secrets and must NEVER be committed to git:
 These files are automatically excluded:
 
 - `node_modules/`
-- `package-lock.json` (can contain dependency vulnerabilities)
 - `.next/` (build artifacts)
 - `*.tsbuildinfo` (TypeScript cache)
 - `.cache/` (various caches)
 - `.eslintcache`
+
+`package-lock.json` is intentionally tracked and should be reviewed in pull requests.
 
 ## Setup Instructions
 
@@ -124,6 +125,39 @@ ETHERSCAN_API_KEY_1=new_key_here
 # Update in Cloudflare
 wrangler secret put ETHERSCAN_API_KEY_1 --env production
 ```
+
+## Oracle Key Management Policy
+
+This project currently operates a centralized oracle signing key for canonical tx fact attestations.
+
+### Key Custody
+- The oracle private key must exist only in secret stores (`.env.local` for local dev, deployment secret manager for hosted envs).
+- Never place oracle private key material in source files, commit history, issue trackers, screenshots, or CI logs.
+- Limit write access to production secret stores to a minimal maintainer set.
+
+### Rotation Cadence
+- Scheduled rotation: every 90 days.
+- Immediate rotation triggers:
+  - suspected key leak or accidental exposure,
+  - maintainer access change/offboarding,
+  - unexplained signature verification anomalies.
+
+### Rotation Procedure (High-Level)
+1. Generate a new key with `openssl rand -hex 32`.
+2. Deploy updated secret to all environments.
+3. Redeploy oracle API.
+4. Verify signatures on newly issued payloads.
+5. Archive a short provenance note (date, operator, reason, impacted environments).
+
+### Verification Endpoint Usage
+- The verifier path checks oracle-authenticated payloads via `POST /api/oracle/verify-signature`.
+- Ensure `oraclePubKeyId` in generated payloads maps to the active key ID after rotation.
+
+### Incident Response Addendum (Oracle Key Compromise)
+1. Rotate `ORACLE_PRIVATE_KEY` immediately in all environments.
+2. Revoke any stale deployment credentials used during the incident window.
+3. Publish an incident note with exposure window and remediation steps.
+4. Re-run a release-readiness checklist before resuming normal issuance.
 
 ## Emergency Response
 

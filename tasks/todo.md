@@ -249,3 +249,55 @@
   - `npm run typecheck` passes.
   - Targeted tests pass (`8` suites, `42` tests).
   - Full coverage pass: `npm run test:coverage -- --ci --runInBand` (`17` suites, `113` tests).
+
+---
+
+# Task Plan: External Review Triage Alignment
+
+- [x] Validate which external-review gaps are already addressed in repo code/docs.
+- [x] Fix circuit runbook drift to match current commitment-based circuit inputs/constraints.
+- [x] Harden circuit compilation script for trusted-setup acquisition fallback and artifact path accuracy.
+- [x] Verify script syntax and updated docs references.
+
+## Review
+- Updated `docs/runbooks/CIRCUIT_COMPILATION.md` to reflect current circuit model:
+  - Replaced `oracleSignature` docs with `oracleCommitment` + `chainId`.
+  - Corrected witness calculator path to `public/zk/receipt_js/receipt.wasm`.
+  - Added explicit trusted-setup/provenance guidance and production checklist.
+- Updated `scripts/compile-circuit.sh`:
+  - Added fallback to local ptau generation when Hermez ptau download fails.
+  - Corrected generated-file output path to `receipt_js/receipt.wasm`.
+  - Preserves final ptau for reproducibility and removes only local intermediate ptau files.
+- Validation:
+  - `bash -n scripts/compile-circuit.sh` passes.
+  - `rg` confirms no stale `oracleSignature` witness-input references remain in the circuit runbook (except a historical note).
+
+---
+
+# Task Plan: Trust Model & Release-Readiness Docs
+
+- [x] Add an explicit Oracle Trust Model section to `README.md`.
+- [x] Expand `docs/runbooks/SECURITY.md` with oracle key custody, rotation, and incident response policy.
+- [x] Add a trusted setup provenance checklist template under `docs/runbooks/`.
+- [x] Add a first-release and live-demo readiness checklist under `docs/project/`.
+- [x] Update docs indexes/links and verify references.
+
+## Review
+- Added `Oracle Trust Model` section in `README.md` with:
+  - explicit centralized-oracle trust assumptions,
+  - oracle capability/non-capability framing,
+  - operational controls and links to runbooks/checklists.
+- Expanded `docs/runbooks/SECURITY.md`:
+  - added oracle key custody policy,
+  - added 90-day rotation cadence and immediate-rotation triggers,
+  - added high-level rotation procedure and compromise-response addendum,
+  - corrected note about `package-lock.json` (tracked, not gitignored).
+- Added trusted setup provenance template:
+  - `docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md`.
+- Added release/demo readiness checklist:
+  - `docs/project/RELEASE_READINESS_CHECKLIST.md`.
+- Updated index/discovery links:
+  - `docs/README.md`
+  - `README.md` documentation section.
+- Validation:
+  - `rg` confirms new links and trust-model references are present.
