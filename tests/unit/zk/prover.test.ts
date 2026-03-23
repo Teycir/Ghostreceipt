@@ -37,7 +37,9 @@ describe('ProofGenerator share payload encoding', () => {
 
   it('round-trips oracle authentication metadata in share payloads', () => {
     const exported = generator.exportProof(sampleProof, {
+      expiresAt: 1700000300,
       messageHash: '123456789',
+      nonce: 'c'.repeat(32),
       oracleSignature: 'a'.repeat(128),
       oraclePubKeyId: 'b'.repeat(16),
       signedAt: 1700000000,
@@ -46,7 +48,9 @@ describe('ProofGenerator share payload encoding', () => {
     const imported = generator.importProof(exported);
 
     expect(imported.oracleAuth).toEqual({
+      expiresAt: 1700000300,
       messageHash: '123456789',
+      nonce: 'c'.repeat(32),
       oracleSignature: 'a'.repeat(128),
       oraclePubKeyId: 'b'.repeat(16),
       signedAt: 1700000000,

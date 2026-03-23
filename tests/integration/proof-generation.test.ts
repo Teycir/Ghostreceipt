@@ -1,18 +1,19 @@
 import { buildWitness, validateWitness } from '@/lib/zk/witness';
 import { ProofGenerator } from '@/lib/zk/prover';
-import type { OraclePayloadV1 } from '@/lib/validation/schemas';
+import type { OraclePayload } from '@/lib/validation/schemas';
 
 describe('End-to-End Proof Generation', () => {
-  const mockOraclePayload: OraclePayloadV1 = {
+  const mockOraclePayload: OraclePayload = {
     chain: 'bitcoin',
     txHash: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
     valueAtomic: '100000000',
     timestampUnix: 1700000000,
     confirmations: 6,
+    expiresAt: 1700000400,
     messageHash: '12345678901234567890',
+    nonce: 'a'.repeat(32),
     oracleSignature: 'f1e2d3c4b5a69780123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     oraclePubKeyId: 'test-key-1',
-    schemaVersion: 'v1',
     signedAt: 1700000100,
   };
 
@@ -73,7 +74,7 @@ describe('End-to-End Proof Generation', () => {
 
   describe('Witness Validation Edge Cases', () => {
     it('should handle maximum safe integer values', () => {
-      const largeValuePayload: OraclePayloadV1 = {
+      const largeValuePayload: OraclePayload = {
         ...mockOraclePayload,
         valueAtomic: '9007199254740991',
         timestampUnix: 2147483647,
@@ -89,7 +90,7 @@ describe('End-to-End Proof Generation', () => {
     });
 
     it('should handle minimum values', () => {
-      const minValuePayload: OraclePayloadV1 = {
+      const minValuePayload: OraclePayload = {
         ...mockOraclePayload,
         valueAtomic: '1',
         timestampUnix: 1,

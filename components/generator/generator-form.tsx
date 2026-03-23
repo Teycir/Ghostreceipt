@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ReceiptSuccess } from './receipt-success';
 import { announceToScreenReader } from '@/lib/accessibility';
-import type { Chain, OraclePayloadV1 } from '@/lib/validation/schemas';
+import type { Chain, OraclePayload } from '@/lib/validation/schemas';
 
 interface FormData {
   chain: Chain;
@@ -99,7 +99,7 @@ export function GeneratorForm(): React.JSX.Element {
       });
 
       const data = (await response.json()) as {
-        data?: OraclePayloadV1;
+        data?: OraclePayload;
       } & ApiErrorPayload;
 
       if (!response.ok) {
@@ -146,7 +146,9 @@ export function GeneratorForm(): React.JSX.Element {
       
       // Export shareable proof
       const shareableProof = prover.exportProof(proofResult, {
+        expiresAt: data.data.expiresAt,
         messageHash: data.data.messageHash,
+        nonce: data.data.nonce,
         oracleSignature: data.data.oracleSignature,
         oraclePubKeyId: data.data.oraclePubKeyId,
         signedAt: data.data.signedAt,

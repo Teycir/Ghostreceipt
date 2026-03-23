@@ -1,4 +1,4 @@
-import type { OraclePayloadV1 } from '@/lib/validation/schemas';
+import type { OraclePayload } from '@/lib/validation/schemas';
 
 /**
  * Witness input for receipt circuit
@@ -28,7 +28,7 @@ export interface UserClaim {
  * Build witness input from oracle payload and user claim
  */
 export function buildWitness(
-  oraclePayload: OraclePayloadV1,
+  oraclePayload: OraclePayload,
   userClaim: UserClaim
 ): ReceiptWitness {
   if (oraclePayload.chain !== 'bitcoin' && oraclePayload.chain !== 'ethereum') {

@@ -1,3 +1,74 @@
+# Task Plan: Canonical Oracle Auth Structure (Single Schema, No Version Labels)
+
+- [x] Remove `v1`/`v2` schema branching and keep one canonical oracle payload shape.
+- [x] Remove version-labelled signer/verification helpers and keep one envelope signing path.
+- [x] Remove `schemaVersion`/`signatureVersion` version labels from runtime payloads.
+- [x] Update generator/verifier/share-payload code to require one auth envelope structure.
+- [x] Update tests/fixtures to one structure naming and one verification path.
+- [x] Verify with typecheck and focused tests.
+
+## Review
+- Unified schema to one canonical payload (no `OraclePayloadV1`/`OraclePayloadV2` split):
+  - [`lib/validation/schemas.ts`](/home/teycir/Repos/GhostReceipt/lib/validation/schemas.ts)
+- Unified signer API to one envelope model (`signAuthEnvelope`, `verifyAuthEnvelope`) and removed version-labelled methods:
+  - [`lib/oracle/signer.ts`](/home/teycir/Repos/GhostReceipt/lib/oracle/signer.ts)
+- Unified server paths to one verify request structure and one fetch payload shape:
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+  - [`lib/libraries/backend-core/http/verify-signature.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/verify-signature.ts)
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Unified client/share handling around one auth structure:
+  - [`components/generator/generator-form.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/generator-form.tsx)
+  - [`app/verify/page.tsx`](/home/teycir/Repos/GhostReceipt/app/verify/page.tsx)
+  - [`lib/zk/prover.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/prover.ts)
+- Updated test fixtures/assertions away from versioned naming:
+  - [`tests/unit/api/oracle-verify-signature-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-verify-signature-route.test.ts)
+  - [`tests/unit/api/fetch-tx-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/fetch-tx-route.test.ts)
+  - [`tests/unit/oracle-signer.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/oracle-signer.test.ts)
+  - [`tests/unit/zk/prover.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/prover.test.ts)
+  - [`tests/unit/zk/witness.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/witness.test.ts)
+  - [`tests/unit/generator/witness-integration.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/generator/witness-integration.test.ts)
+  - [`tests/integration/proof-generation.test.ts`](/home/teycir/Repos/GhostReceipt/tests/integration/proof-generation.test.ts)
+  - [`tests/integration/live-oracle-flows.test.ts`](/home/teycir/Repos/GhostReceipt/tests/integration/live-oracle-flows.test.ts)
+  - [`tests/integration/stress-oracle-volume.test.ts`](/home/teycir/Repos/GhostReceipt/tests/integration/stress-oracle-volume.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/oracle-signer.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/zk/prover.test.ts tests/unit/zk/witness.test.ts tests/unit/generator/witness-integration.test.ts tests/integration/proof-generation.test.ts --runInBand` passes.
+
+# Task Plan: Enhancement M1 Step 1 - Oracle Attestation v2 Envelope
+
+- [x] Add v2 oracle auth schema/types (`nonce`, `expiresAt`, `signatureVersion`) with v1 compatibility union types.
+- [x] Add deterministic envelope canonicalization + full-envelope signing/verification helpers for v2 auth.
+- [x] Update oracle fetch signing path to emit v2 payloads while keeping existing commitment/witness compatibility.
+- [x] Update verify-signature route/core helper + verifier client path to validate v2 payloads and keep v1 support.
+- [x] Add focused tests for v2 success path + tamper/backward-compatibility behavior.
+- [x] Verify with typecheck and targeted unit/integration tests.
+
+## Review
+- Added v2-capable schema surface with v1 compatibility union:
+  - [`lib/validation/schemas.ts`](/home/teycir/Repos/GhostReceipt/lib/validation/schemas.ts)
+- Added deterministic v2 envelope canonicalization + signing/verification primitives:
+  - [`lib/oracle/signer.ts`](/home/teycir/Repos/GhostReceipt/lib/oracle/signer.ts)
+- Updated fetch signing pipeline to emit v2 auth envelope (`nonce`, `expiresAt`, `signatureVersion`) while preserving `messageHash` witness compatibility:
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+- Updated verify-signature core schema/logic to accept v2 and legacy v1 payloads:
+  - [`lib/libraries/backend-core/http/verify-signature.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/verify-signature.ts)
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Updated generator/share/import/verify client flows for v2 auth metadata transport:
+  - [`components/generator/generator-form.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/generator-form.tsx)
+  - [`lib/zk/prover.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/prover.ts)
+  - [`app/verify/page.tsx`](/home/teycir/Repos/GhostReceipt/app/verify/page.tsx)
+  - [`lib/libraries/zk-core/witness.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/zk-core/witness.ts)
+- Added/updated focused coverage for v2 behavior + compatibility:
+  - [`tests/unit/oracle-signer.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/oracle-signer.test.ts)
+  - [`tests/unit/api/oracle-verify-signature-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-verify-signature-route.test.ts)
+  - [`tests/unit/api/fetch-tx-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/fetch-tx-route.test.ts)
+  - [`tests/unit/zk/prover.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/prover.test.ts)
+  - [`tests/integration/live-oracle-flows.test.ts`](/home/teycir/Repos/GhostReceipt/tests/integration/live-oracle-flows.test.ts)
+  - [`tests/integration/stress-oracle-volume.test.ts`](/home/teycir/Repos/GhostReceipt/tests/integration/stress-oracle-volume.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/oracle-signer.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/zk/prover.test.ts tests/unit/zk/witness.test.ts tests/integration/proof-generation.test.ts --runInBand` passes.
+
 # Task Plan: CI Stress Test Rate-Limit Alignment
 
 - [x] Diagnose `npm run test:stress:oracle` CI failure and identify rate-limit bottleneck.
@@ -136,12 +207,12 @@
 - [ ] Assume no VPS/self-hosted infrastructure for current rollout; design around managed/freemium providers only.
 
 ## Workstream A: Oracle Attestation v2 (Bound Signature Envelope)
-- [ ] Define `oracleAuthV2` schema with `messageHash`, `nonce`, `signedAt`, `expiresAt`, `oraclePubKeyId`, `signatureVersion`, `oracleSignature`.
-- [ ] Canonicalize and sign the full v2 envelope (not `messageHash` alone).
-- [ ] Update fetch route signing path to emit v2 envelope.
-- [ ] Update verify-signature route to validate v2 envelope signature binding.
-- [ ] Keep backward-compatible verification support for existing v1 payloads during migration.
-- [ ] Add focused unit tests for envelope tampering cases (field swap, timestamp change, nonce change).
+- [x] Define canonical `oracleAuth` schema with `messageHash`, `nonce`, `signedAt`, `expiresAt`, `oraclePubKeyId`, `oracleSignature`.
+- [x] Canonicalize and sign the full envelope (not `messageHash` alone).
+- [x] Update fetch route signing path to emit the canonical envelope.
+- [x] Update verify-signature route to validate canonical envelope signature binding.
+- [x] Remove legacy version branching and keep one canonical auth structure.
+- [x] Add focused unit tests for envelope tampering cases (field swap, timestamp change, nonce change).
 
 ## Workstream B: Replay Protection (Nonce + Time Window)
 - [ ] Add nonce replay registry abstraction with adapters:
@@ -284,7 +355,7 @@
 - [ ] single-key compromise no longer a single point of total trust failure.
 
 ## Sequence (Execution Order)
-- [ ] Step 1: Implement Attestation v2 schema + signing + verification compatibility layer.
+- [x] Step 1: Implement Attestation v2 schema + signing + verification compatibility layer.
 - [ ] Step 2: Implement nonce replay registry + replay window enforcement.
 - [ ] Step 3: Implement nullifier registry + verifier conflict checks.
 - [ ] Step 4: Implement transparency log validation on verifier path.

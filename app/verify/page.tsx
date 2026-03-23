@@ -20,12 +20,16 @@ interface OracleSignatureVerificationResult {
   error?: string;
 }
 
-async function verifyOracleSignature(oracleAuth: {
+interface OracleAuthPayload {
+  expiresAt: number;
   messageHash: string;
+  nonce: string;
   oracleSignature: string;
   oraclePubKeyId: string;
   signedAt: number;
-}): Promise<OracleSignatureVerificationResult> {
+}
+
+async function verifyOracleSignature(oracleAuth: OracleAuthPayload): Promise<OracleSignatureVerificationResult> {
   const response = await fetch('/api/oracle/verify-signature', {
     method: 'POST',
     headers: {

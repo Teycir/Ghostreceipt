@@ -12,6 +12,14 @@ import { safeHexEqual } from '@/lib/security/safe-compare';
 const ED25519_PKCS8_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 
+export interface OracleAuthEnvelope {
+  expiresAt: number;
+  messageHash: string;
+  nonce: string;
+  oraclePubKeyId: string;
+  signedAt: number;
+}
+
 /**
  * Oracle signer using asymmetric Ed25519 signatures.
  */
@@ -99,7 +107,7 @@ export class OracleSigner {
   }
 
   static verifySignatureWithPublicKey(
-    messageHash: string,
+    message: string,
     signatureHex: string,
     publicKeyHex: string
   ): boolean {
@@ -111,7 +119,7 @@ export class OracleSigner {
       const publicKey = OracleSigner.createPublicKeyFromHex(publicKeyHex);
       return verify(
         null,
-        Buffer.from(messageHash, 'utf8'),
+        Buffer.from(message, 'utf8'),
         publicKey,
         Buffer.from(signatureHex, 'hex')
       );
@@ -123,8 +131,8 @@ export class OracleSigner {
   /**
    * Sign message hash with Ed25519.
    */
-  sign(messageHash: string): string {
-    const signature = sign(null, Buffer.from(messageHash, 'utf8'), this.privateKey);
+  sign(message: string): string {
+    const signature = sign(null, Buffer.from(message, 'utf8'), this.privateKey);
     return signature.toString('hex');
   }
 
@@ -132,7 +140,7 @@ export class OracleSigner {
    * Verify a provided signature over a message hash.
    */
   verifySignature(
-    messageHash: string,
+    message: string,
     signatureHex: string,
     oraclePubKeyId?: string
   ): boolean {
@@ -146,7 +154,7 @@ export class OracleSigner {
 
     try {
       return OracleSigner.verifySignatureWithPublicKey(
-        messageHash,
+        message,
         signatureHex,
         OracleSigner.exportRawPublicKey(this.publicKey).toString('hex')
       );
@@ -160,5 +168,52 @@ export class OracleSigner {
    */
   static generatePrivateKey(): string {
     return randomBytes(32).toString('hex');
+  }
+
+  static serializeAuthEnvelope(envelope: OracleAuthEnvelope): string {
+    return [
+      `messageHash=${envelope.messageHash}`,
+      `nonce=${envelope.nonce}`,
+      `signedAt=${envelope.signedAt}`,
+      `expiresAt=${envelope.expiresAt}`,
+      `oraclePubKeyId=${envelope.oraclePubKeyId}`,
+    ].join('&');
+  }
+
+  signAuthEnvelope(
+    envelope: Omit<OracleAuthEnvelope, 'oraclePubKeyId'>
+  ): { envelope: OracleAuthEnvelope; oracleSignature: string } {
+    const fullEnvelope: OracleAuthEnvelope = {
+      ...envelope,
+      oraclePubKeyId: this.pubKeyId,
+    };
+
+    return {
+      envelope: fullEnvelope,
+      oracleSignature: this.sign(OracleSigner.serializeAuthEnvelope(fullEnvelope)),
+    };
+  }
+
+  verifyAuthEnvelope(
+    envelope: OracleAuthEnvelope,
+    signatureHex: string
+  ): boolean {
+    return this.verifySignature(
+      OracleSigner.serializeAuthEnvelope(envelope),
+      signatureHex,
+      envelope.oraclePubKeyId
+    );
+  }
+
+  static verifyAuthEnvelopeWithPublicKey(
+    envelope: OracleAuthEnvelope,
+    signatureHex: string,
+    publicKeyHex: string
+  ): boolean {
+    return OracleSigner.verifySignatureWithPublicKey(
+      OracleSigner.serializeAuthEnvelope(envelope),
+      signatureHex,
+      publicKeyHex
+    );
   }
 }

@@ -1,17 +1,18 @@
 import { buildWitness, validateWitness } from '@/lib/zk/witness';
-import type { OraclePayloadV1 } from '@/lib/validation/schemas';
+import type { OraclePayload } from '@/lib/validation/schemas';
 
 describe('Generator Form Integration', () => {
-  const mockOraclePayload: OraclePayloadV1 = {
+  const mockOraclePayload: OraclePayload = {
     chain: 'bitcoin',
     txHash: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     valueAtomic: '100000000',
     timestampUnix: 1700000000,
     confirmations: 6,
+    expiresAt: 1700000400,
     messageHash: '12345678901234567890',
+    nonce: 'a'.repeat(32),
     oracleSignature: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     oraclePubKeyId: 'test-key-1',
-    schemaVersion: 'v1',
     signedAt: 1700000100,
   };
 
@@ -84,7 +85,7 @@ describe('Generator Form Integration', () => {
     });
 
     it('should reject witness with non-positive oracle commitment', () => {
-      const invalidCommitmentPayload: OraclePayloadV1 = {
+      const invalidCommitmentPayload: OraclePayload = {
         ...mockOraclePayload,
         messageHash: '0',
       };

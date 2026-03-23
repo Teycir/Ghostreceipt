@@ -103,18 +103,40 @@ export const OracleCommitmentSchema = z
   .string()
   .regex(/^[0-9]{1,78}$/, 'Invalid oracle commitment format');
 
+export const OracleSignatureHexSchema = z
+  .string()
+  .regex(/^[a-f0-9]{128}$/i, 'Invalid oracle signature format');
+
+export const OraclePubKeyIdSchema = z
+  .string()
+  .regex(/^[a-f0-9]{16}$/i, 'Invalid oracle public key id format');
+
+export const OracleNonceSchema = z
+  .string()
+  .regex(/^[a-f0-9]{32,128}$/i, 'Invalid oracle nonce format');
+
 /**
- * Oracle signed payload (v1)
+ * Oracle signed payload
+ * Signature is bound to the full auth envelope (messageHash + nonce + timestamps + key id).
  */
-export const OraclePayloadV1Schema = CanonicalTxDataSchema.extend({
+export const OraclePayloadSchema = CanonicalTxDataSchema.extend({
   messageHash: OracleCommitmentSchema,
-  oracleSignature: z.string(),
-  oraclePubKeyId: z.string(),
-  schemaVersion: z.literal('v1'),
+  oracleSignature: OracleSignatureHexSchema,
+  oraclePubKeyId: OraclePubKeyIdSchema,
+  nonce: OracleNonceSchema,
   signedAt: z.number().int().positive(),
+  expiresAt: z.number().int().positive(),
+}).strict().superRefine((data, ctx) => {
+  if (data.expiresAt <= data.signedAt) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['expiresAt'],
+      message: 'expiresAt must be greater than signedAt',
+    });
+  }
 });
 
-export type OraclePayloadV1 = z.infer<typeof OraclePayloadV1Schema>;
+export type OraclePayload = z.infer<typeof OraclePayloadSchema>;
 
 /**
  * Error codes for structured error handling
@@ -153,7 +175,7 @@ export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
  * Success response wrapper
  */
 export const SuccessResponseSchema = z.object({
-  data: OraclePayloadV1Schema,
+  data: OraclePayloadSchema,
   cached: z.boolean().optional(),
 });
 

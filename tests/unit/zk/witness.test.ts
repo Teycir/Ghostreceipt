@@ -1,18 +1,19 @@
 import { buildWitness, validateWitness, extractPublicSignals } from '@/lib/zk/witness';
-import type { OraclePayloadV1 } from '@/lib/validation/schemas';
+import type { OraclePayload } from '@/lib/validation/schemas';
 import type { UserClaim } from '@/lib/zk/witness';
 
 describe('Witness Builder', () => {
-  const mockOraclePayload: OraclePayloadV1 = {
+  const mockOraclePayload: OraclePayload = {
     chain: 'ethereum',
     txHash: '0x' + 'a'.repeat(64),
     valueAtomic: '1000000000000000000',
     timestampUnix: 1234567890,
     confirmations: 12,
+    expiresAt: 1234568190,
     messageHash: '123456789012345678901234567890',
+    nonce: 'b'.repeat(32),
     oracleSignature: 'c'.repeat(128),
     oraclePubKeyId: 'd'.repeat(16),
-    schemaVersion: 'v1',
     signedAt: 1234567890,
   };
 

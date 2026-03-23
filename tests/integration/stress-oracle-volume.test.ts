@@ -241,13 +241,16 @@ describeStress('Oracle stress test (100 users/hour equivalent + concurrency)', (
           const payload = parsed.data.data;
 
           const verifyStart = Date.now();
+          const verifyPayload = {
+            expiresAt: payload.expiresAt,
+            messageHash: payload.messageHash,
+            nonce: payload.nonce,
+            oracleSignature: payload.oracleSignature,
+            oraclePubKeyId: payload.oraclePubKeyId,
+            signedAt: payload.signedAt,
+          };
           const verifyResponse = await verifySignaturePost(
-            createJsonRequest('/api/oracle/verify-signature', clientIp, {
-              messageHash: payload.messageHash,
-              oracleSignature: payload.oracleSignature,
-              oraclePubKeyId: payload.oraclePubKeyId,
-              signedAt: payload.signedAt,
-            })
+            createJsonRequest('/api/oracle/verify-signature', clientIp, verifyPayload)
           );
           const verifyLatencyMs = Date.now() - verifyStart;
 

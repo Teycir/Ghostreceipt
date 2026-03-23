@@ -301,13 +301,17 @@ describeLive('Live E2E Oracle Flow (BTC + ETH)', () => {
 
     await proveAndVerifyLiveWitness(witness);
 
+    const verifyPayload = {
+      expiresAt: payload.expiresAt,
+      messageHash: payload.messageHash,
+      nonce: payload.nonce,
+      oracleSignature: payload.oracleSignature,
+      oraclePubKeyId: payload.oraclePubKeyId,
+      signedAt: payload.signedAt,
+    };
+
     const verifyResponse = await verifySignaturePost(
-      createJsonRequest('/api/oracle/verify-signature', {
-        messageHash: payload.messageHash,
-        oracleSignature: payload.oracleSignature,
-        oraclePubKeyId: payload.oraclePubKeyId,
-        signedAt: payload.signedAt,
-      })
+      createJsonRequest('/api/oracle/verify-signature', verifyPayload)
     );
     const verifyBody = (await verifyResponse.json()) as { valid?: boolean };
 

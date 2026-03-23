@@ -21,7 +21,9 @@ export interface ProofResult {
 }
 
 export interface OracleAuthData {
+  expiresAt: number;
   messageHash: string;
+  nonce: string;
   oracleSignature: string;
   oraclePubKeyId: string;
   signedAt: number;
@@ -169,16 +171,17 @@ export class ProofGenerator {
         throw new Error('Invalid proof format');
       }
 
-      if (
-        parsed.oracleAuth &&
-        (
-          typeof parsed.oracleAuth.messageHash !== 'string' ||
-          typeof parsed.oracleAuth.oracleSignature !== 'string' ||
-          typeof parsed.oracleAuth.oraclePubKeyId !== 'string' ||
-          typeof parsed.oracleAuth.signedAt !== 'number'
-        )
-      ) {
-        throw new Error('Invalid proof format');
+      if (parsed.oracleAuth) {
+        const hasRequiredFields =
+          typeof parsed.oracleAuth.expiresAt === 'number' &&
+          typeof parsed.oracleAuth.messageHash === 'string' &&
+          typeof parsed.oracleAuth.nonce === 'string' &&
+          typeof parsed.oracleAuth.oracleSignature === 'string' &&
+          typeof parsed.oracleAuth.oraclePubKeyId === 'string' &&
+          typeof parsed.oracleAuth.signedAt === 'number';
+        if (!hasRequiredFields) {
+          throw new Error('Invalid proof format');
+        }
       }
 
       return parsed as ShareableProofPayload;

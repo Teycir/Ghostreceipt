@@ -240,12 +240,24 @@ describe('POST /api/oracle/fetch-tx', () => {
 
     const response = await POST(request);
     const body = (await response.json()) as {
-      data: { oracleSignature: string; oraclePubKeyId: string };
+      data: {
+        expiresAt: number;
+        messageHash: string;
+        nonce: string;
+        oracleSignature: string;
+        oraclePubKeyId: string;
+        signedAt: number;
+      };
     };
 
     expect(response.status).toBe(200);
+    expect(typeof body.data.expiresAt).toBe('number');
+    expect(body.data.messageHash).toMatch(/^[0-9]{1,78}$/);
+    expect(body.data.nonce).toMatch(/^[a-f0-9]{32}$/i);
     expect(body.data.oracleSignature).toMatch(/^[a-f0-9]{128}$/i);
     expect(body.data.oraclePubKeyId).toMatch(/^[a-f0-9]{16}$/i);
+    expect(typeof body.data.signedAt).toBe('number');
+    expect(body.data.expiresAt).toBeGreaterThan(body.data.signedAt);
   });
 
   it('returns 200 for valid solana request with oracle signature', async () => {

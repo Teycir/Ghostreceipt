@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-23 - Versioned Schema Branches Should Be Removed Once Migration Window Closes
+- When the user decides to stop migration support, collapse `v1`/`v2` branches into one canonical structure immediately instead of keeping compatibility code.
+- Remove version-labelled naming (`*V1`, `*V2`, `schemaVersion`, `signatureVersion`) from runtime paths to keep maintenance low and reduce branching bugs.
+- Apply the same simplification consistently across schema types, signer helpers, API validation, client payload handling, and tests.
+
 ## 2026-03-23 - Shared Infra Requirements Should Trigger Immediate Core Abstraction
 - When the user asks for cross-project reuse of a subsystem (for example API key cascade), avoid provider-specific duplication and extract a provider-agnostic core utility immediately.
 - Ensure existing integrations are migrated to the shared abstraction in the same change so behavior stays consistent and reusable by default.

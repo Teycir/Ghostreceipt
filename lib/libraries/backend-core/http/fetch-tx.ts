@@ -1,8 +1,9 @@
+import { randomBytes } from 'crypto';
 import {
   CanonicalTxDataSchema,
   type Chain,
   type ErrorResponse,
-  type OraclePayloadV1,
+  type OraclePayload,
 } from '@/lib/validation/schemas';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
@@ -21,16 +22,18 @@ export interface FetchTxMappedError {
 }
 
 export interface OracleFetchOptions {
+  authTtlSeconds?: number;
   blockchairApiKey?: string;
   cascadeConfig?: CascadeConfig;
   etherscanKeys?: string[];
   heliusKeys?: string[];
+  nonceHex?: string;
   nowMs?: number;
 }
 
 export interface SignedOracleFetchResult {
   cached: boolean;
-  data: OraclePayloadV1;
+  data: OraclePayload;
   fetchedAt: number;
   provider: string;
 }
@@ -41,6 +44,8 @@ const DEFAULT_CASCADE_CONFIG: CascadeConfig = {
   timeoutMs: 10000,
   concurrencyLimit: 5,
 };
+
+const DEFAULT_ORACLE_AUTH_TTL_SECONDS = 5 * 60;
 
 export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
   const code: ErrorResponse['error']['code'] = 'INTERNAL_ERROR';
@@ -281,16 +286,30 @@ export async function fetchAndSignOracleTransaction(
   const signer = getCachedOracleSignerFromEnv();
   const messageHash = await computeOracleCommitment(canonicalDataResult.data);
   const signedAtMs = options.nowMs ?? Date.now();
+  const signedAt = Math.floor(signedAtMs / 1000);
+  const requestedTtlSeconds =
+    options.authTtlSeconds ?? DEFAULT_ORACLE_AUTH_TTL_SECONDS;
+  const authTtlSeconds =
+    Number.isFinite(requestedTtlSeconds) && requestedTtlSeconds > 0
+      ? Math.floor(requestedTtlSeconds)
+      : DEFAULT_ORACLE_AUTH_TTL_SECONDS;
+  const expiresAt = signedAt + authTtlSeconds;
+  const nonce =
+    options.nonceHex ??
+    randomBytes(16).toString('hex');
+  const authSignature = signer.signAuthEnvelope({
+    expiresAt,
+    messageHash,
+    nonce,
+    signedAt,
+  });
 
   return {
     cached: result.cached,
     data: {
       ...canonicalDataResult.data,
-      messageHash,
-      oracleSignature: signer.sign(messageHash),
-      oraclePubKeyId: signer.getPublicKeyId(),
-      schemaVersion: 'v1',
-      signedAt: Math.floor(signedAtMs / 1000),
+      ...authSignature.envelope,
+      oracleSignature: authSignature.oracleSignature,
     },
     fetchedAt: result.fetchedAt,
     provider: result.provider,

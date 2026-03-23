@@ -122,6 +122,54 @@ describe('OracleSigner', () => {
     });
   });
 
+  describe('auth envelope signatures', () => {
+    it('should sign and verify an auth envelope', () => {
+      const signed = signer.signAuthEnvelope({
+        messageHash: '12345678901234567890',
+        nonce: 'a'.repeat(32),
+        signedAt: 1700000000,
+        expiresAt: 1700000300,
+      });
+
+      expect(signer.verifyAuthEnvelope(signed.envelope, signed.oracleSignature)).toBe(true);
+    });
+
+    it('should reject tampered auth envelope field values', () => {
+      const signed = signer.signAuthEnvelope({
+        messageHash: '12345678901234567890',
+        nonce: 'b'.repeat(32),
+        signedAt: 1700000000,
+        expiresAt: 1700000300,
+      });
+      const tamperedEnvelope = {
+        ...signed.envelope,
+        nonce: 'c'.repeat(32),
+      };
+
+      expect(signer.verifyAuthEnvelope(tamperedEnvelope, signed.oracleSignature)).toBe(false);
+    });
+
+    it('should verify auth-envelope signatures with public key only', () => {
+      const privateKey = '1'.repeat(64);
+      const signerInstance = new OracleSigner(privateKey);
+      const publicKeyHex = OracleSigner.derivePublicKeyHex(privateKey);
+      const signed = signerInstance.signAuthEnvelope({
+        messageHash: '12345678901234567890',
+        nonce: 'd'.repeat(32),
+        signedAt: 1700000000,
+        expiresAt: 1700000300,
+      });
+
+      expect(
+        OracleSigner.verifyAuthEnvelopeWithPublicKey(
+          signed.envelope,
+          signed.oracleSignature,
+          publicKeyHex
+        )
+      ).toBe(true);
+    });
+  });
+
   describe('generatePrivateKey', () => {
     it('should generate valid private key', () => {
       const key = OracleSigner.generatePrivateKey();
