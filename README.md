@@ -30,6 +30,8 @@ _Scan the QR code or copy the wallet address above._
 
 **Generate cryptographic payment receipts without exposing sensitive on-chain identity data.**
 
+_Background animation inspired by [VoXelo's Three.js CodePen](https://codepen.io/VoXelo/pen/JoPjvNE)_
+
 ### _"Prove the payment. Keep the privacy."_
 
 Status:
