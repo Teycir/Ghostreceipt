@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { type ErrorResponse } from '@/lib/validation/schemas';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
-import { parseSecureJson } from '@/lib/security/secure-json';
 import {
+  createJsonErrorResponse,
   createRateLimitErrorResponse,
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
+  parseSecureJsonWithError,
+  validateBodyWithSchema,
   VerifySignatureRequestSchema,
   verifyOracleSignature,
 } from '@ghostreceipt/backend-core/http';
@@ -43,53 +44,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  let body: unknown;
-  try {
-    body = await parseSecureJson(request, { maxSize: 1024 * 5 }); // 5KB limit
-  } catch (error) {
-    const message =
-      error instanceof Error &&
-      (
-        error.message.startsWith('Payload too large') ||
-        error.message.startsWith('Invalid Content-Type') ||
-        error.message.startsWith('Empty request body') ||
-        error.message.startsWith('JSON object too complex') ||
-        error.message.startsWith('JSON nesting too deep')
-      )
-        ? error.message
-        : 'Invalid JSON request body';
-    const errorResponse: ErrorResponse = {
-      error: {
-        code: 'INVALID_HASH',
-        message,
-      },
-    };
-    return NextResponse.json(errorResponse, { status: 400 });
+  const bodyResult = await parseSecureJsonWithError(request, {
+    maxSize: 1024 * 5,
+  });
+  if (!bodyResult.ok) {
+    return bodyResult.response;
   }
 
-  const parsed = VerifySignatureRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    const errorResponse: ErrorResponse = {
-      error: {
-        code: 'INVALID_HASH',
-        message: 'Invalid signature verification request',
-        details: parsed.error.flatten(),
-      },
-    };
-    return NextResponse.json(errorResponse, { status: 400 });
+  const parsed = validateBodyWithSchema({
+    body: bodyResult.data,
+    options: {
+      code: 'INVALID_HASH',
+      message: 'Invalid signature verification request',
+    },
+    schema: VerifySignatureRequestSchema,
+  });
+  if (!parsed.ok) {
+    return parsed.response;
   }
 
   const verification = verifyOracleSignature(parsed.data, {
     missingKeyMessage: 'Oracle key not configured (set ORACLE_PUBLIC_KEY or ORACLE_PRIVATE_KEY)',
   });
   if (verification.kind === 'config_error') {
-    const errorResponse: ErrorResponse = {
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: verification.message,
-      },
-    };
-    return NextResponse.json(errorResponse, { status: 500 });
+    return createJsonErrorResponse({
+      code: 'INTERNAL_ERROR',
+      message: verification.message,
+      status: 500,
+    });
   }
 
   return NextResponse.json({

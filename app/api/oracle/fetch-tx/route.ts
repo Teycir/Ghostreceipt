@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  type ErrorResponse,
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
-import { parseSecureJson } from '@/lib/security/secure-json';
 import { secureError } from '@/lib/security/secure-logging';
 import {
+  createJsonErrorResponse,
   createRateLimitErrorResponse,
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
@@ -15,8 +14,10 @@ import {
   FETCH_TX_ANON_IDEMPOTENCY_COOKIE,
   fetchAndSignOracleTransaction,
   mapFetchTxErrorToResponse,
+  parseSecureJsonWithError,
   releaseFetchTxReplayKey,
   reserveFetchTxReplayKey,
+  validateBodyWithSchema,
   withFetchTxAnonymousSessionCookie,
 } from '@ghostreceipt/backend-core/http';
 
@@ -68,43 +69,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         );
       }
     }
-    // Parse request body with security controls
-    let body: unknown;
-    try {
-      body = await parseSecureJson(request, { maxSize: 1024 * 10 }); // 10KB limit
-    } catch (error) {
-      const message =
-        error instanceof Error &&
-        (
-          error.message.startsWith('Payload too large') ||
-          error.message.startsWith('Invalid Content-Type') ||
-          error.message.startsWith('Empty request body') ||
-          error.message.startsWith('JSON object too complex') ||
-          error.message.startsWith('JSON nesting too deep')
-        )
-          ? error.message
-          : 'Invalid JSON request body';
-      const errorResponse: ErrorResponse = {
-        error: {
-          code: 'INVALID_HASH',
-          message,
-        },
-      };
-      return withSession(NextResponse.json(errorResponse, { status: 400 }));
+    const bodyResult = await parseSecureJsonWithError(request, {
+      maxSize: 1024 * 10,
+    });
+    if (!bodyResult.ok) {
+      return withSession(bodyResult.response);
     }
 
-    // Validate request body
-    const validationResult = OracleFetchTxRequestSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      const errorResponse: ErrorResponse = {
-        error: {
-          code: 'INVALID_HASH',
-          message: 'Invalid request parameters',
-          details: validationResult.error.flatten(),
-        },
-      };
-      return withSession(NextResponse.json(errorResponse, { status: 400 }));
+    const validationResult = validateBodyWithSchema({
+      body: bodyResult.data,
+      options: {
+        code: 'INVALID_HASH',
+        message: 'Invalid request parameters',
+      },
+      schema: OracleFetchTxRequestSchema,
+    });
+    if (!validationResult.ok) {
+      return withSession(validationResult.response);
     }
 
     const { chain, txHash, idempotencyKey } = validationResult.data;
@@ -119,13 +100,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       anonymousSessionIdToSet = replayReservation.anonymousSessionIdToSet;
     }
     if (replayReservation.replayConflictReason) {
-      const errorResponse: ErrorResponse = {
-        error: {
+      return withSession(
+        createJsonErrorResponse({
           code: 'REPLAY_DETECTED',
           message: replayReservation.replayConflictReason,
-        },
-      };
-      return withSession(NextResponse.json(errorResponse, { status: 409 }));
+          status: 409,
+        })
+      );
     }
     reservedReplayKey = replayReservation.replayKey;
 
@@ -147,15 +128,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const mapped = mapFetchTxErrorToResponse(error);
 
-    const errorResponse: ErrorResponse = {
-      error: {
+    return withFetchTxAnonymousSessionCookie(
+      createJsonErrorResponse({
         code: mapped.code,
         message: mapped.message,
-      },
-    };
-
-    return withFetchTxAnonymousSessionCookie(
-      NextResponse.json(errorResponse, { status: mapped.status }),
+        status: mapped.status,
+      }),
       anonymousSessionIdToSet
     );
   }

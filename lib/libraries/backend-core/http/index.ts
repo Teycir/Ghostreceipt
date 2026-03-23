@@ -30,3 +30,10 @@ export type {
   FetchTxReplayReservation,
   ReserveFetchTxReplayKeyInput,
 } from './fetch-tx-idempotency';
+export {
+  parseSecureJsonWithError,
+  validateBodyWithSchema,
+} from './request-envelope';
+export type {
+  ParseSecureJsonWithErrorOptions,
+} from './request-envelope';

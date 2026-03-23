@@ -35,13 +35,10 @@ _Background animation inspired by [VoXelo's Three.js CodePen](https://codepen.io
 ### _"Prove the payment. Keep the privacy."_
 
 Status:
-- Release: `v0.1.0-alpha` (Live on Cloudflare Pages)
+- Release: `v0.1.0` (Live on Cloudflare Pages)
 - Live demo: **[https://ghostreceipt.pages.dev](https://ghostreceipt.pages.dev)**
 
-> ⚠️ **Trust Assumptions (Current):**
-> A GhostReceipt proof is valid relative to oracle-signed canonical transaction facts. The oracle is currently centralized; if it is unavailable or compromised, new receipt generation is impacted and trust in newly issued payloads is degraded. See the [Threat Model](./docs/runbooks/THREAT_MODEL.md).
 
-[Roadmap](./docs/project/ROADMAP.md) | [Plan](./docs/project/PLAN.md) | [Report Bug](https://github.com/teycir/GhostReceipt/issues)
 
 </div>
 
