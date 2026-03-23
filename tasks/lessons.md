@@ -1,5 +1,14 @@
 # Lessons Learned
 
+## 2026-03-23 - Pages Deploy Needs Worker Config Isolation
+- When a repo has a Worker-focused `wrangler.toml` with incomplete KV bindings, `wrangler whoami` can fail from project root even though Pages commands still work.
+- For reliable CI/CLI deploys, run auth checks with `--cwd /tmp` (or another clean directory) and keep Pages deploy/secret commands explicit (`wrangler pages ...`).
+- Keep secret sync scripts resilient to local env naming variants (for example provider-suffixed Etherscan keys) and map them to runtime-expected keys (`ETHERSCAN_API_KEY`, `_1.._6`).
+
+## 2026-03-23 - Volume Validation Requires Explicit Load Signals
+- When the user asks for throughput/concurrency confidence, add a dedicated stress suite with explicit volume + concurrency controls instead of relying on functional integration tests.
+- Keep stress tests deterministic for CI by mocking unstable upstream providers while still exercising real route/business logic and signature verification paths.
+
 ## 2026-03-23 - Scope Realignment On User Correction
 - When the user explicitly redirects priority (for example from security follow-up to UI fix), stop expanding scope and execute the requested change immediately.
 - Keep optional follow-ups as suggestions only; do not continue them once the user says "no need."
