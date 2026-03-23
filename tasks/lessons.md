@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Cross-Repo UX Requests Need Feature-Exact Mapping
+- When the user says “use X from repo Y”, first confirm the exact implementation pattern in that repo and mirror the visibility/interaction model, not just the underlying capability.
+- For share features, prioritize prominent success-state action blocks (URL preview + clear copy CTA + quick actions) over subtle/secondary placement.
+
 ## 2026-03-23 - Dropdown Premium Style Must Keep Transparency
 - For glassmorphism forms, default select controls should stay transparent in resting state; opaque gray fills read as low quality against animated dark backgrounds.
 - Keep hover/focus polish in border/shadow layers, not in heavy background fills.

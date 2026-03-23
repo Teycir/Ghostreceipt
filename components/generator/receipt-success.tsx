@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Chain } from '@/lib/validation/schemas';
+import { useSecureClipboard } from '@/lib/shared/use-secure-clipboard';
 
 interface ReceiptSuccessProps {
   proof: string;
@@ -19,10 +20,12 @@ export function ReceiptSuccess({
 }: ReceiptSuccessProps): React.JSX.Element {
   const [qrCode, setQrCode] = useState<string>('');
   const [qrError, setQrError] = useState<string>('');
-  const [copied, setCopied] = useState(false);
+  const [verifyUrl, setVerifyUrl] = useState<string>('');
   const [shareStatus, setShareStatus] = useState<string>('');
+  const { copied, copyToClipboard } = useSecureClipboard();
 
   useEffect(() => {
+    setVerifyUrl(getVerifyUrl());
     void generateQR();
   }, [proof]);
 
@@ -59,10 +62,8 @@ export function ReceiptSuccess({
 
   const copyLink = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(getVerifyUrl());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      setShareStatus('Link copied');
+      await copyToClipboard(getVerifyUrl());
+      setShareStatus('Link copied (auto-clears in 60s)');
     } catch (error) {
       console.error('Copy failed:', error instanceof Error ? error.message : error);
       setShareStatus('Copy failed');
@@ -157,44 +158,29 @@ export function ReceiptSuccess({
         </div>
       </div>
 
-      {qrCode && (
-        <div className="glass-card rounded-xl p-6 text-center">
-          <p className="text-sm font-medium mb-4 text-white/70">Scan to verify receipt</p>
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-white rounded-xl">
-              <img src={qrCode} alt="Receipt QR Code" className="w-48 h-48" />
-            </div>
-          </div>
-          <Button type="button" onClick={downloadQR} variant="secondary" className="w-full">
-            📥 Download QR Code
+      <div className="glass-card rounded-xl p-5">
+        <p className="text-xs uppercase tracking-[0.14em] text-white/50 mb-3">Share Receipt</p>
+        <p className="text-xs text-white/55 mb-2">Verification URL</p>
+        <code className="block w-full max-h-24 overflow-auto break-all rounded-lg border border-white/12 bg-black/35 px-3 py-2 text-[11px] text-white/85">
+          {verifyUrl || 'Preparing link...'}
+        </code>
+
+        <Button type="button" onClick={() => void copyLink()} variant="primary" className="w-full mt-3">
+          {copied ? '✓ Copied! (Auto-clears in 60s)' : 'Copy URL'}
+        </Button>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mt-3">
+          <Button
+            type="button"
+            variant="secondary"
+            className="text-xs sm:text-sm"
+            onClick={() => {
+              if (!verifyUrl) return;
+              window.location.href = verifyUrl;
+            }}
+          >
+            Open Receipt
           </Button>
-        </div>
-      )}
-
-      {qrError && (
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-400">
-          {qrError}
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <Button type="button" onClick={copyLink} variant="primary" className="w-full">
-          {copied ? '✓ Copied!' : '🔗 Copy Verification Link'}
-        </Button>
-        
-        <Button
-          type="button"
-          onClick={() => window.location.href = getVerifyUrl()}
-          variant="secondary"
-          className="w-full"
-        >
-          👁️ View Receipt
-        </Button>
-      </div>
-
-      <div className="glass-card rounded-xl p-4">
-        <p className="text-xs uppercase tracking-[0.14em] text-white/50 mb-3">Share to Social</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           <Button
             type="button"
             variant="secondary"
@@ -238,10 +224,42 @@ export function ReceiptSuccess({
             Reddit
           </Button>
         </div>
-        {shareStatus && (
-          <p className="mt-3 text-xs text-white/55">{shareStatus}</p>
-        )}
       </div>
+
+      {qrCode && (
+        <div className="glass-card rounded-xl p-6 text-center">
+          <p className="text-sm font-medium mb-4 text-white/70">Scan to verify receipt</p>
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-white rounded-xl">
+              <img src={qrCode} alt="Receipt QR Code" className="w-48 h-48" />
+            </div>
+          </div>
+          <Button type="button" onClick={downloadQR} variant="secondary" className="w-full">
+            📥 Download QR Code
+          </Button>
+        </div>
+      )}
+
+      {qrError && (
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-400">
+          {qrError}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Button
+          type="button"
+          onClick={() => window.location.href = getVerifyUrl()}
+          variant="secondary"
+          className="w-full"
+        >
+          👁️ View Receipt
+        </Button>
+      </div>
+
+      {shareStatus && (
+        <p className="text-xs text-white/55 px-1">{shareStatus}</p>
+      )}
     </div>
   );
 }
