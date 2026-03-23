@@ -246,7 +246,7 @@ All tests live in `tests/` (never inline in production files).
 
 ## 11) Source Signals Used (via Exa)
 - Next.js 16.2 release notes: https://nextjs.org/blog/next-16-2
-- Next.js releases: https://github.com/vercel/next.js/releases
+- Next.js release archive: https://nextjs.org/blog
 - Cloudflare Workers Observability: https://developers.cloudflare.com/workers/observability/
 - Cloudflare Workers Tracing: https://developers.cloudflare.com/workers/observability/traces/
 - Durable Objects best practices: https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/

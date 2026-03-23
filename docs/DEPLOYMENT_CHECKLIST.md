@@ -56,9 +56,18 @@ Set in: Repository → Settings → Secrets and variables → Actions
 - [ ] `NEXT_PUBLIC_APP_URL` - Production URL (optional)
 
 ### Verify CI/CD
-- [ ] Push to main triggers deployment
+- [ ] Push to `main` triggers deployment automatically
+- [ ] PRs run CI only (no Cloudflare deploy on PR events)
 - [ ] Check Actions tab for workflow status
 - [ ] Verify deployment in Cloudflare dashboard
+
+### Fix CI/CD Break (Missing `apiToken`)
+1. [ ] Add required GitHub Actions secrets:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+2. [ ] Re-run the failed workflow:
+   - GitHub → Actions → `Deploy to Cloudflare Pages` → **Re-run jobs**
+3. [ ] If the failed run was a PR event, push to `main` to trigger automated deploy in secret-enabled context
 
 ## Custom Domain (Optional)
 

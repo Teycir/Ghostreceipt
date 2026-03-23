@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Full-Term Purge Means Case-Insensitive Repo Sweep
+- When the user requests a full platform-term purge, do a case-insensitive repo-wide search and remove all residual docs references, not only runtime config.
+- After documentation cleanups, always run a final zero-match verification command before closing.
+
 ## 2026-03-23 - Pages Deploy Needs Worker Config Isolation
 - When a repo has a Worker-focused `wrangler.toml` with incomplete KV bindings, `wrangler whoami` can fail from project root even though Pages commands still work.
 - For reliable CI/CLI deploys, run auth checks with `--cwd /tmp` (or another clean directory) and keep Pages deploy/secret commands explicit (`wrangler pages ...`).

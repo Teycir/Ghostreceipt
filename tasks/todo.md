@@ -1,3 +1,52 @@
+# Task Plan: Fully Automated Cloudflare Deploy (No PR Secret Traps)
+
+- [x] Remove deploy workflow PR trigger that cannot reliably access repository secrets.
+- [x] Keep deployment automatic on `push` to `main` and support manual `workflow_dispatch`.
+- [x] Add explicit secret validation before running Cloudflare Pages action.
+- [x] Update deployment checklist to reflect automated trigger behavior.
+
+## Review
+- Deployment workflow now runs automatically on `main` pushes (and manual dispatch), not on PR events.
+- Added a dedicated validation step that fails early with a clear error if required Cloudflare secrets are missing.
+- Deployment checklist now documents that PRs are CI-only and deploy is push-to-main driven.
+
+# Task Plan: Add CI/CD Recovery Steps to Deployment Checklist
+
+- [x] Add explicit checklist step to configure required Cloudflare GitHub secrets.
+- [x] Add explicit checklist step to re-run failed deployment workflow after secrets are set.
+- [x] Verify the new section is present in `docs/DEPLOYMENT_CHECKLIST.md`.
+
+## Review
+- Added a dedicated "Fix CI/CD Break (Missing apiToken)" subsection in the deployment checklist with two actionable steps:
+  1. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in GitHub Actions secrets.
+  2. Re-run the failed workflow from the Actions tab.
+
+# Task Plan: CI/CD Deploy Secret Guard (Cloudflare Pages)
+
+- [x] Confirm deployment workflow failure source for missing Cloudflare token input.
+- [x] Guard Cloudflare deploy step against missing `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`.
+- [x] Add explicit workflow warning when deployment is skipped due to missing secrets.
+- [x] Verify workflow file no longer calls Pages action without secret checks.
+
+## Review
+- Root cause confirmed in `.github/workflows/deploy.yml`: unguarded `cloudflare/pages-action@v1` invocation on PR/push paths.
+- Added secret-presence guard on deploy step and a clear skip warning step when secrets are missing.
+- Verification:
+  - Workflow now references `cloudflare/pages-action@v1` only behind an `if` condition requiring non-empty Cloudflare secrets.
+
+# Task Plan: Purge Legacy Platform References From Repo
+
+- [x] Identify all case-insensitive legacy platform mentions across tracked files.
+- [x] Remove or replace all legacy platform mentions with Cloudflare/generic alternatives.
+- [x] Run repo-wide verification to confirm zero matches remain.
+- [x] Record implementation + verification evidence.
+
+## Review
+- Updated [docs/runbooks/SECURITY.md](/home/teycir/Repos/GhostReceipt/docs/runbooks/SECURITY.md) to remove provider-mixing language and keep runtime storage guidance generic/Cloudflare-oriented.
+- Updated [docs/project/PLAN.md](/home/teycir/Repos/GhostReceipt/docs/project/PLAN.md) source signals to replace the legacy GitHub release URL with a Next.js blog archive link.
+- Verification:
+  - Case-insensitive repository sweep for the legacy keyword now returns no matches.
+
 # Task Plan: Oracle Volume Stress Test (100 Users/Hour + Concurrency)
 
 - [x] Add a dedicated stress integration test for `/api/oracle/fetch-tx` + `/api/oracle/verify-signature`.

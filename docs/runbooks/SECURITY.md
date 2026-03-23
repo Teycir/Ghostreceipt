@@ -158,7 +158,7 @@ This project currently operates a centralized oracle signing key for canonical t
 
 ### Runtime Storage Limits (Important)
 - Current replay protection and API rate limit stores are in-memory maps.
-- In serverless environments (Cloudflare Workers, Vercel functions, etc.), this state is instance-local and ephemeral.
+- In serverless environments (for example Cloudflare Workers), this state is instance-local and ephemeral.
 - Consequences:
   - Limits can reset on cold starts.
   - Cross-instance requests can bypass per-instance counters.
