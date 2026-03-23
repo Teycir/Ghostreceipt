@@ -1,3 +1,27 @@
+# Task Plan: Live E2E Oracle Integration (BTC + ETH)
+
+- [x] Add a live integration test suite that fetches real BTC and ETH transaction hashes at runtime.
+- [x] Cover full oracle flow per chain: `/api/oracle/fetch-tx` success + `/api/oracle/verify-signature` validation.
+- [x] Validate oracle commitment integrity against canonical payload in the live suite.
+- [x] Add a dedicated test script for running live integration tests explicitly.
+- [x] Run typecheck + live test command and record outcomes.
+
+## Review
+- Added new live integration suite: `tests/integration/live-oracle-flows.test.ts`
+  - dynamically discovers BTC tx hash from mempool tip block (`mempool.space`),
+  - dynamically discovers successful ETH tx hash from public RPCs (`eth.llamarpc.com`, `ethereum.publicnode.com`),
+  - executes end-to-end oracle flow per chain:
+    - `POST /api/oracle/fetch-tx` with live tx hash,
+    - schema + canonical payload assertions,
+    - commitment recomputation parity check (`computeOracleCommitment`),
+    - witness build/validate check with payload-derived claim bounds,
+    - `POST /api/oracle/verify-signature` and `valid === true`.
+- Added explicit command in `package.json`:
+  - `test:live:oracle` => `LIVE_INTEGRATION=1 jest tests/integration/live-oracle-flows.test.ts --runInBand`
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test:live:oracle` passes (BTC and ETH live flows).
+
 # Task Plan: Review-Driven Trust Clarity + Public Docs Hygiene
 
 - [x] Add a prominent trust-assumptions warning and CI status badge to `README.md`.

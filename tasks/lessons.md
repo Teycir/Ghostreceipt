@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Scope Realignment On User Correction
+- When the user explicitly redirects priority (for example from security follow-up to UI fix), stop expanding scope and execute the requested change immediately.
+- Keep optional follow-ups as suggestions only; do not continue them once the user says "no need."
+
 ## 2026-03-23 - Trust Assumptions Need Front-Page Visibility
 - For privacy/security products, keep trust-boundary disclosures (for example centralized oracle assumptions) prominent in top-level docs, not only in deep runbooks.
 - Keep user-facing docs technically synchronized with implementation details (for example signature scheme changes such as HMAC -> Ed25519).
