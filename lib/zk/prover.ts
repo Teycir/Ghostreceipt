@@ -1,5 +1,10 @@
 import { groth16 } from 'snarkjs';
 import type { ReceiptWitness } from './witness';
+import {
+  decodeSharePayload,
+  encodeSharePayload,
+  hasDangerousObjectKeys,
+} from '@/lib/libraries/zk';
 
 /**
  * Proof generation result
@@ -155,7 +160,7 @@ export class ProofGenerator {
       const parsed = JSON.parse(decoded);
 
       // Prevent prototype pollution
-      if (hasDangerousKeys(parsed)) {
+      if (hasDangerousObjectKeys(parsed)) {
         throw new Error('Invalid proof format: potentially malicious structure');
       }
 
@@ -188,36 +193,6 @@ export class ProofGenerator {
   }
 }
 
-const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-
-function hasDangerousKeys(value: unknown): boolean {
-  const stack: unknown[] = [value];
-
-  while (stack.length > 0) {
-    const current = stack.pop();
-
-    if (current === null || typeof current !== 'object') {
-      continue;
-    }
-
-    if (Array.isArray(current)) {
-      for (const item of current) {
-        stack.push(item);
-      }
-      continue;
-    }
-
-    for (const [key, entryValue] of Object.entries(current)) {
-      if (DANGEROUS_KEYS.has(key)) {
-        return true;
-      }
-      stack.push(entryValue);
-    }
-  }
-
-  return false;
-}
-
 /**
  * Create proof generator with default paths
  */
@@ -227,32 +202,4 @@ export function createProofGenerator(): ProofGenerator {
     '/zk/receipt_final.zkey',
     '/zk/verification_key.json'
   );
-}
-
-function encodeSharePayload(jsonPayload: string): string {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(jsonPayload, 'utf8').toString('base64url');
-  }
-
-  const bytes = new TextEncoder().encode(jsonPayload);
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
-}
-
-function decodeSharePayload(encodedPayload: string): string {
-  const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-  const normalized = `${base64}${padding}`;
-
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(normalized, 'base64').toString('utf8');
-  }
-
-  const binary = atob(normalized);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
 }

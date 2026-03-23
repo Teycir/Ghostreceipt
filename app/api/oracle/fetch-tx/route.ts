@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'crypto';
 import {
   CanonicalTxDataSchema,
   type ErrorResponse,
@@ -11,13 +10,17 @@ import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
-import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { replayProtection } from '@/lib/security/replay';
 import { parseSecureJson } from '@/lib/security/secure-json';
 import { secureError } from '@/lib/security/secure-logging';
 import type { Provider, ProviderError } from '@/lib/providers/types';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
+import {
+  createRateLimitErrorResponse,
+  getCachedOracleSignerFromEnv,
+  resetCachedOracleSignerForTests,
+} from '@/lib/libraries/backend';
 
 const rateLimiter = createRateLimiter({
   windowMs: 60000,
@@ -30,31 +33,6 @@ const globalRateLimiter = createRateLimiter({
 });
 
 const ANON_IDEMPOTENCY_COOKIE = 'gr_sid';
-let oracleSignerCache: { privateKeyFingerprint: string; signer: OracleSigner } | null = null;
-
-function fingerprintPrivateKey(privateKey: string): string {
-  return createHash('sha256').update(privateKey).digest('hex');
-}
-
-function getOracleSigner(): OracleSigner {
-  const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
-  if (!oraclePrivateKey) {
-    throw new Error('Oracle private key not configured');
-  }
-  const privateKeyFingerprint = fingerprintPrivateKey(oraclePrivateKey);
-
-  if (
-    oracleSignerCache === null ||
-    oracleSignerCache.privateKeyFingerprint !== privateKeyFingerprint
-  ) {
-    oracleSignerCache = {
-      privateKeyFingerprint,
-      signer: new OracleSigner(oraclePrivateKey),
-    };
-  }
-
-  return oracleSignerCache.signer;
-}
 
 function createAnonymousSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -231,40 +209,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const globalRateLimit = globalRateLimiter.check('global');
 
     if (!globalRateLimit.allowed) {
-      const errorResponse: ErrorResponse = {
-        error: {
-          code: 'RATE_LIMIT_EXCEEDED',
+      return withSession(
+        createRateLimitErrorResponse({
+          limit: 200,
           message: 'Service is busy. Please try again later.',
-        },
-      };
-      return withSession(NextResponse.json(errorResponse, {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': '200',
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': new Date(globalRateLimit.resetAt).toISOString(),
-        },
-      }));
+          resetAt: globalRateLimit.resetAt,
+        })
+      );
     }
 
     if (clientId) {
       const rateLimit = rateLimiter.check(clientId);
 
       if (!rateLimit.allowed) {
-        const errorResponse: ErrorResponse = {
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
+        return withSession(
+          createRateLimitErrorResponse({
+            limit: 10,
             message: 'Too many requests. Please try again later.',
-          },
-        };
-        return withSession(NextResponse.json(errorResponse, {
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': '10',
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
-          },
-        }));
+            resetAt: rateLimit.resetAt,
+          })
+        );
       }
     }
     // Parse request body with security controls
@@ -396,7 +360,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Sign canonical data
-    const signer = getOracleSigner();
+    const signer = getCachedOracleSignerFromEnv();
     const messageHash = await computeOracleCommitment(canonicalDataResult.data);
     const signedPayload: OraclePayloadV1 = {
       ...canonicalDataResult.data,
@@ -441,4 +405,5 @@ export function __disposeOracleFetchRouteForTests(): void {
   rateLimiter.dispose();
   globalRateLimiter.dispose();
   replayProtection.dispose();
+  resetCachedOracleSignerForTests();
 }

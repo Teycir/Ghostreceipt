@@ -1,3 +1,35 @@
+# Task Plan: Reusable Libraries Split (UI + Backend + ZK)
+
+- [x] Create reusable library namespaces under `lib/libraries/` for `ui`, `backend`, and `zk`.
+- [x] Encapsulate premium-select UI logic/styles into reusable UI library primitives.
+- [x] Extract easy backend reusable primitives (oracle signer cache + API error helpers) into backend library and adopt in routes.
+- [x] Extract reusable ZK payload helpers (encode/decode + malicious-structure guard) into zk library and adopt in prover.
+- [x] Add reusable library entry points and short usage documentation for future zk apps.
+- [x] Verify with typecheck.
+
+## Review
+- Added reusable library namespaces and entry points:
+  - [`lib/libraries/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/index.ts)
+  - [`lib/libraries/ui/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/ui/index.ts)
+  - [`lib/libraries/backend/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend/index.ts)
+  - [`lib/libraries/zk/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/zk/index.ts)
+- UI encapsulation:
+  - moved premium select component into reusable UI library [`lib/libraries/ui/components/premium-select.tsx`](/home/teycir/Repos/GhostReceipt/lib/libraries/ui/components/premium-select.tsx),
+  - extracted premium select classes/helpers into [`lib/libraries/ui/premium-select.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/ui/premium-select.ts),
+  - preserved compatibility by re-exporting as app `Select` in [`components/ui/select.tsx`](/home/teycir/Repos/GhostReceipt/components/ui/select.tsx).
+- Backend reuse extraction:
+  - added reusable API error/rate-limit response helpers in [`lib/libraries/backend/http-errors.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend/http-errors.ts),
+  - added shared oracle-signer env cache in [`lib/libraries/backend/oracle-signer-cache.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend/oracle-signer-cache.ts),
+  - adopted helpers in routes:
+    - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+    - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- ZK reuse extraction:
+  - moved share payload encode/decode + dangerous-key scan into [`lib/libraries/zk/share-payload.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/zk/share-payload.ts),
+  - updated [`lib/zk/prover.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/prover.ts) to consume these library primitives.
+- Added reuse documentation + low-effort backend/zk extraction candidates for future apps in [`lib/libraries/README.md`](/home/teycir/Repos/GhostReceipt/lib/libraries/README.md).
+- Verification:
+  - `npm run typecheck` passes.
+
 # Task Plan: Premium Dropdown Items (CodePen-Inspired Option 1)
 
 - [x] Port a premium glassmorphism dropdown style inspired by the selected CodePen direction.

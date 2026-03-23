@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-23 - Cross-App Reuse Requests Should Become Concrete Library Boundaries
+- When the user asks for future-project reuse, extract concrete primitives/components into explicit `lib/libraries/{ui,backend,zk}` namespaces instead of keeping logic inside app routes/components.
+- Keep existing app imports stable with thin compatibility wrappers while moving implementation into library modules.
+- For backend reuse, prioritize low-risk extractions first (response helpers, signer cache, payload utilities) before deeper architectural rewrites.
+
 ## 2026-03-23 - Footer Social Icons Should Be Self-Explanatory
 - If social icons are obvious, avoid redundant labels like `Share:` unless explicitly requested.
 - For fixed bottom footers, prioritize small-screen wrapping and larger icon tap areas so mobile users can use links without crowding.

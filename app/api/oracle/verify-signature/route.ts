@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'crypto';
 import { z } from 'zod';
 import { OracleCommitmentSchema, type ErrorResponse } from '@/lib/validation/schemas';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { parseSecureJson } from '@/lib/security/secure-json';
 import { safeHexEqual } from '@/lib/security/safe-compare';
+import {
+  createRateLimitErrorResponse,
+  getCachedOracleSignerFromEnv,
+  resetCachedOracleSignerForTests,
+} from '@/lib/libraries/backend';
 
 const rateLimiter = createRateLimiter({
   windowMs: 60000,
@@ -16,32 +20,6 @@ const globalRateLimiter = createRateLimiter({
   windowMs: 60000,
   maxRequests: 200,
 });
-
-let oracleSignerCache: { privateKeyFingerprint: string; signer: OracleSigner } | null = null;
-
-function fingerprintPrivateKey(privateKey: string): string {
-  return createHash('sha256').update(privateKey).digest('hex');
-}
-
-function getOracleSignerFromPrivateKey(): OracleSigner {
-  const oraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
-  if (!oraclePrivateKey) {
-    throw new Error('Oracle key not configured (set ORACLE_PUBLIC_KEY or ORACLE_PRIVATE_KEY)');
-  }
-  const privateKeyFingerprint = fingerprintPrivateKey(oraclePrivateKey);
-
-  if (
-    oracleSignerCache === null ||
-    oracleSignerCache.privateKeyFingerprint !== privateKeyFingerprint
-  ) {
-    oracleSignerCache = {
-      privateKeyFingerprint,
-      signer: new OracleSigner(oraclePrivateKey),
-    };
-  }
-
-  return oracleSignerCache.signer;
-}
 
 const VerifySignatureRequestSchema = z.object({
   messageHash: OracleCommitmentSchema,
@@ -54,38 +32,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const clientId = getClientIdentifier(request);
   const globalRateLimit = globalRateLimiter.check('global');
   if (!globalRateLimit.allowed) {
-    const errorResponse: ErrorResponse = {
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Service is busy. Please try again later.',
-      },
-    };
-    return NextResponse.json(errorResponse, {
-      status: 429,
-      headers: {
-        'X-RateLimit-Limit': '200',
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': new Date(globalRateLimit.resetAt).toISOString(),
-      },
+    return createRateLimitErrorResponse({
+      limit: 200,
+      message: 'Service is busy. Please try again later.',
+      resetAt: globalRateLimit.resetAt,
     });
   }
 
   if (clientId) {
     const rateLimit = rateLimiter.check(clientId);
     if (!rateLimit.allowed) {
-      const errorResponse: ErrorResponse = {
-        error: {
-          code: 'RATE_LIMIT_EXCEEDED',
-          message: 'Too many requests. Please try again later.',
-        },
-      };
-      return NextResponse.json(errorResponse, {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': '20',
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': new Date(rateLimit.resetAt).toISOString(),
-        },
+      return createRateLimitErrorResponse({
+        limit: 20,
+        message: 'Too many requests. Please try again later.',
+        resetAt: rateLimit.resetAt,
       });
     }
   }
@@ -152,7 +112,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(errorResponse, { status: 500 });
   }
 
-  const signer = getOracleSignerFromPrivateKey();
+  const signer = getCachedOracleSignerFromEnv({
+    missingKeyMessage: 'Oracle key not configured (set ORACLE_PUBLIC_KEY or ORACLE_PRIVATE_KEY)',
+  });
   return NextResponse.json({
     valid: signer.verifySignature(
       parsed.data.messageHash,
@@ -165,4 +127,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export function __disposeOracleVerifyRouteForTests(): void {
   rateLimiter.dispose();
   globalRateLimiter.dispose();
+  resetCachedOracleSignerForTests();
 }
