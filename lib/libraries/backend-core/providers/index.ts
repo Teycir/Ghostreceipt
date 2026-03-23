@@ -1,8 +1,11 @@
 export { ProviderCascade } from './cascade';
 export { ApiKeyCascade } from './api-key-cascade';
 export type {
+  ApiKeyCascadeConfig,
   ApiKeyCascadeExecutionContext,
   ApiKeyCascadeExecuteOptions,
+  ApiKeyCascadeMetricsKeySnapshot,
+  ApiKeyCascadeMetricsSnapshot,
 } from './api-key-cascade';
 export type {
   ApiKeyConfig,

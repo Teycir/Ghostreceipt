@@ -104,10 +104,27 @@
 
 - [ ] Configure Helius key pool in local/deployment secret stores only (no tracked file commits).
 - [x] Add Solana provider integration to consume Helius key cascade from secrets.
-- [ ] Add runtime health metrics for Helius key rotation and failover.
+- [x] Add runtime health metrics for Helius key rotation and failover.
 - [ ] Create deferred implementation track for Alchemy integration (blocked by technical constraints).
 - [ ] Create deferred implementation track for Monero provider/circuit integration (blocked by technical constraints).
 - [ ] Revisit deferred tracks after constraints are resolved and move them into active milestone execution.
+
+## Review (Latest Increment)
+- Added shared cross-request key-cascade metrics registry (scope-based) with per-key success/failure counters:
+  - [`lib/libraries/backend-core/providers/api-key-cascade.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/api-key-cascade.ts)
+- Exported new metrics types/config through provider indexes:
+  - [`lib/libraries/backend-core/providers/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/index.ts)
+  - [`lib/providers/api-key-cascade.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/api-key-cascade.ts)
+- Wired runtime metrics scopes into providers and exposed static snapshot/reset helpers:
+  - [`lib/providers/solana/helius.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/solana/helius.ts)
+  - [`lib/providers/ethereum/etherscan.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/ethereum/etherscan.ts)
+- Added tests for shared metrics behavior and provider failover metrics:
+  - [`tests/unit/providers/api-key-cascade.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/api-key-cascade.test.ts)
+  - [`tests/unit/providers/helius.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/helius.test.ts)
+  - [`tests/unit/providers/etherscan.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/etherscan.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/providers/api-key-cascade.test.ts tests/unit/providers/helius.test.ts tests/unit/providers/etherscan.test.ts --runInBand` passes.
 
 # Task Plan: Enhancement Phase 1 (Cryptographic Robustness + Speed)
 

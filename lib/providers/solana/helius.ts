@@ -3,7 +3,10 @@ import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { SolanaTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureError, secureWarn } from '@/lib/security/secure-logging';
-import { ApiKeyCascade } from '@/lib/libraries/backend-core/providers/api-key-cascade';
+import {
+  ApiKeyCascade,
+  type ApiKeyCascadeMetricsSnapshot,
+} from '@/lib/libraries/backend-core/providers/api-key-cascade';
 
 interface JsonRpcError {
   code?: number;
@@ -54,6 +57,7 @@ interface SignatureStatusesResult {
 }
 
 const HELIUS_RPC_BASE_URL = 'https://mainnet.helius-rpc.com/';
+const HELIUS_METRICS_SCOPE = 'provider:helius';
 
 export class HeliusProvider implements SolanaProvider {
   readonly name = 'helius';
@@ -71,7 +75,17 @@ export class HeliusProvider implements SolanaProvider {
   private readonly keyCascade: ApiKeyCascade;
 
   constructor(apiKeyConfig: ApiKeyConfig) {
-    this.keyCascade = new ApiKeyCascade(apiKeyConfig);
+    this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
+      metricsScope: HELIUS_METRICS_SCOPE,
+    });
+  }
+
+  static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {
+    return ApiKeyCascade.getMetricsSnapshot(HELIUS_METRICS_SCOPE);
+  }
+
+  static resetRuntimeMetricsForTests(): void {
+    ApiKeyCascade.resetMetricsForTests(HELIUS_METRICS_SCOPE);
   }
 
   async fetchTransaction(txHash: string, signal?: AbortSignal): Promise<CanonicalTxData> {
@@ -106,6 +120,7 @@ export class HeliusProvider implements SolanaProvider {
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error('Unknown error');
       if (normalizedError.message.startsWith('All API keys exhausted')) {
+        secureError(`[${this.name}] API key pool exhausted`, HeliusProvider.getRuntimeMetrics());
         const causeMessage =
           normalizedError.cause instanceof Error
             ? normalizedError.cause.message

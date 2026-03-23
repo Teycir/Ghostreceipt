@@ -3,7 +3,10 @@ import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureWarn, secureError } from '@/lib/security/secure-logging';
-import { ApiKeyCascade } from '@/lib/libraries/backend-core/providers/api-key-cascade';
+import {
+  ApiKeyCascade,
+  type ApiKeyCascadeMetricsSnapshot,
+} from '@/lib/libraries/backend-core/providers/api-key-cascade';
 
 /**
  * Etherscan proxy API response types
@@ -39,6 +42,7 @@ interface EtherscanProxyBlock {
 
 const ETHEREUM_CHAIN_ID = '1';
 const HEX_QUANTITY_REGEX = /^0x[0-9a-f]+$/i;
+const ETHERSCAN_METRICS_SCOPE = 'provider:etherscan';
 
 /**
  * Etherscan provider with API key cascade
@@ -60,7 +64,17 @@ export class EtherscanProvider implements EthereumProvider {
   private readonly keyCascade: ApiKeyCascade;
 
   constructor(apiKeyConfig: ApiKeyConfig) {
-    this.keyCascade = new ApiKeyCascade(apiKeyConfig);
+    this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
+      metricsScope: ETHERSCAN_METRICS_SCOPE,
+    });
+  }
+
+  static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {
+    return ApiKeyCascade.getMetricsSnapshot(ETHERSCAN_METRICS_SCOPE);
+  }
+
+  static resetRuntimeMetricsForTests(): void {
+    ApiKeyCascade.resetMetricsForTests(ETHERSCAN_METRICS_SCOPE);
   }
 
   async fetchTransaction(
@@ -95,6 +109,7 @@ export class EtherscanProvider implements EthereumProvider {
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error('Unknown error');
       if (normalizedError.message.startsWith('All API keys exhausted')) {
+        secureError(`[${this.name}] API key pool exhausted`, EtherscanProvider.getRuntimeMetrics());
         const causeMessage =
           normalizedError.cause instanceof Error
             ? normalizedError.cause.message

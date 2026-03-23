@@ -1,7 +1,12 @@
 import { ApiKeyCascade } from '@/lib/libraries/backend-core/providers/api-key-cascade';
 
 describe('ApiKeyCascade', () => {
+  beforeEach(() => {
+    ApiKeyCascade.resetMetricsForTests();
+  });
+
   afterEach(() => {
+    ApiKeyCascade.resetMetricsForTests();
     jest.restoreAllMocks();
   });
 
@@ -98,5 +103,85 @@ describe('ApiKeyCascade', () => {
       expect(cast.cause).toBeInstanceOf(Error);
       expect((cast.cause as Error).message).toBe('HTTP 503: Service unavailable');
     }
+  });
+
+  it('tracks shared runtime metrics across instances in the same scope', async () => {
+    const scope = 'test-shared-scope';
+
+    const cascadeA = new ApiKeyCascade(
+      {
+        keys: ['key-1', 'key-2'],
+        rotationStrategy: 'round-robin',
+        shuffleOnStartup: false,
+      },
+      { metricsScope: scope }
+    );
+
+    const cascadeB = new ApiKeyCascade(
+      {
+        keys: ['key-1', 'key-2'],
+        rotationStrategy: 'round-robin',
+        shuffleOnStartup: false,
+      },
+      { metricsScope: scope }
+    );
+
+    await cascadeA.execute(async () => 'ok', { delayBetweenAttemptsMs: 0 });
+
+    await expect(
+      cascadeB.execute(
+        async (apiKey) => {
+          if (apiKey === 'key-1') {
+            throw new Error('Rate limit exceeded');
+          }
+          return 'ok';
+        },
+        { delayBetweenAttemptsMs: 0 }
+      )
+    ).resolves.toBe('ok');
+
+    const metrics = ApiKeyCascade.getMetricsSnapshot(scope);
+    expect(metrics).not.toBeNull();
+    expect(metrics?.totalExecutions).toBe(2);
+    expect(metrics?.totalAttempts).toBe(3);
+    expect(metrics?.totalSuccesses).toBe(2);
+    expect(metrics?.totalFailures).toBe(1);
+    expect(metrics?.totalExhausted).toBe(0);
+    expect(metrics?.totalNonRetryableStops).toBe(0);
+    expect(metrics?.keys[0]?.failures).toBe(1);
+    expect(metrics?.keys[1]?.successes).toBe(1);
+  });
+
+  it('tracks non-retryable stops without counting them as exhausted', async () => {
+    const scope = 'test-non-retryable-stop';
+    const cascade = new ApiKeyCascade(
+      {
+        keys: ['key-1', 'key-2'],
+        rotationStrategy: 'round-robin',
+        shuffleOnStartup: false,
+      },
+      { metricsScope: scope }
+    );
+
+    await expect(
+      cascade.execute(
+        async () => {
+          throw new Error('Transaction not found');
+        },
+        {
+          delayBetweenAttemptsMs: 0,
+          isNonRetryableError: (error) =>
+            error.message.toLowerCase().includes('not found'),
+        }
+      )
+    ).rejects.toThrow('Transaction not found');
+
+    const metrics = ApiKeyCascade.getMetricsSnapshot(scope);
+    expect(metrics).not.toBeNull();
+    expect(metrics?.totalExecutions).toBe(1);
+    expect(metrics?.totalAttempts).toBe(1);
+    expect(metrics?.totalFailures).toBe(1);
+    expect(metrics?.totalNonRetryableStops).toBe(1);
+    expect(metrics?.totalExhausted).toBe(0);
   });
 });

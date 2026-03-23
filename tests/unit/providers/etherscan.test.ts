@@ -7,7 +7,12 @@ const makeProvider = () => new EtherscanProvider({
 });
 
 describe('EtherscanProvider', () => {
+  beforeEach(() => {
+    EtherscanProvider.resetRuntimeMetricsForTests();
+  });
+
   afterEach(() => {
+    EtherscanProvider.resetRuntimeMetricsForTests();
     jest.restoreAllMocks();
   });
 
@@ -216,5 +221,14 @@ describe('EtherscanProvider', () => {
     const secondCallUrl = String(fetchMock.mock.calls[1]?.[0] ?? '');
     expect(firstCallUrl).toContain('apikey=key-2');
     expect(secondCallUrl).toContain('apikey=key-3');
+
+    const metrics = EtherscanProvider.getRuntimeMetrics();
+    expect(metrics).not.toBeNull();
+    expect(metrics?.totalExecutions).toBe(1);
+    expect(metrics?.totalAttempts).toBe(2);
+    expect(metrics?.totalSuccesses).toBe(1);
+    expect(metrics?.totalFailures).toBe(1);
+    expect(metrics?.keys[1]?.failures).toBe(1);
+    expect(metrics?.keys[2]?.successes).toBe(1);
   });
 });

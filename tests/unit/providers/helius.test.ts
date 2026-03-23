@@ -10,7 +10,12 @@ const makeProvider = () =>
 const sampleSignature = '1111111111111111111111111111111111111111111111111111111111111111';
 
 describe('HeliusProvider', () => {
+  beforeEach(() => {
+    HeliusProvider.resetRuntimeMetricsForTests();
+  });
+
   afterEach(() => {
+    HeliusProvider.resetRuntimeMetricsForTests();
     jest.restoreAllMocks();
   });
 
@@ -154,5 +159,79 @@ describe('HeliusProvider', () => {
     const secondCallUrl = String(fetchMock.mock.calls[1]?.[0] ?? '');
     expect(firstCallUrl).toContain('api-key=key-2');
     expect(secondCallUrl).toContain('api-key=key-3');
+  });
+
+  it('exposes runtime failover metrics across attempts', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.4); // index 1 -> key-2
+
+    const provider = new HeliusProvider({
+      keys: ['key-1', 'key-2', 'key-3'],
+      rotationStrategy: 'random',
+      shuffleOnStartup: false,
+    });
+
+    jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            slot: 2,
+            blockTime: 1700000000,
+            transaction: {
+              message: {
+                recentBlockhash: 'BlockHash3',
+                instructions: [
+                  {
+                    program: 'system',
+                    parsed: {
+                      type: 'transfer',
+                      info: {
+                        lamports: 11,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+            meta: {
+              innerInstructions: [],
+            },
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            value: [{ confirmationStatus: 'confirmed', confirmations: 2 }],
+          },
+        }),
+      } as Response);
+
+    await provider.fetchTransaction(sampleSignature);
+
+    const metrics = HeliusProvider.getRuntimeMetrics();
+    expect(metrics).not.toBeNull();
+    expect(metrics?.totalExecutions).toBe(1);
+    expect(metrics?.totalAttempts).toBe(2);
+    expect(metrics?.totalSuccesses).toBe(1);
+    expect(metrics?.totalFailures).toBe(1);
+    expect(metrics?.totalExhausted).toBe(0);
+    expect(metrics?.totalNonRetryableStops).toBe(0);
+    expect(metrics?.keys[1]?.failures).toBe(1); // key-2 first attempt
+    expect(metrics?.keys[2]?.successes).toBe(1); // key-3 success after failover
   });
 });
