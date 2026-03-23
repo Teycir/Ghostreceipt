@@ -133,7 +133,8 @@ const fragmentShader = `
   }
 
   void main() {
-    vec2 p = vUv * 2.0 - 1.0;
+    vec2 centeredUv = vUv * 2.0 - 1.0;
+    vec2 p = centeredUv;
     p.x *= u_resolution.x / u_resolution.y;
 
     float t = u_time * u_speed;
@@ -158,8 +159,9 @@ const fragmentShader = `
     float dither = fract((p3.x + p3.y) * p3.z);
     color += (dither - 0.5) * u_grain;
 
-    float dist = length(p);
-    float mask = smoothstep(1.8, 0.2, dist);
+    // Use unscaled UVs for vignette so ultra-wide screens do not look clipped.
+    float dist = length(centeredUv);
+    float mask = smoothstep(1.35, 0.15, dist);
     color *= mask;
 
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
