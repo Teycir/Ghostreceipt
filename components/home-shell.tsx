@@ -36,7 +36,14 @@ export function HomeShell(): React.JSX.Element {
     <>
       <EyeCandy onReady={() => setBackgroundReady(true)} />
 
-      <div className={`startup-overlay ${loading ? 'startup-overlay--visible' : 'startup-overlay--hidden'}`}>
+      <div
+        className={`startup-overlay ${loading ? 'startup-overlay--visible' : 'startup-overlay--hidden'}`}
+        style={{
+          opacity: loading ? 1 : 0,
+          visibility: loading ? 'visible' : 'hidden',
+          pointerEvents: loading ? 'auto' : 'none',
+        }}
+      >
         <div className="startup-overlay__blob startup-overlay__blob--a" />
         <div className="startup-overlay__blob startup-overlay__blob--b" />
         <div className="startup-overlay__blob startup-overlay__blob--c" />
@@ -50,7 +57,14 @@ export function HomeShell(): React.JSX.Element {
         </div>
       </div>
 
-      <div className={`main-shell ${loading ? 'main-shell--loading' : 'main-shell--ready'}`}>
+      <div
+        className={`main-shell ${loading ? 'main-shell--loading' : 'main-shell--ready'}`}
+        style={{
+          opacity: loading ? 0 : 1,
+          pointerEvents: loading ? 'none' : 'auto',
+          transition: 'opacity 520ms ease',
+        }}
+      >
         <main className="flex min-h-screen flex-col items-center justify-center p-4 pb-20">
           <div className="w-full max-w-2xl space-y-8 fade-up">
             <div className="text-center space-y-3">
