@@ -1,3 +1,50 @@
+# Task Plan: Informational Loader (xmrproof-Inspired Use Cases)
+
+- [x] Add informational use-case messaging to startup loader.
+- [x] Rotate multiple practical GhostReceipt use cases during load.
+- [x] Keep transition from loader to main UI as a smooth fade.
+- [x] Run typecheck/build and record outcomes.
+
+## Review
+- Updated [`components/home-shell.tsx`](/home/teycir/Repos/GhostReceipt/components/home-shell.tsx) to include:
+  - rotating loader use-case cards,
+  - explanatory startup status copy,
+  - smoother cross-fade timing into the main UI.
+- Updated [`app/globals.css`](/home/teycir/Repos/GhostReceipt/app/globals.css) with:
+  - use-case card styles,
+  - entry animation for rotating informational content,
+  - active indicator dots for use-case progression.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run build` passes (existing export/middleware/viewport warnings unchanged).
+
+# Task Plan: Premium Form Polish + Social Share Actions
+
+- [x] Upgrade dropdown/select visuals to a premium glass+gradient style.
+- [x] Upgrade primary CTA button styling to a premium gradient treatment.
+- [x] Add social sharing actions to receipt success flow (native share + platform links).
+- [x] Verify with typecheck and production build.
+
+## Review
+- Upgraded shared select styling in [`components/ui/select.tsx`](/home/teycir/Repos/GhostReceipt/components/ui/select.tsx) with:
+  - richer glass gradient surface,
+  - custom chevron icon,
+  - stronger premium border/focus states.
+- Upgraded shared button styling in [`components/ui/button.tsx`](/home/teycir/Repos/GhostReceipt/components/ui/button.tsx) with:
+  - premium blue gradient primary CTA,
+  - deeper depth/shadow treatment,
+  - improved focus ring and typography feel.
+- Added social sharing actions in [`components/generator/receipt-success.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/receipt-success.tsx):
+  - native share button (`navigator.share` fallback to copy),
+  - quick-share buttons for X, Telegram, LinkedIn, Reddit,
+  - lightweight status feedback.
+- Hardened success-panel action buttons with explicit `type="button"` to avoid accidental form submits.
+- Reference alignment:
+  - Sanctum repo does not expose a dedicated social-share component in the expected path, so the implementation follows Sanctum’s practical share/copy action pattern and adapts it to GhostReceipt’s receipt flow.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run build` passes.
+
 # Task Plan: Add Branded Startup Loading Animation
 
 - [x] Introduce a home startup overlay with motion matching the liquid blue shader visual language.

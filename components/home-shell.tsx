@@ -9,10 +9,31 @@ import TextPressure from '@/components/text-pressure';
 
 const MIN_LOADING_MS = 1100;
 const FAILSAFE_LOADING_MS = 2800;
+const USE_CASE_ROTATE_MS = 1700;
+
+const LOADER_USE_CASES = [
+  {
+    title: 'Merchant Dispute Proofs',
+    description: 'Share a verifiable receipt link when a customer disputes a crypto payment.',
+  },
+  {
+    title: 'Freelancer Invoice Confirmation',
+    description: 'Prove that a BTC or ETH payment landed for a specific amount and date.',
+  },
+  {
+    title: 'Audit-Ready Payment Records',
+    description: 'Keep private yet verifiable receipts for accounting and compliance workflows.',
+  },
+  {
+    title: 'Escrow & Third-Party Verification',
+    description: 'Let counterparties validate payment evidence without exposing private wallet details.',
+  },
+] as const;
 
 export function HomeShell(): React.JSX.Element {
   const [backgroundReady, setBackgroundReady] = useState(false);
   const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const [useCaseIndex, setUseCaseIndex] = useState(0);
 
   useEffect(() => {
     const minTimer = window.setTimeout(() => setMinimumElapsed(true), MIN_LOADING_MS);
@@ -31,6 +52,20 @@ export function HomeShell(): React.JSX.Element {
     () => !(backgroundReady && minimumElapsed),
     [backgroundReady, minimumElapsed]
   );
+
+  useEffect(() => {
+    if (!loading) {
+      return;
+    }
+
+    const rotateTimer = window.setInterval(() => {
+      setUseCaseIndex((prev) => (prev + 1) % LOADER_USE_CASES.length);
+    }, USE_CASE_ROTATE_MS);
+
+    return () => window.clearInterval(rotateTimer);
+  }, [loading]);
+
+  const activeUseCase = LOADER_USE_CASES[useCaseIndex] ?? LOADER_USE_CASES[0];
 
   return (
     <>
@@ -51,6 +86,22 @@ export function HomeShell(): React.JSX.Element {
         <div className="startup-overlay__content">
           <p className="startup-overlay__brand">GhostReceipt</p>
           <p className="startup-overlay__tag">Prove the payment. Keep the privacy.</p>
+          <p className="startup-overlay__status">Initializing secure verification engine...</p>
+
+          <div key={useCaseIndex} className="startup-overlay__usecase">
+            <p className="startup-overlay__usecase-label">Use Case</p>
+            <p className="startup-overlay__usecase-title">{activeUseCase.title}</p>
+            <p className="startup-overlay__usecase-text">{activeUseCase.description}</p>
+            <div className="startup-overlay__usecase-dots" aria-hidden="true">
+              {LOADER_USE_CASES.map((item, index) => (
+                <span
+                  key={item.title}
+                  className={index === useCaseIndex ? 'is-active' : ''}
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="startup-overlay__bar">
             <span />
           </div>
@@ -62,7 +113,7 @@ export function HomeShell(): React.JSX.Element {
         style={{
           opacity: loading ? 0 : 1,
           pointerEvents: loading ? 'none' : 'auto',
-          transition: 'opacity 520ms ease',
+          transition: 'opacity 620ms ease 120ms',
         }}
       >
         <main className="flex min-h-screen flex-col items-center justify-center p-4 pb-20">

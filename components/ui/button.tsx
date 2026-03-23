@@ -12,16 +12,16 @@ export function Button({
 }: ButtonProps): React.JSX.Element {
   const variantStyles: Record<string, string> = {
     primary:
-      "bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/30 hover:shadow-blue-800/40",
+      "border border-blue-200/30 text-white bg-gradient-to-r from-[#2f66ff] via-[#4f7bff] to-[#6a71ff] shadow-[0_12px_30px_rgba(45,92,255,0.45)] hover:brightness-110 hover:shadow-[0_16px_34px_rgba(63,113,255,0.55)] active:scale-[0.99]",
     secondary:
-      "bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20",
+      "bg-white/7 border border-white/15 text-white/85 hover:bg-white/12 hover:text-white hover:border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]",
     danger:
       "bg-transparent border border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-400",
   };
 
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:pointer-events-none disabled:opacity-40 ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium tracking-[0.01em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:pointer-events-none disabled:opacity-40 ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {children}

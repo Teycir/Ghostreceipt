@@ -19,25 +19,47 @@ export function Select({
           {label}
         </label>
       )}
-      <select
-        className={`
-          flex h-10 w-full rounded-lg border px-3 py-2 text-sm
-          bg-white/[0.06] text-white
-          [color-scheme:dark]
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-0
-          disabled:cursor-not-allowed disabled:opacity-40
-          transition-colors duration-150
-          ${error
-            ? "border-red-500/50"
-            : "border-white/10 hover:border-white/20 focus-visible:border-blue-500/50"
-          }
-          ${className}
-        `}
-        style={{ colorScheme: 'dark' }}
-        {...props}
-      >
-        {children}
-      </select>
+      <div className="relative">
+        <select
+          className={`
+            flex h-11 w-full appearance-none rounded-xl border px-3 py-2 pr-10 text-sm
+            bg-[linear-gradient(120deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))]
+            text-white
+            [color-scheme:dark]
+            shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_28px_rgba(12,24,66,0.35)]
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/70 focus-visible:ring-offset-0
+            disabled:cursor-not-allowed disabled:opacity-40
+            transition-all duration-200
+            ${error
+              ? "border-red-500/50"
+              : "border-white/20 hover:border-blue-200/30 focus-visible:border-blue-300/50"
+            }
+            ${className}
+          `}
+          style={{ colorScheme: 'dark' }}
+          {...props}
+        >
+          {children}
+        </select>
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/70">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M6 9L12 15L18 9"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
       {error && (
         <span className="text-xs text-red-400/90">
           {error}

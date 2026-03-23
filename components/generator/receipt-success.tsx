@@ -20,6 +20,7 @@ export function ReceiptSuccess({
   const [qrCode, setQrCode] = useState<string>('');
   const [qrError, setQrError] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [shareStatus, setShareStatus] = useState<string>('');
 
   useEffect(() => {
     void generateQR();
@@ -61,8 +62,54 @@ export function ReceiptSuccess({
       await navigator.clipboard.writeText(getVerifyUrl());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      setShareStatus('Link copied');
     } catch (error) {
       console.error('Copy failed:', error instanceof Error ? error.message : error);
+      setShareStatus('Copy failed');
+    }
+  };
+
+  const getShareText = (): string => {
+    return `I generated a privacy-preserving ${chain} receipt with GhostReceipt. Verify it here:`;
+  };
+
+  const shareToNetwork = (network: 'x' | 'telegram' | 'linkedin' | 'reddit'): void => {
+    const url = encodeURIComponent(getVerifyUrl());
+    const text = encodeURIComponent(getShareText());
+    const title = encodeURIComponent('GhostReceipt verification link');
+
+    const shareUrls: Record<typeof network, string> = {
+      x: `https://x.com/intent/tweet?text=${text}%20${url}`,
+      telegram: `https://t.me/share/url?url=${url}&text=${text}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+      reddit: `https://www.reddit.com/submit?url=${url}&title=${title}`,
+    };
+
+    window.open(shareUrls[network], '_blank', 'noopener,noreferrer');
+  };
+
+  const shareNatively = async (): Promise<void> => {
+    const shareData = {
+      title: 'GhostReceipt Verification Link',
+      text: getShareText(),
+      url: getVerifyUrl(),
+    };
+
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share(shareData);
+        setShareStatus('Shared successfully');
+        return;
+      }
+      await navigator.clipboard.writeText(shareData.url);
+      setShareStatus('Copied link (native share unavailable)');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setShareStatus('Share cancelled');
+        return;
+      }
+      console.error('Native share failed:', error instanceof Error ? error.message : error);
+      setShareStatus('Share failed');
     }
   };
 
@@ -118,7 +165,7 @@ export function ReceiptSuccess({
               <img src={qrCode} alt="Receipt QR Code" className="w-48 h-48" />
             </div>
           </div>
-          <Button onClick={downloadQR} variant="secondary" className="w-full">
+          <Button type="button" onClick={downloadQR} variant="secondary" className="w-full">
             📥 Download QR Code
           </Button>
         </div>
@@ -131,17 +178,69 @@ export function ReceiptSuccess({
       )}
 
       <div className="space-y-2">
-        <Button onClick={copyLink} variant="primary" className="w-full">
+        <Button type="button" onClick={copyLink} variant="primary" className="w-full">
           {copied ? '✓ Copied!' : '🔗 Copy Verification Link'}
         </Button>
         
         <Button
+          type="button"
           onClick={() => window.location.href = getVerifyUrl()}
           variant="secondary"
           className="w-full"
         >
           👁️ View Receipt
         </Button>
+      </div>
+
+      <div className="glass-card rounded-xl p-4">
+        <p className="text-xs uppercase tracking-[0.14em] text-white/50 mb-3">Share to Social</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <Button
+            type="button"
+            variant="secondary"
+            className="text-xs sm:text-sm"
+            onClick={() => {
+              void shareNatively();
+            }}
+          >
+            Share
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="text-xs sm:text-sm"
+            onClick={() => shareToNetwork('x')}
+          >
+            X
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="text-xs sm:text-sm"
+            onClick={() => shareToNetwork('telegram')}
+          >
+            Telegram
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="text-xs sm:text-sm"
+            onClick={() => shareToNetwork('linkedin')}
+          >
+            LinkedIn
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="text-xs sm:text-sm"
+            onClick={() => shareToNetwork('reddit')}
+          >
+            Reddit
+          </Button>
+        </div>
+        {shareStatus && (
+          <p className="mt-3 text-xs text-white/55">{shareStatus}</p>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Loader Should Communicate Value, Not Only Progress
+- When the user asks for inspiration from sibling repos (for example `xmrproof`), carry over the UX principle (informational onboarding) instead of only visual animation.
+- Startup loaders should teach at least 2-4 concrete use cases so first-time visitors understand the product before interacting with forms.
+
 ## 2026-03-23 - Startup UX Should Wait For Visual Engine Readiness
 - For shader-heavy hero backgrounds, gate first-screen reveal on an explicit renderer-ready signal to avoid showing an old/static screen flash.
 - Pair renderer readiness with a short minimum loader duration so transition feels intentional rather than abrupt.
