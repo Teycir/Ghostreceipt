@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Unexpected Files Should Respect Explicit User Scope
+- If an unexpected file appears during active work, pause and ask before touching it.
+- When the user explicitly says to ignore it for now, leave it untouched and continue the requested implementation scope.
+
 ## 2026-03-23 - Loader Cleanup Requests Must Remove Residual Animated Copy
 - When the user asks to remove loader animated text, remove the animated UI block itself (not only restyle it) and delete any now-unused loader animation classes/imports.
 - Keep the requested static sentence in place (`Prove the payment. Keep the privacy.`) while simplifying loader content.
