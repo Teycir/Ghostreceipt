@@ -5,14 +5,73 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>License - GhostReceipt</title>
   <style>
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      25% { background-position: 100% 50%; }
+      50% { background-position: 50% 100%; }
+      75% { background-position: 0% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes haze {
+      0%, 100% { opacity: 0.3; transform: scale(1) translate(0, 0) rotate(0deg); }
+      25% { opacity: 0.5; transform: scale(1.2) translate(10%, -10%) rotate(5deg); }
+      50% { opacity: 0.4; transform: scale(0.9) translate(-10%, 10%) rotate(-5deg); }
+      75% { opacity: 0.5; transform: scale(1.1) translate(5%, -5%) rotate(3deg); }
+    }
+
     body {
       font-family: system-ui, -apple-system, sans-serif;
       line-height: 1.6;
       max-width: 800px;
       margin: 0 auto;
       padding: 2rem;
-      background: #0a0a0a;
-      color: #e5e5e5;
+      background: linear-gradient(
+        135deg,
+        #04060f 0%,
+        #080c1a 20%,
+        #060814 40%,
+        #080d1c 60%,
+        #050810 80%,
+        #020307 100%
+      );
+      background-size: 400% 400%;
+      animation: gradientShift 30s ease-in-out infinite;
+      color: #f0f4ff;
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 80%, rgba(59, 130, 246, 0.09) 0%, transparent 55%),
+        radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.05) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background:
+        radial-gradient(circle at 30% 40%, rgba(37, 99, 235, 0.1) 0%, transparent 30%),
+        radial-gradient(circle at 70% 60%, rgba(99, 102, 241, 0.08) 0%, transparent 35%),
+        radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.07) 0%, transparent 40%);
+      filter: blur(80px);
+      animation: haze 40s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body > * {
+      position: relative;
+      z-index: 1;
     }
     h1 { color: #fff; margin-bottom: 0.5rem; }
     h2 { color: #fff; margin-top: 2rem; }
