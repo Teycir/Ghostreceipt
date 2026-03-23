@@ -1,3 +1,17 @@
+# Task Plan: Integrate Liquid Silk Background
+
+- [x] Add Three.js runtime dependency for shader-based background rendering.
+- [x] Replace legacy particle eye-candy with the provided liquid-silk shader background.
+- [x] Keep integration client-safe with cleanup and mobile/performance defaults.
+- [x] Verify with TypeScript check.
+
+## Review
+- Added `three@0.160.0` dependency.
+- Replaced [`components/eye-candy.tsx`](/home/teycir/Repos/GhostReceipt/components/eye-candy.tsx) with a Three.js shader background implementation based on the provided code.
+- Removed debug GUI dependency for production cleanliness; kept the visual engine/shader behavior.
+- Added robust lifecycle cleanup (RAF cancel, resize listener removal, GPU resource disposal).
+- Applied mobile-friendly defaults (`resolution` and `octaves`) to avoid frame drops on smaller devices.
+
 # Task Plan: Fully Automated Cloudflare Deploy (No PR Secret Traps)
 
 - [x] Remove deploy workflow PR trigger that cannot reliably access repository secrets.
