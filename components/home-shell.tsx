@@ -1,45 +1,50 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneratorForm } from '@/components/generator/generator-form';
 import { Footer } from '@/components/footer';
 import { EyeCandy } from '@/components/eye-candy';
 import { AnimatedTagline } from '@/components/animated-tagline';
 import TextPressure from '@/components/text-pressure';
 
-const MIN_LOADING_MS = 1100;
-const FAILSAFE_LOADING_MS = 2800;
-const USE_CASE_ROTATE_MS = 1700;
+const MIN_LOADING_MS = 1700;
+const USE_CASE_ROTATE_MS = 1800;
 
 const LOADER_USE_CASES = [
   {
     title: 'Merchant Dispute Proofs',
-    description: 'Share a verifiable receipt link when a customer disputes a crypto payment.',
+    benefit: 'Resolve payment disputes quickly with a verifiable receipt link.',
   },
   {
     title: 'Freelancer Invoice Confirmation',
-    description: 'Prove that a BTC or ETH payment landed for a specific amount and date.',
+    benefit: 'Prove BTC or ETH payment delivery for exact amount and date claims.',
   },
   {
     title: 'Audit-Ready Payment Records',
-    description: 'Keep private yet verifiable receipts for accounting and compliance workflows.',
+    benefit: 'Keep accounting evidence verifiable without exposing sensitive wallet identities.',
   },
   {
     title: 'Escrow & Third-Party Verification',
-    description: 'Let counterparties validate payment evidence without exposing private wallet details.',
+    benefit: 'Let counterparties verify payment facts without seeing private wallet details.',
   },
 ] as const;
+
+const FAILSAFE_LOADING_MS = MIN_LOADING_MS + (USE_CASE_ROTATE_MS * LOADER_USE_CASES.length) + 2200;
 
 export function HomeShell(): React.JSX.Element {
   const [backgroundReady, setBackgroundReady] = useState(false);
   const [minimumElapsed, setMinimumElapsed] = useState(false);
   const [useCaseIndex, setUseCaseIndex] = useState(0);
+  const [shownAllUseCases, setShownAllUseCases] = useState(LOADER_USE_CASES.length <= 1);
+  const shownUseCaseIndicesRef = useRef<Set<number>>(new Set([0]));
 
   useEffect(() => {
     const minTimer = window.setTimeout(() => setMinimumElapsed(true), MIN_LOADING_MS);
     const failSafeTimer = window.setTimeout(() => {
       setBackgroundReady(true);
       setMinimumElapsed(true);
+      setShownAllUseCases(true);
     }, FAILSAFE_LOADING_MS);
 
     return () => {
@@ -49,8 +54,8 @@ export function HomeShell(): React.JSX.Element {
   }, []);
 
   const loading = useMemo(
-    () => !(backgroundReady && minimumElapsed),
-    [backgroundReady, minimumElapsed]
+    () => !(backgroundReady && minimumElapsed && shownAllUseCases),
+    [backgroundReady, minimumElapsed, shownAllUseCases]
   );
 
   useEffect(() => {
@@ -58,8 +63,16 @@ export function HomeShell(): React.JSX.Element {
       return;
     }
 
+    const totalUseCases = LOADER_USE_CASES.length;
     const rotateTimer = window.setInterval(() => {
-      setUseCaseIndex((prev) => (prev + 1) % LOADER_USE_CASES.length);
+      setUseCaseIndex((prev) => {
+        const next = (prev + 1) % totalUseCases;
+        shownUseCaseIndicesRef.current.add(next);
+        setShownAllUseCases(
+          (alreadyComplete) => alreadyComplete || shownUseCaseIndicesRef.current.size >= totalUseCases
+        );
+        return next;
+      });
     }, USE_CASE_ROTATE_MS);
 
     return () => window.clearInterval(rotateTimer);
@@ -88,14 +101,55 @@ export function HomeShell(): React.JSX.Element {
           <p className="startup-overlay__tag">Prove the payment. Keep the privacy.</p>
           <p className="startup-overlay__status">Initializing secure verification engine...</p>
 
-          <div key={useCaseIndex} className="startup-overlay__usecase">
-            <p className="startup-overlay__usecase-label">Use Case</p>
-            <p className="startup-overlay__usecase-title">{activeUseCase.title}</p>
-            <p className="startup-overlay__usecase-text">{activeUseCase.description}</p>
+          <div className="startup-overlay__usecase">
+            <p className="startup-overlay__usecase-label">Use Cases + Benefits</p>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.p
+                key={`${activeUseCase.title}-${useCaseIndex}`}
+                className="startup-overlay__usecase-textline"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.28, ease: 'easeOut' }}
+              >
+                {`${activeUseCase.title}: ${activeUseCase.benefit}`.split('').map((char, index, arr) => (
+                  <motion.span
+                    key={`${activeUseCase.title}-char-${index}`}
+                    className="startup-overlay__usecase-char"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      duration: 0.14,
+                      delay: (arr.length - index - 1) * 0.008,
+                    }}
+                  >
+                    {char === ' ' ? '\u00A0' : char}
+                  </motion.span>
+                ))}
+              </motion.p>
+            </AnimatePresence>
+
+            <ul className="startup-overlay__usecase-list" aria-hidden="true">
+              {LOADER_USE_CASES.map((item, index) => (
+                <li
+                  key={`${item.title}-list`}
+                  className={index === useCaseIndex ? 'is-active' : ''}
+                >
+                  <span className="startup-overlay__usecase-bullet">•</span>
+                  <span>
+                    <span className="startup-overlay__usecase-title">{item.title}</span>
+                    <span className="startup-overlay__usecase-sep"> - </span>
+                    <span className="startup-overlay__usecase-text">{item.benefit}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
             <div className="startup-overlay__usecase-dots" aria-hidden="true">
               {LOADER_USE_CASES.map((item, index) => (
                 <span
-                  key={item.title}
+                  key={`${item.title}-dot`}
                   className={index === useCaseIndex ? 'is-active' : ''}
                 />
               ))}

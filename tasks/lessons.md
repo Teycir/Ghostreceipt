@@ -1,5 +1,14 @@
 # Lessons Learned
 
+## 2026-03-23 - Footer Social Requests Should Mirror Timeseal Links Exactly
+- When the user asks to "copy from Timeseal", port the exact social destinations (X, Reddit, LinkedIn) and icon interaction model from `Timeseal/app/components/Footer.tsx`.
+- Keep GhostReceipt-specific message + URL content, but preserve the visible `Share:` block placement in the footer for discoverability.
+
+## 2026-03-23 - Timeseal Loader Requests Need The Same Text-List Interaction
+- When the user asks for "like Timeseal below the title", copy the interaction pattern (rotating character-animated messaging under the heading), not only visual styling.
+- Include both use case and user benefit in each loader message line, and keep a visible list context so value is readable at a glance.
+- Verify sibling repository paths with exact casing (for example `Timeseal`, not `timeseal`) before concluding a reference is missing.
+
 ## 2026-03-23 - Cross-Repo UX Requests Need Feature-Exact Mapping
 - When the user says “use X from repo Y”, first confirm the exact implementation pattern in that repo and mirror the visibility/interaction model, not just the underlying capability.
 - For share features, prioritize prominent success-state action blocks (URL preview + clear copy CTA + quick actions) over subtle/secondary placement.

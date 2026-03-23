@@ -1,3 +1,40 @@
+# Task Plan: Timeseal Footer Social Share Ports (X/Reddit/LinkedIn)
+
+- [x] Copy Timeseal-style footer social share actions (X, Reddit, LinkedIn) into GhostReceipt footer.
+- [x] Point social share links to GhostReceipt website messaging (not Timeseal URLs).
+- [x] Keep existing docs/footer links intact and responsive.
+- [x] Verify with typecheck and record outcomes.
+
+## Review
+- Updated [`components/footer.tsx`](/home/teycir/Repos/GhostReceipt/components/footer.tsx) to include Timeseal-style social share icons and links for:
+  - X/Twitter,
+  - Reddit,
+  - LinkedIn.
+- Kept the existing docs/creator footer links intact, and added a dedicated `Share:` group beside them.
+- Share URLs now target GhostReceipt messaging + GhostReceipt site URL (`https://ghostreceipt.pages.dev`) instead of Timeseal endpoints.
+- Verification:
+  - `npm run typecheck` passes.
+
+# Task Plan: Timeseal-Style Loader Text List (Use Cases + Benefits)
+
+- [x] Inspect `Timeseal` loader-adjacent text animation pattern and map it to GhostReceipt.
+- [x] Add animated rotating use-case/benefit text directly under loader title/tagline.
+- [x] Render a visible text list of use cases and benefits with active highlighting.
+- [x] Ensure startup loader remains long enough to show every list entry at least once.
+- [x] Verify with typecheck and record outcomes.
+
+## Review
+- Updated [`components/home-shell.tsx`](/home/teycir/Repos/GhostReceipt/components/home-shell.tsx) to:
+  - mirror Timeseal-like character-by-character rotating copy below the loader title,
+  - show a persistent use-case/benefit text list with active item emphasis,
+  - gate loader completion on `backgroundReady + minimumElapsed + all use-cases shown`.
+- Updated [`app/globals.css`](/home/teycir/Repos/GhostReceipt/app/globals.css) with styles for:
+  - animated loader text line,
+  - list layout and active-state treatment,
+  - improved readability for multi-line use-case/benefit messaging.
+- Verification:
+  - `npm run typecheck` passes.
+
 # Task Plan: Sanctum-Style Share Actions In Receipt Success
 
 - [x] Review Sanctum result/share UX pattern and extract applicable behavior.
