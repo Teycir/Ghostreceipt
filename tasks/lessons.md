@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Startup UX Should Wait For Visual Engine Readiness
+- For shader-heavy hero backgrounds, gate first-screen reveal on an explicit renderer-ready signal to avoid showing an old/static screen flash.
+- Pair renderer readiness with a short minimum loader duration so transition feels intentional rather than abrupt.
+
 ## 2026-03-23 - Unit Tests Must Not Depend on Live Provider Network Paths
 - For route unit tests, mock provider calls for "valid request" cases instead of allowing real network cascade retries/timeouts.
 - Any unit test importing oracle route modules should call route dispose hooks in `afterAll` to avoid lingering interval/timer handles.

@@ -1,3 +1,22 @@
+# Task Plan: Add Branded Startup Loading Animation
+
+- [x] Introduce a home startup overlay with motion matching the liquid blue shader visual language.
+- [x] Keep startup visible until background shader reports readiness with a minimum display duration.
+- [x] Fade from startup overlay into the main home UI without layout jump/flicker.
+- [x] Verify TypeScript/build success after integration.
+
+## Review
+- Added [`components/home-shell.tsx`](/home/teycir/Repos/GhostReceipt/components/home-shell.tsx) as a client shell that coordinates:
+  - startup overlay timing,
+  - shader readiness signal,
+  - smooth transition to the main UI.
+- Updated [`components/eye-candy.tsx`](/home/teycir/Repos/GhostReceipt/components/eye-candy.tsx) to expose optional `onReady` callback fired on first render (or fallback paths).
+- Updated [`app/page.tsx`](/home/teycir/Repos/GhostReceipt/app/page.tsx) to render `HomeShell`.
+- Added loader animation styles to [`app/globals.css`](/home/teycir/Repos/GhostReceipt/app/globals.css) with blue liquid blobs + shimmer bar for a CodePen-like first impression.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run build` passes.
+
 # Task Plan: Fix Oracle Fetch-Tx Unit Timeout + Jest Teardown Leak
 
 - [x] Make `tests/unit/api/oracle-fetch-tx.test.ts` deterministic by mocking provider network calls in "valid request" cases.

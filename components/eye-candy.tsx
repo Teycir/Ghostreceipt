@@ -168,13 +168,25 @@ const fragmentShader = `
   }
 `;
 
-export function EyeCandy(): null {
+type EyeCandyProps = {
+  onReady?: () => void;
+};
+
+export function EyeCandy({ onReady }: EyeCandyProps = {}): null {
   useEffect(() => {
     let disposed = false;
     let animId = 0;
+    let readyNotified = false;
+
+    const notifyReady = () => {
+      if (readyNotified) return;
+      readyNotified = true;
+      onReady?.();
+    };
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (reduceMotion.matches) {
+      notifyReady();
       return;
     }
 
@@ -272,6 +284,7 @@ export function EyeCandy(): null {
         if (disposed) return;
         uniforms.u_time.value = clock.getElapsedTime();
         renderer.render(scene, camera);
+        notifyReady();
         animId = window.requestAnimationFrame(animate);
       };
       animate();
@@ -292,7 +305,9 @@ export function EyeCandy(): null {
       container.remove();
     };
 
-    void setup();
+    void setup().catch(() => {
+      notifyReady();
+    });
 
     return () => {
       disposed = true;
