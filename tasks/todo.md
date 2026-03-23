@@ -1,3 +1,49 @@
+# Task Plan: Premium Dropdown Items (CodePen-Inspired Option 1)
+
+- [x] Port a premium glassmorphism dropdown style inspired by the selected CodePen direction.
+- [x] Make dropdown item backgrounds fully stylable (custom listbox, not native browser option menu).
+- [x] Keep current `Select` usage compatible with generator form state handling.
+- [x] Verify with typecheck.
+
+## Review
+- Reworked [`components/ui/select.tsx`](/home/teycir/Repos/GhostReceipt/components/ui/select.tsx) from a native `<select>` to a custom accessible dropdown (`button` + `listbox`) so item backgrounds can be styled to a premium glass finish.
+- Added:
+  - glass gradient trigger surface,
+  - premium dropdown panel background/shadow,
+  - highlighted and selected item treatments,
+  - keyboard navigation (`ArrowUp/ArrowDown`, `Enter/Space`, `Escape`),
+  - outside-click close behavior.
+- Preserved generator compatibility by dispatching a select-like `onChange` payload (`event.target.value`) on item selection.
+- Verification:
+  - `npm run typecheck` passes.
+
+# Task Plan: Footer Share Label Removal + Mobile Responsiveness
+
+- [x] Remove the `Share:` label from footer social icons.
+- [x] Improve footer layout behavior on small screens (clean wrapping and spacing).
+- [x] Verify with typecheck.
+
+## Review
+- Updated [`components/footer.tsx`](/home/teycir/Repos/GhostReceipt/components/footer.tsx):
+  - removed `Share:` label next to social icons,
+  - switched to responsive Tailwind layout classes for better mobile wrapping,
+  - improved spacing/tap-target sizing for social icons on small screens.
+- Verification:
+  - `npm run typecheck` passes.
+
+# Task Plan: Loader Copy Placement Simplification
+
+- [x] Remove `Use Cases + Benefits` header from loader card.
+- [x] Remove animated text block from inside loader use-case card.
+- [x] Place rotating animated text directly below `Prove the payment. Keep the privacy.` line.
+- [x] Verify with typecheck.
+
+## Review
+- Updated [`components/home-shell.tsx`](/home/teycir/Repos/GhostReceipt/components/home-shell.tsx) to move the rotating animated use-case text under the loader tagline and keep the use-case card as list-only content.
+- Updated [`app/globals.css`](/home/teycir/Repos/GhostReceipt/app/globals.css) to add `startup-overlay__tag-animated` styling and remove now-unused in-card animated text/header styles.
+- Verification:
+  - `npm run typecheck` passes.
+
 # Task Plan: Match HTML Docs Design + Add Source Code Footer Link
 
 - [x] Make `public/docs/how-to-use.html` use the same design language as the existing docs pages.

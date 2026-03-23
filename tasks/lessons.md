@@ -1,5 +1,13 @@
 # Lessons Learned
 
+## 2026-03-23 - Footer Social Icons Should Be Self-Explanatory
+- If social icons are obvious, avoid redundant labels like `Share:` unless explicitly requested.
+- For fixed bottom footers, prioritize small-screen wrapping and larger icon tap areas so mobile users can use links without crowding.
+
+## 2026-03-23 - Loader Animation Placement Must Follow The Requested Hierarchy
+- If the user asks for animated copy to appear under a specific line, place it exactly there and avoid duplicating it elsewhere.
+- Keep loader cards minimal when asked: remove redundant headers and keep only essential list content.
+
 ## 2026-03-23 - Docs Page Requests Should Keep Exact Static-Docs Style Parity
 - When the user asks to keep the "same design as other HTML pages", reuse the exact docs page style baseline (body, typography, spacing, footer structure) rather than introducing a variant visual system.
 - If a footer-link addition is requested, apply it consistently to both the runtime app footer and all static docs footers to avoid split navigation behavior.
