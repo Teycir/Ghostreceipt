@@ -164,4 +164,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`Transparency log OK (${fullPath})`);
+console.info(`Transparency log OK (${fullPath})`);

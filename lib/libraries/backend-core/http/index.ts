@@ -1,4 +1,5 @@
 export {
+  __resetFetchTxCanonicalCacheForTests,
   createProviderCascadeForChain,
   fetchAndSignOracleTransaction,
   loadEtherscanKeysFromEnv,

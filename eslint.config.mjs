@@ -5,6 +5,19 @@ const eslintConfig = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -26,6 +39,7 @@ const eslintConfig = [
     ignores: [
       'node_modules/**',
       '.next/**',
+      '.history/**',
       'out/**',
       'public/**',
       '*.config.js',

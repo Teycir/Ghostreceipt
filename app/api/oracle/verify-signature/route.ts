@@ -31,19 +31,19 @@ function parsePositiveIntEnv(key: string, fallback: number): number {
 const VERIFY_SIGNATURE_RATE_LIMIT = {
   clientMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_MINUTE',
-    20
+    12
   ),
   globalMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_MINUTE',
-    200
+    120
   ),
   clientBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_SECOND',
-    5
+    3
   ),
   globalBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_SECOND',
-    75
+    30
   ),
   windowMs: 60000,
   burstWindowMs: 1000,

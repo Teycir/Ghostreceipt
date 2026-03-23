@@ -3,6 +3,7 @@ import {
   mapErrorToResponse,
   __disposeOracleFetchRouteForTests,
 } from '@/app/api/oracle/fetch-tx/route';
+import { __resetFetchTxCanonicalCacheForTests } from '@/lib/libraries/backend-core/http';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
@@ -90,6 +91,7 @@ describe('POST /api/oracle/fetch-tx', () => {
       process.env['HELIUS_API_KEY_1'] = originalHeliusKey1;
     }
 
+    __resetFetchTxCanonicalCacheForTests();
     jest.restoreAllMocks();
   });
 
@@ -292,6 +294,104 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(response.status).toBe(200);
     expect(body.data.chain).toBe('solana');
     expect(body.data.oracleSignature).toMatch(/^[a-f0-9]{128}$/i);
+  });
+
+  it('serves duplicate fetches from canonical cache while signing fresh envelopes', async () => {
+    const canonicalTx = {
+      chain: 'bitcoin' as const,
+      txHash: 'a'.repeat(64),
+      valueAtomic: '1000',
+      timestampUnix: 1700000000,
+      confirmations: 12,
+      blockNumber: 123456,
+      blockHash: 'b'.repeat(64),
+    };
+
+    const mempoolSpy = jest
+      .spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction')
+      .mockResolvedValue(canonicalTx);
+
+    const requestPayload = JSON.stringify({
+      chain: 'bitcoin',
+      txHash: 'a'.repeat(64),
+    });
+
+    const firstResponse = await POST(new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+      },
+    }));
+
+    const secondResponse = await POST(new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+      },
+    }));
+
+    const firstBody = (await firstResponse.json()) as {
+      cached: boolean;
+      data: { messageHash: string; nonce: string; oracleSignature: string };
+    };
+    const secondBody = (await secondResponse.json()) as {
+      cached: boolean;
+      data: { messageHash: string; nonce: string; oracleSignature: string };
+    };
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(firstBody.cached).toBe(false);
+    expect(secondBody.cached).toBe(true);
+    expect(firstBody.data.messageHash).toBe(secondBody.data.messageHash);
+    expect(firstBody.data.nonce).not.toBe(secondBody.data.nonce);
+    expect(firstBody.data.oracleSignature).not.toBe(secondBody.data.oracleSignature);
+    expect(mempoolSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('can reset canonical cache between requests for deterministic test isolation', async () => {
+    const canonicalTx = {
+      chain: 'bitcoin' as const,
+      txHash: 'a'.repeat(64),
+      valueAtomic: '1000',
+      timestampUnix: 1700000000,
+      confirmations: 12,
+      blockNumber: 123456,
+      blockHash: 'b'.repeat(64),
+    };
+
+    const mempoolSpy = jest
+      .spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction')
+      .mockResolvedValue(canonicalTx);
+
+    const requestPayload = JSON.stringify({
+      chain: 'bitcoin',
+      txHash: 'a'.repeat(64),
+    });
+
+    const firstResponse = await POST(new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+      },
+    }));
+
+    __resetFetchTxCanonicalCacheForTests();
+
+    const secondResponse = await POST(new NextRequest('http://localhost/api/oracle/fetch-tx', {
+      method: 'POST',
+      body: requestPayload,
+      headers: {
+        'content-type': 'application/json',
+      },
+    }));
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(mempoolSpy).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes cached signer when ORACLE_PRIVATE_KEY changes', async () => {

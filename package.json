@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prepare": "husky install",
+    "precommit": "npm test && npm run lint",
+    "prepush": "npm run test && npm run lint",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
@@ -56,6 +59,7 @@
     "@types/snarkjs": "^0.7.9",
     "@types/three": "^0.183.1",
     "autoprefixer": "^10.4.20",
+    "husky": "^9.0.0",
     "circomlib": "^2.0.5",
     "eslint": "^9.18.0",
     "eslint-config-next": "^16.2.1",

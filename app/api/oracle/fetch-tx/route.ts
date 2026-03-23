@@ -8,6 +8,7 @@ import {
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
+  __resetFetchTxCanonicalCacheForTests,
   createOracleRouteRateLimiters,
   disposeOracleRouteRateLimiters,
   disposeFetchTxReplayProtection,
@@ -37,19 +38,19 @@ function parsePositiveIntEnv(key: string, fallback: number): number {
 const FETCH_TX_RATE_LIMIT = {
   clientMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_MINUTE',
-    10
+    6
   ),
   globalMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_MINUTE',
-    200
+    90
   ),
   clientBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_SECOND',
-    3
+    2
   ),
   globalBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_SECOND',
-    50
+    20
   ),
   windowMs: 60000,
   burstWindowMs: 1000,
@@ -147,5 +148,6 @@ export const mapErrorToResponse = mapFetchTxErrorToResponse;
 export function __disposeOracleFetchRouteForTests(): void {
   disposeOracleRouteRateLimiters(routeRateLimiters);
   disposeFetchTxReplayProtection();
+  __resetFetchTxCanonicalCacheForTests();
   resetCachedOracleSignerForTests();
 }

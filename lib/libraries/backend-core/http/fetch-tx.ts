@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import {
+  type CanonicalTxData,
   CanonicalTxDataSchema,
   type Chain,
   type ErrorResponse,
@@ -25,6 +26,7 @@ export interface FetchTxMappedError {
 export interface OracleFetchOptions {
   authTtlSeconds?: number;
   blockchairApiKey?: string;
+  canonicalCacheTtlMs?: number;
   cascadeConfig?: CascadeConfig;
   etherscanKeys?: string[];
   heliusKeys?: string[];
@@ -47,6 +49,158 @@ const DEFAULT_CASCADE_CONFIG: CascadeConfig = {
 };
 
 const DEFAULT_ORACLE_AUTH_TTL_SECONDS = 5 * 60;
+const DEFAULT_CANONICAL_TX_CACHE_TTL_MS = 15_000;
+const MAX_CANONICAL_TX_CACHE_ENTRIES = 1_000;
+
+interface CanonicalTxCacheEntry {
+  data: CanonicalTxData;
+  expiresAtMs: number;
+  fetchedAt: number;
+  provider: string;
+}
+
+interface CanonicalTxFetchResult {
+  cached: boolean;
+  data: CanonicalTxData;
+  fetchedAt: number;
+  provider: string;
+}
+
+const canonicalTxCache = new Map<string, CanonicalTxCacheEntry>();
+const inFlightCanonicalTxFetches = new Map<string, Promise<CanonicalTxFetchResult>>();
+
+function parseNonNegativeIntEnv(key: string, fallback: number): number {
+  const rawValue = process.env[key];
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function resolveCanonicalCacheTtlMs(options: OracleFetchOptions): number {
+  const requested = options.canonicalCacheTtlMs;
+  if (requested !== undefined) {
+    if (!Number.isFinite(requested) || requested <= 0) {
+      return 0;
+    }
+
+    return Math.floor(requested);
+  }
+
+  return parseNonNegativeIntEnv(
+    'ORACLE_FETCH_TX_CANONICAL_CACHE_TTL_MS',
+    DEFAULT_CANONICAL_TX_CACHE_TTL_MS
+  );
+}
+
+function buildCanonicalTxCacheKey(chain: Chain, txHash: string): string {
+  const normalizedHash = chain === 'solana' ? txHash : txHash.toLowerCase();
+  return `${chain}:${normalizedHash}`;
+}
+
+function readCanonicalTxCache(
+  cacheKey: string,
+  nowMs: number
+): CanonicalTxFetchResult | null {
+  const entry = canonicalTxCache.get(cacheKey);
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAtMs <= nowMs) {
+    canonicalTxCache.delete(cacheKey);
+    return null;
+  }
+
+  return {
+    cached: true,
+    data: entry.data,
+    fetchedAt: entry.fetchedAt,
+    provider: entry.provider,
+  };
+}
+
+function writeCanonicalTxCache(
+  cacheKey: string,
+  entry: CanonicalTxCacheEntry
+): void {
+  canonicalTxCache.set(cacheKey, entry);
+
+  while (canonicalTxCache.size > MAX_CANONICAL_TX_CACHE_ENTRIES) {
+    const oldestKey = canonicalTxCache.keys().next().value;
+    if (!oldestKey) {
+      break;
+    }
+
+    canonicalTxCache.delete(oldestKey);
+  }
+}
+
+async function fetchCanonicalTxData(
+  chain: Chain,
+  txHash: string,
+  options: Pick<
+    OracleFetchOptions,
+    'blockchairApiKey' | 'canonicalCacheTtlMs' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
+  >
+): Promise<CanonicalTxFetchResult> {
+  const cacheTtlMs = resolveCanonicalCacheTtlMs(options);
+  const cacheKey = buildCanonicalTxCacheKey(chain, txHash);
+
+  if (cacheTtlMs > 0) {
+    const cachedResult = readCanonicalTxCache(cacheKey, Date.now());
+    if (cachedResult) {
+      return cachedResult;
+    }
+  }
+
+  const inFlight = inFlightCanonicalTxFetches.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const fetchPromise = (async (): Promise<CanonicalTxFetchResult> => {
+    const cascade = createProviderCascadeForChain(chain, options);
+    const result = await cascade.fetchTransaction(txHash);
+    const canonicalDataResult = CanonicalTxDataSchema.safeParse(result.data);
+    if (!canonicalDataResult.success) {
+      throw new Error('Provider returned invalid canonical data');
+    }
+
+    const parsedCanonicalData = canonicalDataResult.data;
+    const canonicalResult: CanonicalTxFetchResult = {
+      cached: result.cached,
+      data: parsedCanonicalData,
+      fetchedAt: result.fetchedAt,
+      provider: result.provider,
+    };
+
+    if (cacheTtlMs > 0) {
+      writeCanonicalTxCache(cacheKey, {
+        data: parsedCanonicalData,
+        expiresAtMs: Date.now() + cacheTtlMs,
+        fetchedAt: result.fetchedAt,
+        provider: result.provider,
+      });
+    }
+
+    return canonicalResult;
+  })();
+
+  inFlightCanonicalTxFetches.set(cacheKey, fetchPromise);
+
+  try {
+    return await fetchPromise;
+  } finally {
+    inFlightCanonicalTxFetches.delete(cacheKey);
+  }
+}
 
 export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
   const code: ErrorResponse['error']['code'] = 'INTERNAL_ERROR';
@@ -262,10 +416,13 @@ export async function fetchAndSignOracleTransaction(
 ): Promise<SignedOracleFetchResult> {
   const cascadeOptions: Pick<
     OracleFetchOptions,
-    'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
+    'blockchairApiKey' | 'canonicalCacheTtlMs' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
   > = {};
   if (options.blockchairApiKey !== undefined) {
     cascadeOptions.blockchairApiKey = options.blockchairApiKey;
+  }
+  if (options.canonicalCacheTtlMs !== undefined) {
+    cascadeOptions.canonicalCacheTtlMs = options.canonicalCacheTtlMs;
   }
   if (options.cascadeConfig !== undefined) {
     cascadeOptions.cascadeConfig = options.cascadeConfig;
@@ -277,15 +434,10 @@ export async function fetchAndSignOracleTransaction(
     cascadeOptions.heliusKeys = options.heliusKeys;
   }
 
-  const cascade = createProviderCascadeForChain(chain, cascadeOptions);
-  const result = await cascade.fetchTransaction(txHash);
-  const canonicalDataResult = CanonicalTxDataSchema.safeParse(result.data);
-  if (!canonicalDataResult.success) {
-    throw new Error('Provider returned invalid canonical data');
-  }
+  const canonicalResult = await fetchCanonicalTxData(chain, txHash, cascadeOptions);
 
   const signer = getCachedOracleSignerFromEnv();
-  const messageHash = await computeOracleCommitment(canonicalDataResult.data);
+  const messageHash = await computeOracleCommitment(canonicalResult.data);
   const nullifier = deriveNullifier(messageHash);
   const signedAtMs = options.nowMs ?? Date.now();
   const signedAt = Math.floor(signedAtMs / 1000);
@@ -307,14 +459,19 @@ export async function fetchAndSignOracleTransaction(
   });
 
   return {
-    cached: result.cached,
+    cached: canonicalResult.cached,
     data: {
-      ...canonicalDataResult.data,
+      ...canonicalResult.data,
       ...authSignature.envelope,
       nullifier,
       oracleSignature: authSignature.oracleSignature,
     },
-    fetchedAt: result.fetchedAt,
-    provider: result.provider,
+    fetchedAt: canonicalResult.fetchedAt,
+    provider: canonicalResult.provider,
   };
+}
+
+export function __resetFetchTxCanonicalCacheForTests(): void {
+  canonicalTxCache.clear();
+  inFlightCanonicalTxFetches.clear();
 }

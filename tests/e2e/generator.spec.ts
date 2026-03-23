@@ -30,6 +30,13 @@ async function navigateViaFooterLink(
   await page.goto(href);
 }
 
+async function fillClaimedAmount(
+  page: import('@playwright/test').Page,
+  amount: string
+): Promise<void> {
+  await page.getByLabel(/Claimed Amount/i).fill(amount);
+}
+
 test.describe('GhostReceipt E2E Flow', () => {
   test('should load home page successfully', async ({ page }) => {
     await page.goto('/');
@@ -67,7 +74,7 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await selectChain(page, 'Bitcoin');
     await page.fill('input[placeholder*="64 hex"]', 'invalid-hash');
-    await page.fill('input[placeholder="Enter amount"]', '100000000');
+    await fillClaimedAmount(page, '100000000');
     await page.fill('input[type="date"]', '2024-01-01');
     
     await page.click('button:has-text("Generate Receipt")');
@@ -81,7 +88,7 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await selectChain(page, 'Ethereum');
     await page.fill('input[placeholder*="0x"]', 'invalid-hash');
-    await page.fill('input[placeholder="Enter amount"]', '1000000000000000000');
+    await fillClaimedAmount(page, '1000000000000000000');
     await page.fill('input[type="date"]', '2024-01-01');
     
     await page.click('button:has-text("Generate Receipt")');
@@ -153,17 +160,20 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await selectChain(page, 'Bitcoin');
     await page.fill('input[placeholder*="64 hex"]', 'a'.repeat(64));
-    await page.fill('input[placeholder="Enter amount"]', '100000000');
+    await fillClaimedAmount(page, '100000000');
     await page.fill('input[type="date"]', '2024-01-01');
     
     await page.click('button:has-text("Generate Receipt")');
-    
-    await page.waitForSelector('text=Fetching transaction', { timeout: 5000 });
-    
-    const errorVisible = await page.locator('button:has-text("Retry")').isVisible({ timeout: 30000 }).catch(() => false);
-    
-    if (errorVisible) {
-      await page.click('button:has-text("Retry")');
+
+    const retryButton = page.getByRole('button', { name: 'Try Again' });
+    const successCard = page.locator('text=Receipt Generated');
+    await Promise.race([
+      retryButton.waitFor({ state: 'visible', timeout: 30000 }),
+      successCard.waitFor({ state: 'visible', timeout: 30000 }),
+    ]);
+
+    if (await retryButton.isVisible()) {
+      await retryButton.click();
       await expect(page.locator('button:has-text("Generate Receipt")')).toBeVisible();
     }
   });

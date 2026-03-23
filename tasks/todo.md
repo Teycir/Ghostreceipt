@@ -1,12 +1,93 @@
+# Task Plan: Enhancement M1 Step 6A - Free-Tier Guardrails (Rate Limits + Safe Fetch Cache)
+
+- [x] Lower default oracle route rate limits to safer free-tier baselines while preserving env overrides.
+- [x] Add short-lived canonical transaction cache in fetch path to absorb bursty duplicate requests.
+- [x] Ensure cache only stores schema-validated successful canonical data and does not cache errors.
+- [x] Preserve per-request oracle signature freshness (`nonce`, `signedAt`, `expiresAt`) on cached canonical reads.
+- [x] Add focused tests for repeated fetch behavior and cache reset coverage.
+- [x] Verify with typecheck and focused route/http tests.
+
+## Review
+- Lowered default rate limits (env-overridable) for safer free-tier operation under burst pressure:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+  - [`app/api/oracle/check-nullifier/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/check-nullifier/route.ts)
+- Added short-lived canonical tx cache in backend-core fetch path with strict guardrails:
+  - cache key is `chain:txHash`,
+  - stores only schema-validated successful canonical tx data,
+  - does not cache failures,
+  - retains fresh per-request oracle signatures on every response.
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+- Exported and wired cache reset for deterministic tests:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+- Added env examples for optional rate-limit/cache tuning:
+  - [`.env.example`](/home/teycir/Repos/GhostReceipt/.env.example)
+- Added focused cache behavior tests:
+  - [`tests/unit/api/fetch-tx-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/fetch-tx-route.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts --runInBand` passes.
+
+# Task Plan: Enhancement M1 Step 6 - Gates + Metrics Delta + Rollout Notes
+
+- [x] Run and record gate commands for typecheck, API routes, ZK proof path, and e2e generator flow.
+- [x] Resolve gate regressions found during execution.
+- [x] Capture latest stress metrics and compare against prior recorded baseline.
+- [x] Document rollout notes and command caveats in roadmap tracker.
+
+## Review
+- Gate results:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
+  - `npm run test -- tests/unit/zk/prover.test.ts tests/integration/proof-generation.test.ts --runInBand` passes.
+  - Listed roadmap command `npm run test -- tests/e2e/generator.spec.ts --runInBand` fails with `No tests found` (Jest only matches `*.test.ts[x]`).
+  - Correct e2e gate command `npm run test:e2e -- tests/e2e/generator.spec.ts` passes after selector updates.
+  - `npm run lint` passes.
+  - `npm run build` passes (Next static-export warnings remain; no build failure).
+- Regression fixed during Step 6:
+  - Updated e2e selectors to use label-based amount input targeting and current retry CTA text:
+    - [`tests/e2e/generator.spec.ts`](/home/teycir/Repos/GhostReceipt/tests/e2e/generator.spec.ts)
+- Gate infrastructure cleanup completed:
+  - Added script-scoped Node globals and ignored `.history` snapshots in ESLint config:
+    - [`eslint.config.mjs`](/home/teycir/Repos/GhostReceipt/eslint.config.mjs)
+  - Removed deprecated `eslint-env` directive in Node script:
+    - [`scripts/check-oracle-transparency-log.mjs`](/home/teycir/Repos/GhostReceipt/scripts/check-oracle-transparency-log.mjs)
+- Metrics delta snapshot (from stress gate):
+  - Prior recorded baseline: `fetchP95=440ms`, `verifyP95=6ms`, `successRate=1`.
+  - Current run (`npm run test:stress:oracle`): `fetchP95=532ms`, `verifyP95=15ms`, `successRate=1`, `failureCount=0`, `totalUsers=100`, `concurrency=10`.
+  - Delta vs prior: `fetchP95 +92ms`, `verifyP95 +9ms`, success rate unchanged at `1.0`.
+
 # Task Plan: Enhancement M1 Step 5 - Proof Speed Track (Preload + Worker + Telemetry)
 
-- [ ] Add artifact path/version resolver with cache-safe invalidation token.
-- [ ] Add proactive artifact preload on generator idle with deduplicated requests.
-- [ ] Move proof generation off main thread via Web Worker with safe fallback.
-- [ ] Add performance telemetry for `fetch_ms`, `witness_ms`, `prove_ms`, `package_ms`, `total_ms`.
-- [ ] Add UX slow-path guidance when proving crosses threshold.
-- [ ] Add focused unit tests for artifact caching/versioning and worker-aware prover flow.
-- [ ] Verify with typecheck and focused tests.
+- [x] Add artifact path/version resolver with cache-safe invalidation token.
+- [x] Add proactive artifact preload on generator idle with deduplicated requests.
+- [x] Move proof generation off main thread via Web Worker with safe fallback.
+- [x] Add performance telemetry for `fetch_ms`, `witness_ms`, `prove_ms`, `package_ms`, `total_ms`.
+- [x] Add UX slow-path guidance when proving crosses threshold.
+- [x] Add focused unit tests for artifact caching/versioning and worker-aware prover flow.
+- [x] Verify with typecheck and focused tests.
+
+## Review
+- Added artifact resolver + preload/cache utilities with versioned URLs and in-memory key caching:
+  - [`lib/zk/artifacts.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/artifacts.ts)
+- Added browser worker proving path and worker client bootstrap:
+  - [`lib/zk/proof-worker.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/proof-worker.ts)
+  - [`lib/zk/proof-worker-client.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/proof-worker-client.ts)
+- Updated prover to prefer worker proving (with safe main-thread fallback) and reuse cached verification keys:
+  - [`lib/zk/prover.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/prover.ts)
+- Added generator timing telemetry and idle artifact preloading:
+  - [`lib/generator/use-proof-generator.ts`](/home/teycir/Repos/GhostReceipt/lib/generator/use-proof-generator.ts)
+  - [`lib/generator/types.ts`](/home/teycir/Repos/GhostReceipt/lib/generator/types.ts)
+- Surfaced slow-proof fallback guidance + timing details in UI:
+  - [`components/generator/generator-form.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/generator-form.tsx)
+  - [`components/generator/receipt-success.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/receipt-success.tsx)
+- Added focused tests for artifact caching/versioning and runtime prover behavior:
+  - [`tests/unit/zk/artifacts.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/artifacts.test.ts)
+  - [`tests/unit/zk/prover-runtime.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/prover-runtime.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/zk/artifacts.test.ts tests/unit/zk/prover-runtime.test.ts tests/unit/zk/prover.test.ts tests/unit/generator/witness-integration.test.ts tests/integration/proof-generation.test.ts --runInBand` passes.
 
 # Task Plan: Enhancement M1 Step 4 - Transparency Log Validation On Verifier Path
 
@@ -345,22 +426,22 @@
 - [x] Add tests for revoked/expired/unknown key behavior.
 
 ## Workstream E: Speed Track (Must Ship Alongside Security)
-- [ ] Add first-class performance telemetry around generator steps:
-- [ ] `fetch_ms`, `witness_ms`, `prove_ms`, `package_ms`, `total_ms`.
-- [ ] Preload/proactively fetch proof artifacts (`wasm`, `zkey`, `vkey`) on generator idle.
-- [ ] Move proof generation to Web Worker to prevent main-thread blocking.
-- [ ] Add artifact caching strategy (memory + persistent cache) with safe version invalidation.
-- [ ] Keep security checks in lightweight API/verifier paths, not in-circuit additions for this phase.
-- [ ] Add UX guardrails: show fallback message and next action when prove step crosses threshold.
+- [x] Add first-class performance telemetry around generator steps:
+- [x] `fetch_ms`, `witness_ms`, `prove_ms`, `package_ms`, `total_ms`.
+- [x] Preload/proactively fetch proof artifacts (`wasm`, `zkey`, `vkey`) on generator idle.
+- [x] Move proof generation to Web Worker to prevent main-thread blocking.
+- [x] Add artifact caching strategy (memory + persistent cache) with safe version invalidation.
+- [x] Keep security checks in lightweight API/verifier paths, not in-circuit additions for this phase.
+- [x] Add UX guardrails: show fallback message and next action when prove step crosses threshold.
 
 ## Workstream F: Verification And Gates
 - [ ] Add a dedicated performance test that tracks proof flow timing budgets on CI-friendly fixtures.
 - [ ] Add regression tests for v1/v2 payload compatibility.
-- [ ] Run and record validation commands:
-- [ ] `npm run typecheck`
-- [ ] `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand`
-- [ ] `npm run test -- tests/unit/zk/prover.test.ts tests/integration/proof-generation.test.ts --runInBand`
-- [ ] `npm run test -- tests/e2e/generator.spec.ts --runInBand`
+- [x] Run and record validation commands:
+- [x] `npm run typecheck`
+- [x] `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand`
+- [x] `npm run test -- tests/unit/zk/prover.test.ts tests/integration/proof-generation.test.ts --runInBand`
+- [x] `npm run test:e2e -- tests/e2e/generator.spec.ts` (replacing invalid Jest pattern command)
 
 ## Workstream G: Priority Expansion Backlog (Beyond Phase 1 Hardening)
 - [ ] P0: Move multi-oracle quorum design up from long-term backlog and produce MVP architecture doc (`2-of-3` signing quorum).
@@ -369,7 +450,7 @@
 - [ ] P1: Add ERC-20 transfer/event-log receipt proofs (USDT + USDC first, then DAI).
 - [ ] P1: Add Monero receipt track (dedicated circuit + view-key-based witness model + trust-model docs).
 - [ ] P1: Add proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` migration rationale).
-- [ ] P1: Add batch verification experience (`/verify/batch`) with import + pass/fail table.
+
 - [ ] P2: Add selective disclosure circuit modes (partial reveal controls).
 - [ ] P2: Add PDF export for invoice/compliance workflow.
 - [ ] P2: Add receipt labels/categories in payload metadata.
@@ -387,14 +468,14 @@
 - [ ] Write an RFC for selective disclosure and range proof public input contracts.
 - [ ] Write an RFC for on-chain verifier integration (ABI, contract addresses, gas targets, trust boundaries).
 - [ ] Write an RFC for proof compression + backward-compatible share payload parsing.
-- [ ] Write an RFC for batch verify UX and report export schema.
+
 - [ ] Write an RFC for webhook/embed API auth model and abuse controls.
 
 ## Workstream I: Performance Guardrails For New Features
-- [ ] Define per-feature latency budgets before implementation (API, proving, verify, batch verify).
+- [ ] Define per-feature latency budgets before implementation (API, proving, verify).
 - [ ] Require feature PRs to report `before/after` metrics for `p50/p95` generate and verify flows.
 - [ ] For any circuit growth, require proving benchmark evidence that `p95` target remains under `60s`.
-- [ ] Keep optional heavy features (batch, PDF, history indexing) off critical initial render path.
+- [ ] Keep optional heavy features (PDF, history indexing) off critical initial render path.
 - [ ] Add feature flags for high-risk features so performance regressions can be rolled back safely.
 
 ## Milestone Plan (Execution Buckets)
@@ -404,10 +485,10 @@
 - [ ] Deliver replay-window + nonce registry enforcement.
 - [ ] Deliver nullifier registry conflict checks.
 - [x] Deliver transparency-log key validity checks at verification time.
-- [ ] Deliver proof-path speed baseline:
-- [ ] artifact preload (`wasm`, `zkey`, `vkey`),
-- [ ] worker-based proving,
-- [ ] timing telemetry and UX threshold fallbacks.
+- [x] Deliver proof-path speed baseline:
+- [x] artifact preload (`wasm`, `zkey`, `vkey`),
+- [x] worker-based proving,
+- [x] timing telemetry and UX threshold fallbacks.
 - [ ] Exit criteria:
 - [ ] cryptographic checks active and tested,
 - [ ] generator `p95 < 60s`, `p50 < 25s` in benchmark environment.
@@ -438,7 +519,7 @@
 - [ ] Monero proof flow works on stagenet/testnet fixtures.
 
 ### Milestone M4: Verification + Operations UX
-- [ ] Add batch verification (`/verify/batch`) with multi-file input and pass/fail table.
+
 - [ ] Add PDF export path with QR + human-readable proof summary.
 - [ ] Add labels/categories + local history (`/history`, IndexedDB, JSON export).
 - [ ] Exit criteria:
@@ -464,11 +545,11 @@
 - [x] Step 2: Implement nonce replay registry + replay window enforcement.
 - [x] Step 3: Implement nullifier registry + verifier conflict checks.
 - [x] Step 4: Implement transparency log validation on verifier path.
-- [ ] Step 5: Implement speed track changes (artifact preload/cache + worker proving + UX thresholds).
-- [ ] Step 6: Run gates, document metrics deltas, and finalize rollout notes.
+- [x] Step 5: Implement speed track changes (artifact preload/cache + worker proving + UX thresholds).
+- [x] Step 6: Run gates, document metrics deltas, and finalize rollout notes.
 - [ ] Step 7: Deliver on-chain verifier MVP (contract artifact + docs + integration tests).
 - [ ] Step 8: Deliver ERC-20 event-log proof support + Monero receipt track MVP.
-- [ ] Step 9: Deliver batch verify + PDF export + labels/history product slice.
+- [ ] Step 9: Deliver PDF export + labels/history product slice.
 - [ ] Step 10: Deliver Solana + webhook/embed API integrations + payload compression.
 - [ ] Step 11: Deliver multi-oracle quorum alpha and document TLS-notary path.
 
@@ -481,7 +562,7 @@
 - [ ] Speed:
 - [ ] Generator flow `p95 < 60s` and `p50 < 25s` on defined benchmark environment.
 - [ ] No major UI thread stalls during proof generation.
-- [ ] User-facing fallback guidance appears before abandonment thresholds.
+- [x] User-facing fallback guidance appears before abandonment thresholds.
 - [ ] Product and ecosystem:
 - [ ] On-chain verifier contract path available for trustless integrations.
 - [ ] ERC-20 transfer proof flow validated for major stablecoins.

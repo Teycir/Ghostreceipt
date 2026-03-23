@@ -28,19 +28,19 @@ function parsePositiveIntEnv(key: string, fallback: number): number {
 const NULLIFIER_RATE_LIMIT = {
   clientMaxRequests: parsePositiveIntEnv(
     'ORACLE_NULLIFIER_CLIENT_MAX_REQUESTS_PER_MINUTE',
-    30
+    15
   ),
   globalMaxRequests: parsePositiveIntEnv(
     'ORACLE_NULLIFIER_GLOBAL_MAX_REQUESTS_PER_MINUTE',
-    300
+    150
   ),
   clientBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_NULLIFIER_CLIENT_MAX_REQUESTS_PER_SECOND',
-    8
+    4
   ),
   globalBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_NULLIFIER_GLOBAL_MAX_REQUESTS_PER_SECOND',
-    100
+    40
   ),
   windowMs: 60_000,
   burstWindowMs: 1_000,
