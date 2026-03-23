@@ -5,6 +5,10 @@ import {
   encodeSharePayload,
   hasDangerousObjectKeys,
 } from '@/lib/libraries/zk';
+import {
+  fetchVerificationKeyCached,
+  getDefaultZkArtifactPaths,
+} from '@/lib/zk/artifacts';
 
 /**
  * Proof generation result
@@ -42,6 +46,92 @@ export interface VerificationResult {
   error?: string;
 }
 
+interface WorkerProveRequestMessage {
+  id: number;
+  type: 'prove';
+  witness: ReceiptWitness;
+  wasmPath: string;
+  zkeyPath: string;
+}
+
+interface WorkerProveSuccessMessage {
+  id: number;
+  proof: ProofResult['proof'];
+  publicSignals: string[];
+  type: 'prove_success';
+}
+
+interface WorkerProveErrorMessage {
+  error: string;
+  id: number;
+  type: 'prove_error';
+}
+
+type WorkerProveResponseMessage = WorkerProveSuccessMessage | WorkerProveErrorMessage;
+
+let nextWorkerRequestId = 0;
+
+function canUseProofWorker(): boolean {
+  return typeof window !== 'undefined' && typeof Worker !== 'undefined';
+}
+
+async function proveInWorker(
+  witness: ReceiptWitness,
+  wasmPath: string,
+  zkeyPath: string
+): Promise<ProofResult> {
+  const { createProofWorker } = await import('./proof-worker-client');
+  const worker = createProofWorker();
+  const requestId = ++nextWorkerRequestId;
+
+  return await new Promise<ProofResult>((resolve, reject) => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const cleanup = (): void => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+      worker.terminate();
+    };
+
+    worker.onmessage = (event: MessageEvent<WorkerProveResponseMessage>): void => {
+      const message = event.data;
+      if (!message || message.id !== requestId) {
+        return;
+      }
+
+      cleanup();
+      if (message.type === 'prove_error') {
+        reject(new Error(message.error));
+        return;
+      }
+
+      resolve({
+        proof: message.proof,
+        publicSignals: message.publicSignals,
+      });
+    };
+
+    worker.onerror = (event: ErrorEvent): void => {
+      cleanup();
+      reject(new Error(event.message || 'Proof worker failed'));
+    };
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error('Proof worker timed out'));
+    }, 180_000);
+
+    const request: WorkerProveRequestMessage = {
+      id: requestId,
+      type: 'prove',
+      witness,
+      wasmPath,
+      zkeyPath,
+    };
+    worker.postMessage(request);
+  });
+}
+
 /**
  * Proof generator for receipt circuit
  */
@@ -76,7 +166,14 @@ export class ProofGenerator {
    */
   async generateProof(witness: ReceiptWitness): Promise<ProofResult> {
     try {
-       
+      if (canUseProofWorker()) {
+        try {
+          return await proveInWorker(witness, this.wasmPath, this.zkeyPath);
+        } catch {
+          // Fall through to main-thread proving when worker path is unavailable.
+        }
+      }
+
       const { proof, publicSignals } = await groth16.fullProve(
         witness as any,
         this.wasmPath,
@@ -105,12 +202,7 @@ export class ProofGenerator {
     proof: ProofResult['proof']
   ): Promise<VerificationResult> {
     try {
-      // Load verification key
-      const vkeyResponse = await fetch(this.vkeyPath);
-      if (!vkeyResponse.ok) {
-        throw new Error(`Failed to load verification key: ${vkeyResponse.statusText}`);
-      }
-      const vkey = await vkeyResponse.json();
+      const vkey = await fetchVerificationKeyCached(this.vkeyPath);
 
       // Verify proof
       const valid = await groth16.verify(vkey, publicSignals, proof);
@@ -202,9 +294,10 @@ export class ProofGenerator {
  * Create proof generator with default paths
  */
 export function createProofGenerator(): ProofGenerator {
+  const artifactPaths = getDefaultZkArtifactPaths();
   return new ProofGenerator(
-    '/zk/receipt_js/receipt.wasm',
-    '/zk/receipt_final.zkey',
-    '/zk/verification_key.json'
+    artifactPaths.wasmPath,
+    artifactPaths.zkeyPath,
+    artifactPaths.vkeyPath
   );
 }

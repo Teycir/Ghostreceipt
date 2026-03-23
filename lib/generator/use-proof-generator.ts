@@ -9,16 +9,18 @@
  * The form component becomes a thin rendering layer with no async logic.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { announceToScreenReader } from '@/lib/accessibility';
 import type {
   GeneratorState,
   GeneratorFormValues,
   GeneratorFormErrors,
+  GeneratorTimingTelemetry,
   ProofResult,
   ApiErrorPayload,
 } from '@/lib/generator/types';
 import type { OraclePayload } from '@/lib/validation/schemas';
+import { scheduleZkArtifactPreload } from '@/lib/zk/artifacts';
 
 // ── Field-level validation ───────────────────────────────────────────────────
 function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
@@ -63,6 +65,8 @@ export interface UseProofGeneratorReturn {
   errors: GeneratorFormErrors;
   /** Human-readable error message when state === 'error' */
   errorMessage: string;
+  /** Optional guidance when a long-running prove step crosses threshold. */
+  processingHint: string;
   /** Populated when state === 'success' */
   proofResult: ProofResult | null;
   /** Call on form submit */
@@ -76,12 +80,23 @@ export function useProofGenerator(): UseProofGeneratorReturn {
   const [state, setState] = useState<GeneratorState>('idle');
   const [errors, setErrors] = useState<GeneratorFormErrors>({});
   const [errorMessage, setErrorMessage] = useState('');
+  const [processingHint, setProcessingHint] = useState('');
   const [proofResult, setProofResult] = useState<ProofResult | null>(null);
 
   const reset = useCallback((): void => {
     setState('idle');
     setErrorMessage('');
+    setProcessingHint('');
   }, []);
+
+  useEffect(() => {
+    scheduleZkArtifactPreload();
+  }, []);
+
+  const nowMs = (): number =>
+    typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
 
   const generate = useCallback(async (values: GeneratorFormValues): Promise<void> => {
     // 1. Validate fields first
@@ -91,12 +106,25 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       return;
     }
     setErrors({});
+    setProcessingHint('');
+
+    const telemetry: GeneratorTimingTelemetry = {
+      fetchMs: 0,
+      packageMs: 0,
+      proveMs: 0,
+      totalMs: 0,
+      witnessMs: 0,
+    };
+    const totalStart = nowMs();
+    let slowHintTimer: ReturnType<typeof setTimeout> | null = null;
+    let nextActionTimer: ReturnType<typeof setTimeout> | null = null;
 
     try {
       // 2. Fetch oracle data
       setState('fetching');
       setErrorMessage('');
       announceToScreenReader('Fetching transaction data');
+      const fetchStart = nowMs();
 
       const response = await fetch('/api/oracle/fetch-tx', {
         method: 'POST',
@@ -105,6 +133,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       });
 
       const data = (await response.json()) as { data?: OraclePayload } & ApiErrorPayload;
+      telemetry.fetchMs = nowMs() - fetchStart;
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -118,6 +147,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       // 3. Build & validate witness
       setState('validating');
       announceToScreenReader('Validating transaction data');
+      const witnessStart = nowMs();
 
       const { buildWitness, validateWitness } = await import('@/lib/zk/witness');
       const witness = buildWitness(data.data, {
@@ -129,15 +159,38 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       if (!validation.valid) {
         throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
       }
+      telemetry.witnessMs = nowMs() - witnessStart;
 
       // 4. Generate ZK proof
       setState('generating');
       announceToScreenReader('Generating zero-knowledge proof');
+      const proveSlowThresholdMs = 25_000;
+      const nextActionThresholdMs = 45_000;
+      slowHintTimer = setTimeout(() => {
+        setProcessingHint(
+          'Proof generation is taking longer than usual. Keep this tab open while artifacts finish loading.'
+        );
+      }, proveSlowThresholdMs);
+      nextActionTimer = setTimeout(() => {
+        setProcessingHint(
+          'Still generating proof. If this exceeds 60 seconds, keep this tab focused and retry once.'
+        );
+      }, nextActionThresholdMs);
+      const proveStart = nowMs();
 
       const { createProofGenerator } = await import('@/lib/zk/prover');
       const prover = createProofGenerator();
       const proofOutput = await prover.generateProof(witness);
+      telemetry.proveMs = nowMs() - proveStart;
+      if (slowHintTimer !== null) {
+        clearTimeout(slowHintTimer);
+      }
+      if (nextActionTimer !== null) {
+        clearTimeout(nextActionTimer);
+      }
+      setProcessingHint('');
 
+      const packageStart = nowMs();
       const shareableProof = prover.exportProof(proofOutput, {
         expiresAt:       data.data.expiresAt,
         messageHash:     data.data.messageHash,
@@ -147,23 +200,36 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         oraclePubKeyId:  data.data.oraclePubKeyId,
         signedAt:        data.data.signedAt,
       });
+      telemetry.packageMs = nowMs() - packageStart;
+      telemetry.totalMs = nowMs() - totalStart;
 
       setProofResult({
         proof:          shareableProof,
         chain:          values.chain,
         claimedAmount:  values.claimedAmount,
         minDate:        values.minDate,
+        timings:        telemetry,
       });
+      if (typeof console !== 'undefined') {
+        console.info('[ghostreceipt][proof_timing_ms]', telemetry);
+      }
 
       setState('success');
       announceToScreenReader('Receipt generated successfully');
     } catch (err) {
+      if (slowHintTimer !== null) {
+        clearTimeout(slowHintTimer);
+      }
+      if (nextActionTimer !== null) {
+        clearTimeout(nextActionTimer);
+      }
       const msg = err instanceof Error ? err.message : 'An unexpected error occurred';
       setState('error');
       setErrorMessage(msg);
+      setProcessingHint('');
       announceToScreenReader(`Error: ${msg}`);
     }
   }, []);
 
-  return { state, errors, errorMessage, proofResult, generate, reset };
+  return { state, errors, errorMessage, processingHint, proofResult, generate, reset };
 }

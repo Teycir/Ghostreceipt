@@ -1,3 +1,13 @@
+# Task Plan: Enhancement M1 Step 5 - Proof Speed Track (Preload + Worker + Telemetry)
+
+- [ ] Add artifact path/version resolver with cache-safe invalidation token.
+- [ ] Add proactive artifact preload on generator idle with deduplicated requests.
+- [ ] Move proof generation off main thread via Web Worker with safe fallback.
+- [ ] Add performance telemetry for `fetch_ms`, `witness_ms`, `prove_ms`, `package_ms`, `total_ms`.
+- [ ] Add UX slow-path guidance when proving crosses threshold.
+- [ ] Add focused unit tests for artifact caching/versioning and worker-aware prover flow.
+- [ ] Verify with typecheck and focused tests.
+
 # Task Plan: Enhancement M1 Step 4 - Transparency Log Validation On Verifier Path
 
 - [x] Define and add append-only transparency log JSON schema + repository-hosted artifact.

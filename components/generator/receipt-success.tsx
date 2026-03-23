@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { Button }       from '@/components/ui/button';
 import { useReceiptShare } from '@/lib/generator/use-receipt-share';
 import { toHumanAmount } from '@/lib/format/units';
-import type { Chain }   from '@/lib/generator/types';
+import type { Chain, GeneratorTimingTelemetry }   from '@/lib/generator/types';
 import type { SocialNetwork } from '@/lib/share/social';
 
 interface ReceiptSuccessProps {
@@ -19,6 +19,7 @@ interface ReceiptSuccessProps {
   chain:          Chain;
   claimedAmount:  string;
   minDate:        string;
+  timings?:       GeneratorTimingTelemetry;
 }
 
 function formatChainLabel(chain: Chain): string {
@@ -42,6 +43,7 @@ export function ReceiptSuccess({
   chain,
   claimedAmount,
   minDate,
+  timings,
 }: Readonly<ReceiptSuccessProps>): React.JSX.Element {
   const {
     verifyUrl,
@@ -114,6 +116,21 @@ export function ReceiptSuccess({
             </div>
           ))}
         </div>
+
+        {timings && (
+          <div className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 mb-2">
+              Generation Telemetry (ms)
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-xs text-cyan-100/85 font-mono">
+              <span>fetch: {Math.round(timings.fetchMs)}</span>
+              <span>witness: {Math.round(timings.witnessMs)}</span>
+              <span>prove: {Math.round(timings.proveMs)}</span>
+              <span>package: {Math.round(timings.packageMs)}</span>
+              <span className="col-span-2">total: {Math.round(timings.totalMs)}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Share card ── */}

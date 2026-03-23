@@ -28,7 +28,15 @@ const DEFAULT_VALUES: GeneratorFormValues = {
 export function GeneratorForm(): React.JSX.Element {
   const formId = useId();
   const [values, setValues] = useState<GeneratorFormValues>(DEFAULT_VALUES);
-  const { state, errors, errorMessage, proofResult, generate, reset } = useProofGenerator();
+  const {
+    state,
+    errors,
+    errorMessage,
+    processingHint,
+    proofResult,
+    generate,
+    reset,
+  } = useProofGenerator();
 
   const isProcessing = state === 'fetching' || state === 'validating' || state === 'generating';
 
@@ -143,7 +151,14 @@ export function GeneratorForm(): React.JSX.Element {
       />
 
       {/* ── Animated stepper while processing ── */}
-      {isProcessing && <ProofStepper state={state} />}
+      {isProcessing && (
+        <>
+          <ProofStepper state={state} />
+          {state === 'generating' && processingHint && (
+            <StatusBanner variant="warning" message={processingHint} aria="polite" />
+          )}
+        </>
+      )}
 
       {/* ── Error ── */}
       {state === 'error' && (
@@ -162,6 +177,7 @@ export function GeneratorForm(): React.JSX.Element {
           chain={proofResult.chain}
           claimedAmount={proofResult.claimedAmount}
           minDate={proofResult.minDate}
+          {...(proofResult.timings ? { timings: proofResult.timings } : {})}
         />
       )}
 

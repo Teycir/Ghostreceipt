@@ -29,11 +29,21 @@ export interface GeneratorFormValues {
 export type GeneratorFormErrors = Partial<Record<keyof GeneratorFormValues, string>>;
 
 /** The shareable proof output kept in state after success */
+export interface GeneratorTimingTelemetry {
+  fetchMs: number;
+  packageMs: number;
+  proveMs: number;
+  totalMs: number;
+  witnessMs: number;
+}
+
+/** The shareable proof output kept in state after success */
 export interface ProofResult {
   proof: string;
   chain: Chain;
   claimedAmount: string;
   minDate: string;
+  timings?: GeneratorTimingTelemetry;
 }
 
 /** Shape of the structured API error payload */
