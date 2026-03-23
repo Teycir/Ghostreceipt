@@ -12,12 +12,19 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:live:oracle": "bash scripts/run-live-oracle-tests.sh",
+    "test:stress:oracle": "STRESS_TEST=1 jest tests/integration/stress-oracle-volume.test.ts --runInBand --ci --testTimeout=180000",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:secrets": "bash scripts/check-secrets.sh",
     "compile:circuit": "bash scripts/compile-circuit.sh",
     "deploy:check": "bash scripts/deploy-check.sh",
-    "security:audit": "bash scripts/security-audit.sh"
+    "security:audit": "bash scripts/security-audit.sh",
+    "deploy": "bash deploy.sh",
+    "deploy:preview": "npm run build && npx wrangler pages deploy out --project-name=ghostreceipt --branch=preview",
+    "pages:dev": "npx wrangler pages dev out",
+    "cf:setup": "bash scripts/setup-cloudflare.sh",
+    "cf:secrets": "bash scripts/manage-secrets.sh",
+    "cf:sync": "bash scripts/sync-secrets.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -35,6 +42,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.1",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.58.2",
@@ -54,7 +62,8 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "ts-jest": "^29.2.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "wrangler": "^4.76.0"
   },
   "overrides": {
     "underscore": "1.13.8"

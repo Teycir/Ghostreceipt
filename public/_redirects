@@ -1,0 +1,5 @@
+# SPA fallback for client-side routing
+/*    /index.html   200
+
+# API routes should not fallback
+/api/*  /api/:splat  200

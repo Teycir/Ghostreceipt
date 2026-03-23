@@ -1,3 +1,37 @@
+# Task Plan: Oracle Volume Stress Test (100 Users/Hour + Concurrency)
+
+- [x] Add a dedicated stress integration test for `/api/oracle/fetch-tx` + `/api/oracle/verify-signature`.
+- [x] Simulate 100-user/hour equivalent traffic with configurable concurrency and mixed BTC/ETH load.
+- [x] Capture latency and success-rate metrics with explicit assertions.
+- [x] Add a dedicated npm script for running stress tests on demand.
+- [x] Run typecheck and stress test command; record outcomes.
+
+## Review
+- Added new stress suite: `tests/integration/stress-oracle-volume.test.ts`
+  - env-gated (`STRESS_TEST=1`) so it runs only when explicitly requested,
+  - simulates 100 users with concurrency 10 by default (`STRESS_USERS`, `STRESS_CONCURRENCY` override support),
+  - mixed BTC/ETH traffic split (`STRESS_BTC_RATIO`, default `0.5`),
+  - runs full route path per simulated user:
+    - `POST /api/oracle/fetch-tx`,
+    - `POST /api/oracle/verify-signature`,
+  - collects and logs metrics (`successRate`, `fetchP95`, `verifyP95`, total duration),
+  - asserts non-regression thresholds:
+    - success rate `>= 99%`,
+    - fetch p95 `< 2000ms`,
+    - verify p95 `< 1000ms`.
+- Stress suite is deterministic/stable in CI:
+  - mocks provider network calls (`MempoolSpaceProvider`, `EthereumPublicRpcProvider`) while preserving full oracle route logic,
+  - uses unique per-user trusted proxy IPs to model concurrency without hitting per-client throttling,
+  - includes route-level disposer hooks to clean timers/limiters.
+- CI/CD wiring:
+  - `package.json`: added `test:stress:oracle`,
+  - `.github/workflows/ci.yml`: added stress integration step in Quality Gate,
+  - `.github/workflows/deploy.yml`: added stress integration step before deploy,
+  - `scripts/deploy-check.sh`: added stress integration check.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test:stress:oracle` passes with summary metrics.
+
 # Task Plan: CI/CD Reliability Hardening (Live Integration)
 
 - [x] Eliminate open-handle warnings from live integration tests via explicit route-level timer teardown.

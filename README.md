@@ -244,6 +244,8 @@ Open `http://localhost:3000`.
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)
+- Cloudflare deployment: [docs/CLOUDFLARE_DEPLOYMENT.md](./docs/CLOUDFLARE_DEPLOYMENT.md)
+- Deployment checklist: [docs/DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md)
 - Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
 - Execution roadmap: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
 - Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)

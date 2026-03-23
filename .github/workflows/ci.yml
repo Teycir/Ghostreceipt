@@ -50,6 +50,9 @@ jobs:
       - name: Run tests
         run: npm run test:coverage
 
+      - name: Run stress integration tests
+        run: npm run test:stress:oracle
+
       - name: Build
         run: npm run build
 

@@ -1,0 +1,8 @@
+# GhostReceipt robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://ghostreceipt.pages.dev/sitemap.xml

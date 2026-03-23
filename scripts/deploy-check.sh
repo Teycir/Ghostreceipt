@@ -81,6 +81,16 @@ else
     echo -e "${YELLOW}⚠${NC} Linter warnings/errors found. Run: npm run lint"
 fi
 
+# Run stress integration tests
+echo ""
+echo "⚡ Running stress integration tests..."
+if npm run test:stress:oracle > /dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} Stress integration tests passed"
+else
+    echo -e "${RED}✗${NC} Stress integration tests failed. Run: npm run test:stress:oracle"
+    exit 1
+fi
+
 # Test build
 echo ""
 echo "🏗️  Testing production build..."

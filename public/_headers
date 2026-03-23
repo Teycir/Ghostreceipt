@@ -1,0 +1,20 @@
+/*
+  X-DNS-Prefetch-Control: on
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://mempool.space https://blockchair.com https://api.etherscan.io https://eth.llamarpc.com https://rpc.ankr.com https://cloudflare-eth.com https://cloudflareinsights.com; worker-src 'self' blob:; frame-ancestors 'none'; block-all-mixed-content; upgrade-insecure-requests
+
+/zk/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/docs/*
+  Cache-Control: public, max-age=3600
