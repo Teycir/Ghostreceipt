@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-23 - Trust Assumptions Need Front-Page Visibility
+- For privacy/security products, keep trust-boundary disclosures (for example centralized oracle assumptions) prominent in top-level docs, not only in deep runbooks.
+- Keep user-facing docs technically synchronized with implementation details (for example signature scheme changes such as HMAC -> Ed25519).
+- Avoid leaking local workstation paths in public/reference sections; prefer repository URLs or relative project paths.
+
 ## 2026-03-22 - Cross-Repo Deprecation Parity
 - When the user points to an already-fixed issue in a sibling repo (for example `smartcontractpatternfinder`), pull that implementation pattern first instead of re-deriving from scratch.
 - For provider/API hardening, validate against live endpoint behavior (not assumptions) before closing review findings, especially around versioned API migrations like Etherscan v1 -> v2.

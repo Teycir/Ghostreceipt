@@ -6,7 +6,7 @@ This record is completed from the current local artifact set.
 
 - Date (UTC): `2026-03-22T00:36:50Z`
 - Operator: `teycir`
-- Environment: local workstation (`/home/teycir/Repos/GhostReceipt`)
+- Environment: local workstation (`<repo-root>/GhostReceipt`)
 - Circuit file: `circuits/receipt.circom`
 - Circuit git commit: `524e27eef4d87aec19890d4d47a3c43979a4dde4`
 - Circom version: `2.2.3`

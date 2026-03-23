@@ -68,6 +68,16 @@
   </div>
 
   <div class="faq-item">
+    <h2>What does a verified receipt prove today?</h2>
+    <p>It proves your claim satisfies the circuit against oracle-signed canonical transaction facts. It does not remove trust in the current single oracle operator and upstream data providers.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>For Bitcoin, what does the amount represent?</h2>
+    <p>Bitcoin <code>valueAtomic</code> currently maps to total transaction output value (<code>sum(vout)</code> / <code>output_total</code>), not recipient-specific net received value. For multi-output transactions, treat it as tx-level evidence.</p>
+  </div>
+
+  <div class="faq-item">
     <h2>How long does proof generation take?</h2>
     <p>Typically under 60 seconds on modern devices. The process includes fetching transaction data, validating constraints, and generating the zero-knowledge proof in your browser.</p>
   </div>

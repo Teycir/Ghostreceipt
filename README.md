@@ -24,6 +24,7 @@ _Scan the QR code or copy the wallet address above._
 ![Proof](https://img.shields.io/badge/Proof-Zero--Knowledge-111111?style=for-the-badge)
 ![Hosting](https://img.shields.io/badge/Hosting-No--Card%20Friendly-0f766e?style=for-the-badge)
 ![UX](https://img.shields.io/badge/UX-Zero%20Friction-1d4ed8?style=for-the-badge)
+[![CI](https://img.shields.io/github/actions/workflow/status/Teycir/Ghostreceipt/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Teycir/Ghostreceipt/actions/workflows/ci.yml)
 
 <img src="assets/ghostreceipt_ascii.svg" alt="GhostReceipt animated banner" width="720" />
 
@@ -34,6 +35,9 @@ _Scan the QR code or copy the wallet address above._
 Status:
 - Release: `Unreleased` (pre-`v0.1.0`)
 - Live demo: `Not published yet`
+
+> ⚠️ **Trust Assumptions (Current):**
+> A GhostReceipt proof is valid relative to oracle-signed canonical transaction facts. The oracle is currently centralized; if it is unavailable or compromised, new receipt generation is impacted and trust in newly issued payloads is degraded. See the [Threat Model](./docs/runbooks/THREAT_MODEL.md).
 
 [Roadmap](./docs/project/ROADMAP.md) | [Plan](./docs/project/PLAN.md) | [Report Bug](https://github.com/teycir/GhostReceipt/issues)
 
@@ -133,6 +137,14 @@ GhostReceipt uses four API types so the product stays reliable while keeping UX 
 ## Oracle Trust Model
 GhostReceipt currently uses a single first-party oracle signing key as the trust anchor for canonical transaction facts.
 
+Receipt verification proves:
+- The proof satisfies circuit constraints.
+- The proof is tied to the oracle-signed canonical commitment.
+
+Receipt verification does not independently prove:
+- Full chain-state correctness without trusting the oracle/provider pipeline.
+- That a specific BTC recipient got the full tx-level value in multi-output transactions.
+
 What the oracle can do:
 - Confirm canonical transaction facts (`valueAtomic`, `timestampUnix`, `txHash`, `chain`) after provider fetch and normalization.
 - Sign the deterministic commitment used by witness/proof generation.
@@ -146,6 +158,7 @@ Current trust assumptions:
 - Oracle signatures use Ed25519 over the canonical oracle commitment (`messageHash`).
 - Receipt verification checks both ZK validity and oracle signature integrity.
 - Oracle trust is centralized today; if the oracle is offline, new receipt generation is degraded.
+- If oracle key compromise is suspected, treat new payloads as untrusted until rotation/recovery procedures complete.
 
 Operational controls:
 - Key-management and rotation procedures are documented in [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md).
@@ -237,6 +250,7 @@ Open `http://localhost:3000`.
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md)
 - Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./docs/project/REPO_METADATA_CHECKLIST.md)
 - Security runbook: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
+- Threat model: [docs/runbooks/THREAT_MODEL.md](./docs/runbooks/THREAT_MODEL.md)
 - Circuit provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)
 - Trusted setup provenance record (2026-03-22): [docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md)
 - Circuit self-review: [docs/runbooks/CIRCUIT_SELF_REVIEW.md](./docs/runbooks/CIRCUIT_SELF_REVIEW.md)
@@ -258,8 +272,11 @@ Yes. Local setup and baseline flow are designed for no-card operation.
 ### What does the verifier see?
 Only proof-related public claims and redacted receipt output, not raw sensitive identities.
 
+### What does a verified receipt prove today?
+It proves your claim satisfies the circuit against oracle-signed canonical tx facts. It does not remove trust in the current single oracle/operator and provider data sources.
+
 ### What BTC value does `valueAtomic` represent?
-Current BTC canonicalization uses total tx output value (`sum(vout)`), not recipient-specific net received value.
+For BTC, `valueAtomic` is currently tx-level total output value (`sum(vout)` / `output_total`), not recipient-specific net received value. In multi-output transactions, this can exceed what any single recipient received.
 
 ### Is Monero supported?
 Planned as a dedicated track with separate constraints due to hidden amounts.
@@ -311,10 +328,10 @@ GhostReceipt is part of a privacy-first toolkit. Check out these related project
 ## References
 - Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
 - Execution checklist: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
-- Reference source: `/home/teycir/Repos/xmrproof`
-- Reference source: `/home/teycir/Repos/Timeseal`
-- Reference source: `/home/teycir/Repos/Sanctum`
-- Reference source: `/home/teycir/Repos/smartcontractpatternfinder`
+- Reference source: [xmrproof](https://github.com/Teycir/xmrproof)
+- Reference source: [Timeseal](https://github.com/Teycir/Timeseal)
+- Reference source: [Sanctum](https://github.com/Teycir/Sanctum)
+- Reference source: [smartcontractpatternfinder](https://github.com/Teycir/smartcontractpatternfinder)
 
 ## Contact
 - Creator: [Teycir Ben Soltane](https://teycirbensoltane.tn)

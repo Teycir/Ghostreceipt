@@ -107,6 +107,7 @@ This roadmap is execution-first and checkbox-driven so progress is visible at ev
 - [ ] Add dependency audit checks in CI
 - [ ] Verify no sensitive data is logged
 - [ ] Run threat-model review and document mitigations
+- [ ] Publish a consumer-facing trust assumptions + oracle compromise response document
 
 ## Phase 9: Testing and Quality Gates
 - [ ] Ensure all tests are in `tests/` only
@@ -146,6 +147,8 @@ This roadmap is execution-first and checkbox-driven so progress is visible at ev
 - [ ] Improve proof compression and share size
 - [ ] Add optional account features (still no-login default)
 - [ ] Add observability dashboards and SLA alerts
+- [ ] Design and prototype multi-oracle attestation/quorum path to reduce single-operator trust
+- [ ] Evaluate TLS-notary/light-client approaches for trust-minimized transaction attestation
 
 ## Definition of Done (Global)
 - [ ] No-credit-card local setup documented and verified

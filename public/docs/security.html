@@ -44,20 +44,21 @@
     <li>✓ Privacy leakage of exact timestamps</li>
     <li>✓ Privacy leakage of sender/receiver addresses</li>
     <li>✓ Forged receipts (cryptographic proof verification)</li>
-    <li>✓ Oracle data tampering (HMAC-SHA256 signatures)</li>
+    <li>✓ Oracle payload tampering in transit (Ed25519 signature verification)</li>
   </ul>
 
   <h2>Trust Assumptions</h2>
   <p>You must trust:</p>
   <ul>
-    <li>The oracle to fetch correct blockchain data</li>
+    <li>The current single oracle operator to fetch/sign canonical blockchain data honestly</li>
+    <li>Upstream chain data providers used by the oracle</li>
     <li>The circuit implementation (open source, auditable)</li>
     <li>The proving system (Groth16, widely used)</li>
     <li>Your browser's JavaScript execution environment</li>
   </ul>
 
   <div class="warning">
-    <strong>⚠️ Important:</strong> GhostReceipt is experimental software. Use at your own risk. Always verify receipts independently when possible.
+    <strong>⚠️ Important:</strong> GhostReceipt is experimental software with a centralized oracle trust anchor. A valid receipt proves constraints against oracle-signed data, not trustless full chain-state verification.
   </div>
 
   <h2>Security Headers</h2>
@@ -73,7 +74,7 @@
   <ol>
     <li>User enters transaction hash and claim parameters</li>
     <li>Oracle fetches canonical blockchain data</li>
-    <li>Oracle signs data with HMAC-SHA256</li>
+    <li>Oracle signs canonical commitment data with Ed25519</li>
     <li>Browser builds witness from oracle payload + user claim</li>
     <li>Browser generates zero-knowledge proof locally</li>
     <li>Shareable receipt contains only proof + public signals</li>

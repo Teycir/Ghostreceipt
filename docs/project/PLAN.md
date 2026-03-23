@@ -258,10 +258,10 @@ All tests live in `tests/` (never inline in production files).
 
 ## 12) Reuse Map from Existing Repos
 This section identifies what to reuse from:
-- `/home/teycir/Repos/xmrproof`
-- `/home/teycir/Repos/Timeseal`
-- `/home/teycir/Repos/Sanctum`
-- `/home/teycir/Repos/smartcontractpatternfinder`
+- `https://github.com/Teycir/xmrproof`
+- `https://github.com/Teycir/Timeseal`
+- `https://github.com/Teycir/Sanctum`
+- `https://github.com/Teycir/smartcontractpatternfinder`
 
 ### A) Copy First (High ROI, Low Refactor)
 - Text scramble + reveal animation core:

@@ -1,3 +1,36 @@
+# Task Plan: Review-Driven Trust Clarity + Public Docs Hygiene
+
+- [x] Add a prominent trust-assumptions warning and CI status badge to `README.md`.
+- [x] Clarify centralized oracle guarantees/limits and BTC `valueAtomic` semantics in user-facing docs.
+- [x] Remove local workstation filesystem-path references from public-facing reference sections.
+- [x] Add roadmap/threat-model artifacts for oracle compromise handling and decentralization direction.
+- [x] Run verification checks and record outcomes.
+
+## Review
+- Updated `README.md` to include:
+  - a visible CI badge for `.github/workflows/ci.yml`,
+  - a top-level trust-assumptions warning block,
+  - explicit "what verified receipts prove vs do not prove" language,
+  - stronger BTC `valueAtomic` semantics disclosure,
+  - sanitized references (GitHub links instead of local absolute filesystem paths).
+- Updated static user docs:
+  - `public/docs/security.html` now references Ed25519 signatures (not HMAC), clarifies centralized oracle assumptions, and states trust boundaries more explicitly.
+  - `public/docs/faq.html` now includes dedicated answers for current trust assumptions and BTC tx-level value semantics.
+- Added threat-model documentation:
+  - New file `docs/runbooks/THREAT_MODEL.md` covering scope, trust boundaries, key threats, compromise expectations, and trust-minimization roadmap direction.
+  - Linked from both `README.md` and `docs/README.md`.
+- Added roadmap tracking for trust hardening in `docs/project/ROADMAP.md`:
+  - consumer-facing trust assumptions + compromise response item,
+  - multi-oracle and TLS-notary/light-client exploration items.
+- Removed local workstation path exposure from planning/provenance docs:
+  - `docs/project/PLAN.md`,
+  - `agents.md`,
+  - `docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md`.
+- Verification:
+  - `npm run typecheck` passes.
+  - `rg -n "HMAC|HMAC-SHA256" README.md public/docs/security.html public/docs/faq.html docs/runbooks/THREAT_MODEL.md docs/README.md` returns no matches.
+  - `rg -n "/home/teycir/Repos" README.md docs/project/PLAN.md agents.md docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md` returns no matches.
+
 # Task Plan: Etherscan V2 Robustness + Live Validation
 
 - [x] Confirm live Etherscan API behavior via Exa/Fetch docs + direct network calls.

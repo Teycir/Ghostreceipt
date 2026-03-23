@@ -13,6 +13,7 @@ This directory is the central home for project documentation.
 ## Runbooks
 
 - Security and secret handling: [docs/runbooks/SECURITY.md](./runbooks/SECURITY.md)
+- Threat model: [docs/runbooks/THREAT_MODEL.md](./runbooks/THREAT_MODEL.md)
 - Cloudflare deployment: [docs/runbooks/CLOUDFLARE_DEPLOYMENT.md](./runbooks/CLOUDFLARE_DEPLOYMENT.md)
 - Circuit compilation: [docs/runbooks/CIRCUIT_COMPILATION.md](./runbooks/CIRCUIT_COMPILATION.md)
 - Trusted setup provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)

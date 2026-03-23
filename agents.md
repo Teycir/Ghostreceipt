@@ -247,7 +247,7 @@ Before committing code:
 - Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
 - Execution checklist: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
 - Reuse sources:
-  - `/home/teycir/Repos/xmrproof`
-  - `/home/teycir/Repos/Timeseal`
-  - `/home/teycir/Repos/Sanctum`
-  - `/home/teycir/Repos/smartcontractpatternfinder`
+  - `https://github.com/Teycir/xmrproof`
+  - `https://github.com/Teycir/Timeseal`
+  - `https://github.com/Teycir/Sanctum`
+  - `https://github.com/Teycir/smartcontractpatternfinder`
