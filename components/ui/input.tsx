@@ -1,6 +1,7 @@
 "use client";
 
 interface InputProps {
+  id?: string;
   type?: string;
   value: string;
   onChange: (value: string) => void;
@@ -11,6 +12,7 @@ interface InputProps {
 }
 
 export function Input({
+  id,
   type = "text",
   value,
   onChange,
@@ -18,7 +20,7 @@ export function Input({
   label,
   error,
   disabled,
-}: InputProps): React.JSX.Element {
+}: Readonly<InputProps>): React.JSX.Element {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -27,6 +29,7 @@ export function Input({
         </label>
       )}
       <input
+        id={id}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}

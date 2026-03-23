@@ -39,16 +39,16 @@ export function HomeShell(): React.JSX.Element {
   const shownUseCaseIndicesRef = useRef<Set<number>>(new Set([0]));
 
   useEffect(() => {
-    const minTimer = window.setTimeout(() => setMinimumElapsed(true), MIN_LOADING_MS);
-    const failSafeTimer = window.setTimeout(() => {
+    const minTimer = globalThis.setTimeout(() => setMinimumElapsed(true), MIN_LOADING_MS);
+    const failSafeTimer = globalThis.setTimeout(() => {
       setBackgroundReady(true);
       setMinimumElapsed(true);
       setShownAllUseCases(true);
     }, FAILSAFE_LOADING_MS);
 
     return () => {
-      window.clearTimeout(minTimer);
-      window.clearTimeout(failSafeTimer);
+      globalThis.clearTimeout(minTimer);
+      globalThis.clearTimeout(failSafeTimer);
     };
   }, []);
 
@@ -63,7 +63,7 @@ export function HomeShell(): React.JSX.Element {
     }
 
     const totalUseCases = LOADER_USE_CASES.length;
-    const rotateTimer = window.setInterval(() => {
+    const rotateTimer = globalThis.setInterval(() => {
       setUseCaseIndex((prev) => {
         const next = (prev + 1) % totalUseCases;
         shownUseCaseIndicesRef.current.add(next);
@@ -74,7 +74,7 @@ export function HomeShell(): React.JSX.Element {
       });
     }, USE_CASE_ROTATE_MS);
 
-    return () => window.clearInterval(rotateTimer);
+    return () => globalThis.clearInterval(rotateTimer);
   }, [loading]);
 
   return (
@@ -94,7 +94,15 @@ export function HomeShell(): React.JSX.Element {
         <div className="startup-overlay__blob startup-overlay__blob--c" />
         <div className="startup-overlay__grain" />
         <div className="startup-overlay__content">
-          <p className="startup-overlay__brand">GhostReceipt</p>
+          <div className="startup-overlay__brand" aria-hidden="true">
+            <TextPressure
+              text="GhostReceipt"
+              textColor="rgba(235,243,255,0.95)"
+              minFontSize={34}
+              className="justify-center"
+            />
+          </div>
+          <p className="sr-only">GhostReceipt</p>
           <p className="startup-overlay__tag">Prove the payment. Keep the privacy.</p>
           <p className="startup-overlay__status">Initializing secure verification engine...</p>
 

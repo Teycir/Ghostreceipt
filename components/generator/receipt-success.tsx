@@ -1,242 +1,173 @@
 'use client';
 
+/**
+ * components/generator/receipt-success.tsx
+ *
+ * Pure rendering layer — NO async logic, NO QR generation, NO sharing calls.
+ * All side-effects live in useReceiptShare().
+ */
+
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import type { Chain } from '@/lib/validation/schemas';
-import { useSecureClipboard } from '@/lib/shared/use-secure-clipboard';
+import { Button }       from '@/components/ui/button';
+import { useReceiptShare } from '@/lib/generator/use-receipt-share';
+import { toHumanAmount } from '@/lib/format/units';
+import type { Chain }   from '@/lib/generator/types';
+import type { SocialNetwork } from '@/lib/share/social';
 
 interface ReceiptSuccessProps {
-  proof: string;
-  chain: Chain;
-  claimedAmount: string;
-  minDate: string;
+  proof:          string;
+  chain:          Chain;
+  claimedAmount:  string;
+  minDate:        string;
 }
+
+function formatChainLabel(chain: Chain): string {
+  const LABELS: Record<Chain, string> = {
+    bitcoin:  '₿ Bitcoin',
+    ethereum: 'Ξ Ethereum',
+    solana:   '◎ Solana',
+  };
+  return LABELS[chain] ?? chain;
+}
+
+const SOCIAL_BUTTONS: { label: string; network: SocialNetwork }[] = [
+  { label: '𝕏 Post',       network: 'x'        },
+  { label: '✈ Telegram',   network: 'telegram'  },
+  { label: 'in LinkedIn',  network: 'linkedin'  },
+  { label: '↗ Reddit',     network: 'reddit'    },
+];
 
 export function ReceiptSuccess({
   proof,
   chain,
   claimedAmount,
   minDate,
-}: ReceiptSuccessProps): React.JSX.Element {
-  const [qrCode, setQrCode] = useState<string>('');
-  const [qrError, setQrError] = useState<string>('');
-  const [verifyUrl, setVerifyUrl] = useState<string>('');
-  const [shareStatus, setShareStatus] = useState<string>('');
-  const { copied, copyToClipboard } = useSecureClipboard();
+}: Readonly<ReceiptSuccessProps>): React.JSX.Element {
+  const {
+    verifyUrl,
+    qrCode,
+    qrError,
+    shareStatus,
+    copied,
+    copyLink,
+    shareToNetwork,
+    shareNatively,
+    downloadQR,
+    openReceipt,
+  } = useReceiptShare({ proof, chain });
 
+  // Stagger-reveal the card on mount
+  const [revealed, setRevealed] = useState(false);
   useEffect(() => {
-    setVerifyUrl(getVerifyUrl());
-    void generateQR();
-  }, [proof]);
+    const t = globalThis.setTimeout(() => setRevealed(true), 60);
+    return () => globalThis.clearTimeout(t);
+  }, []);
 
-  const generateQR = async (): Promise<void> => {
-    try {
-      const QRCode = (await import('qrcode')).default;
-      const verifyUrl = getVerifyUrl();
-      setQrError('');
-      
-      const qr = await QRCode.toDataURL(verifyUrl, {
-        errorCorrectionLevel: 'H',
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
-      
-      setQrCode(qr);
-    } catch (error) {
-      console.error('QR generation failed:', error instanceof Error ? error.message : error);
-      setQrError('Could not generate QR code. You can still copy the verification link.');
-    }
-  };
-
-  const getVerifyUrl = (): string => {
-    const params = new URLSearchParams({
-      proof,
-    });
-    
-    return `${window.location.origin}/verify?${params.toString()}`;
-  };
-
-  const copyLink = async (): Promise<void> => {
-    try {
-      await copyToClipboard(getVerifyUrl());
-      setShareStatus('Link copied (auto-clears in 60s)');
-    } catch (error) {
-      console.error('Copy failed:', error instanceof Error ? error.message : error);
-      setShareStatus('Copy failed');
-    }
-  };
-
-  const getShareText = (): string => {
-    return `I generated a privacy-preserving ${chain} receipt with GhostReceipt. Verify it here:`;
-  };
-
-  const shareToNetwork = (network: 'x' | 'telegram' | 'linkedin' | 'reddit'): void => {
-    const url = encodeURIComponent(getVerifyUrl());
-    const text = encodeURIComponent(getShareText());
-    const title = encodeURIComponent('GhostReceipt verification link');
-
-    const shareUrls: Record<typeof network, string> = {
-      x: `https://x.com/intent/tweet?text=${text}%20${url}`,
-      telegram: `https://t.me/share/url?url=${url}&text=${text}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
-      reddit: `https://www.reddit.com/submit?url=${url}&title=${title}`,
-    };
-
-    window.open(shareUrls[network], '_blank', 'noopener,noreferrer');
-  };
-
-  const shareNatively = async (): Promise<void> => {
-    const shareData = {
-      title: 'GhostReceipt Verification Link',
-      text: getShareText(),
-      url: getVerifyUrl(),
-    };
-
-    try {
-      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-        await navigator.share(shareData);
-        setShareStatus('Shared successfully');
-        return;
-      }
-      await navigator.clipboard.writeText(shareData.url);
-      setShareStatus('Copied link (native share unavailable)');
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        setShareStatus('Share cancelled');
-        return;
-      }
-      console.error('Native share failed:', error instanceof Error ? error.message : error);
-      setShareStatus('Share failed');
-    }
-  };
-
-  const downloadQR = (): void => {
-    if (!qrCode) return;
-    
-    const link = document.createElement('a');
-    link.download = `ghostreceipt-${Date.now()}.png`;
-    link.href = qrCode;
-    link.click();
-  };
+  const receiptFields = [
+    { label: 'Chain',    value: formatChainLabel(chain),                                 delay: '0.15s' },
+    { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain)})`, delay: '0.25s' },
+    { label: 'Min Date', value: minDate,                                                  delay: '0.35s' },
+  ] as const;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-xl text-green-400">
-            ✓
+    <div
+      className={`receipt-reveal space-y-4 ${revealed ? 'receipt-reveal--in' : ''}`}
+      aria-live="polite"
+      aria-label="Receipt generated"
+    >
+      {/* ── Hero success card ── */}
+      <div className="receipt-card receipt-card--success">
+        <div className="receipt-card__burst" aria-hidden="true" />
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="receipt-checkmark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="20" cy="20" r="19" stroke="#34d399" strokeWidth="1.5" opacity="0.4" />
+              <circle
+                cx="20" cy="20" r="19"
+                stroke="#34d399" strokeWidth="1.5"
+                strokeDasharray="120" strokeDashoffset="120"
+                className="receipt-checkmark__ring"
+              />
+              <polyline
+                points="12,21 18,27 29,14"
+                stroke="#34d399" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round"
+                strokeDasharray="30" strokeDashoffset="30"
+                className="receipt-checkmark__tick"
+              />
+            </svg>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-green-400">Receipt Generated</h3>
-            <p className="text-xs text-white/40">
-              Your zero-knowledge payment proof is ready
-            </p>
+            <h3 className="text-lg font-bold text-emerald-400 leading-tight">Receipt Generated</h3>
+            <p className="text-xs text-white/40 mt-0.5">Zero-knowledge proof ready to share</p>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="p-3 bg-white/5 rounded-lg border border-white/8">
-            <div className="text-xs text-white/40 mb-1">Chain</div>
-            <div className="text-sm font-semibold capitalize text-white">{chain}</div>
-          </div>
-
-          <div className="p-3 bg-white/5 rounded-lg border border-white/8">
-            <div className="text-xs text-white/40 mb-1">
-              Claimed Amount {chain === 'bitcoin' ? '(satoshis)' : '(wei)'}
+        {/* Fields */}
+        <div className="space-y-2.5">
+          {receiptFields.map(({ label, value, delay }) => (
+            <div key={label} className="receipt-field" style={{ animationDelay: delay }}>
+              <span className="receipt-field__label">{label}</span>
+              <span className="receipt-field__value font-mono">{value}</span>
             </div>
-            <div className="text-sm font-semibold font-mono text-white">{claimedAmount}</div>
-          </div>
-
-          <div className="p-3 bg-white/5 rounded-lg border border-white/8">
-            <div className="text-xs text-white/40 mb-1">Minimum Date</div>
-            <div className="text-sm font-semibold text-white">{minDate}</div>
-          </div>
+          ))}
         </div>
       </div>
 
-      <div className="glass-card rounded-xl p-5">
-        <p className="text-xs uppercase tracking-[0.14em] text-white/50 mb-3">Share Receipt</p>
-        <p className="text-xs text-white/55 mb-2">Verification URL</p>
+      {/* ── Share card ── */}
+      <div className="glass-card rounded-xl p-5 space-y-3">
+        <p className="text-xs uppercase tracking-[0.14em] text-white/50">Share Receipt</p>
+        <p className="text-xs text-white/55">Verification URL</p>
         <code className="block w-full max-h-24 overflow-auto break-all rounded-lg border border-white/12 bg-black/35 px-3 py-2 text-[11px] text-white/85">
-          {verifyUrl || 'Preparing link...'}
+          {verifyUrl || 'Preparing link…'}
         </code>
 
-        <Button type="button" onClick={() => void copyLink()} variant="primary" className="w-full mt-3">
-          {copied ? '✓ Copied! (Auto-clears in 60s)' : 'Copy URL'}
+        <Button type="button" onClick={() => { void copyLink(); }} variant="primary" className="w-full">
+          {copied ? '✓ Copied! (Auto-clears in 60s)' : '⎘ Copy Verify URL'}
         </Button>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mt-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {SOCIAL_BUTTONS.map(({ label, network }) => (
+            <Button
+              key={network}
+              type="button"
+              variant="secondary"
+              className="text-xs"
+              onClick={() => shareToNetwork(network)}
+            >
+              {label}
+            </Button>
+          ))}
           <Button
             type="button"
             variant="secondary"
-            className="text-xs sm:text-sm"
-            onClick={() => {
-              if (!verifyUrl) return;
-              window.location.href = verifyUrl;
-            }}
+            className="text-xs col-span-2 sm:col-span-4"
+            onClick={() => { void shareNatively(); }}
           >
-            Open Receipt
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-xs sm:text-sm"
-            onClick={() => {
-              void shareNatively();
-            }}
-          >
-            Share
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-xs sm:text-sm"
-            onClick={() => shareToNetwork('x')}
-          >
-            X
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-xs sm:text-sm"
-            onClick={() => shareToNetwork('telegram')}
-          >
-            Telegram
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-xs sm:text-sm"
-            onClick={() => shareToNetwork('linkedin')}
-          >
-            LinkedIn
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-xs sm:text-sm"
-            onClick={() => shareToNetwork('reddit')}
-          >
-            Reddit
+            ↗ Share via…
           </Button>
         </div>
       </div>
 
+      {/* ── QR code ── */}
       {qrCode && (
-        <div className="glass-card rounded-xl p-6 text-center">
-          <p className="text-sm font-medium mb-4 text-white/70">Scan to verify receipt</p>
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-white rounded-xl">
-              <img src={qrCode} alt="Receipt QR Code" className="w-48 h-48" />
+        <div className="glass-card rounded-xl p-6 text-center space-y-4">
+          <p className="text-sm font-medium text-white/70">Scan to verify receipt</p>
+          <div className="flex justify-center">
+            <div className="qr-frame">
+              <img
+                src={qrCode}
+                alt="Receipt QR Code — scan to open the verify page"
+                className="w-48 h-48 block"
+              />
             </div>
           </div>
-          <Button type="button" onClick={downloadQR} variant="secondary" className="w-full">
-            📥 Download QR Code
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" onClick={downloadQR}   variant="secondary" className="text-sm">↓ Download QR</Button>
+            <Button type="button" onClick={openReceipt}  variant="secondary" className="text-sm">👁 Open Receipt</Button>
+          </div>
         </div>
       )}
 
@@ -246,19 +177,8 @@ export function ReceiptSuccess({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Button
-          type="button"
-          onClick={() => window.location.href = getVerifyUrl()}
-          variant="secondary"
-          className="w-full"
-        >
-          👁️ View Receipt
-        </Button>
-      </div>
-
       {shareStatus && (
-        <p className="text-xs text-white/55 px-1">{shareStatus}</p>
+        <p className="text-xs text-white/55 px-1" aria-live="polite">{shareStatus}</p>
       )}
     </div>
   );
