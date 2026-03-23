@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Dropdown Premium Style Must Keep Transparency
+- For glassmorphism forms, default select controls should stay transparent in resting state; opaque gray fills read as low quality against animated dark backgrounds.
+- Keep hover/focus polish in border/shadow layers, not in heavy background fills.
+
 ## 2026-03-23 - Loader Should Communicate Value, Not Only Progress
 - When the user asks for inspiration from sibling repos (for example `xmrproof`), carry over the UX principle (informational onboarding) instead of only visual animation.
 - Startup loaders should teach at least 2-4 concrete use cases so first-time visitors understand the product before interacting with forms.

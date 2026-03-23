@@ -23,7 +23,7 @@ export function Select({
         <select
           className={`
             flex h-11 w-full appearance-none rounded-xl border px-3 py-2 pr-10 text-sm
-            bg-[linear-gradient(120deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))]
+            bg-transparent
             text-white
             [color-scheme:dark]
             shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_28px_rgba(12,24,66,0.35)]
@@ -32,7 +32,7 @@ export function Select({
             transition-all duration-200
             ${error
               ? "border-red-500/50"
-              : "border-white/20 hover:border-blue-200/30 focus-visible:border-blue-300/50"
+              : "border-white/20 hover:bg-white/[0.03] hover:border-blue-200/30 focus-visible:border-blue-300/50"
             }
             ${className}
           `}
