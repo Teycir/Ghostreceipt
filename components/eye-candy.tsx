@@ -212,6 +212,11 @@ export function EyeCandy(): null {
         powerPreference: 'high-performance',
       });
       renderer.setClearAlpha(0);
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.inset = '0';
+      renderer.domElement.style.width = '100vw';
+      renderer.domElement.style.height = '100vh';
+      renderer.domElement.style.display = 'block';
       container.appendChild(renderer.domElement);
 
       const uniforms = {
@@ -244,10 +249,12 @@ export function EyeCandy(): null {
       scene.add(new THREE.Mesh(geometry, material));
 
       const resize = () => {
+        const width = Math.max(window.innerWidth, document.documentElement.clientWidth || 0);
+        const height = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
         const pixelRatio = Math.min(window.devicePixelRatio || 1, 2) * params.resolution;
         renderer.setPixelRatio(pixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight, false);
-        uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+        renderer.setSize(width, height, true);
+        uniforms.u_resolution.value.set(width, height);
       };
 
       const onResize = () => {
