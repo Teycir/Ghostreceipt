@@ -24,6 +24,7 @@ This folder packages app code into reusable library slices for future zk applica
 - `lib/libraries/backend-core`
   - package-style backend core surface:
     - provider contracts + cascade orchestrator,
+    - shared route rate-limit envelope (global/client checks + reusable limiter pair factory/dispose),
     - shared request-envelope helpers (secure parse + zod validation + standardized error responses),
     - fetch-tx HTTP orchestration helpers (provider factory, signer flow, error mapping),
     - fetch-tx idempotency/session helpers (replay reservation/release + cookie response utility),
@@ -51,11 +52,11 @@ This folder packages app code into reusable library slices for future zk applica
 These are simple candidates for future extraction as shared backend/zk libraries:
 
 - `app/api/oracle/verify-signature/route.ts`
-  - rate-limit envelope
+  - minimal route orchestration using shared rate-limit + request-envelope helpers
   - HTTP response shaping around backend-core verification outcomes
 
 - `app/api/oracle/fetch-tx/route.ts`
-  - rate-limit envelope
+  - minimal route orchestration using shared rate-limit + request-envelope helpers
   - HTTP response shaping around backend-core helper outcomes
 
 - `lib/zk/witness.ts`

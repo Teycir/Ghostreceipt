@@ -1,3 +1,26 @@
+# Task Plan: Phase 2 Extraction - Shared Oracle Rate-Limit Envelope
+
+- [x] Extract reusable route rate-limit helper (global + client checks) into backend-core HTTP module.
+- [x] Extract reusable route limiter pair factory/dispose helpers.
+- [x] Rewire `fetch-tx` and `verify-signature` routes to use shared rate-limit helpers.
+- [x] Preserve existing status/messages and route behavior expected by tests.
+- [x] Verify with typecheck.
+- [x] Verify with focused oracle route unit tests.
+
+## Review
+- Added shared rate-limit module:
+  - [`lib/libraries/backend-core/http/rate-limit-envelope.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/rate-limit-envelope.ts)
+- Extended backend-core HTTP exports:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Refactored routes to consume shared rate-limit helpers:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- Updated library extraction docs:
+  - [`lib/libraries/README.md`](/home/teycir/Repos/GhostReceipt/lib/libraries/README.md)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
+
 # Task Plan: Phase 2 Extraction - Shared Oracle Request Envelope
 
 - [x] Extract secure JSON parse + invalid-body error mapping into backend-core HTTP helper.

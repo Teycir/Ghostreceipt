@@ -37,3 +37,13 @@ export {
 export type {
   ParseSecureJsonWithErrorOptions,
 } from './request-envelope';
+export {
+  checkOracleRouteRateLimits,
+  createOracleRouteRateLimiters,
+  disposeOracleRouteRateLimiters,
+} from './rate-limit-envelope';
+export type {
+  CreateOracleRouteRateLimitersOptions,
+  OracleRouteRateLimiters,
+  OracleRouteRateLimitMessages,
+} from './rate-limit-envelope';

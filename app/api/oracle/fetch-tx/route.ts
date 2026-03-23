@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
-import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
+import { getClientIdentifier } from '@/lib/security/rate-limit';
 import { secureError } from '@/lib/security/secure-logging';
 import {
   createJsonErrorResponse,
-  createRateLimitErrorResponse,
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
+  checkOracleRouteRateLimits,
+  createOracleRouteRateLimiters,
+  disposeOracleRouteRateLimiters,
   disposeFetchTxReplayProtection,
   FETCH_TX_ANON_IDEMPOTENCY_COOKIE,
   fetchAndSignOracleTransaction,
@@ -21,14 +23,10 @@ import {
   withFetchTxAnonymousSessionCookie,
 } from '@ghostreceipt/backend-core/http';
 
-const rateLimiter = createRateLimiter({
+const routeRateLimiters = createOracleRouteRateLimiters({
+  clientMaxRequests: 10,
+  globalMaxRequests: 200,
   windowMs: 60000,
-  maxRequests: 10,
-});
-
-const globalRateLimiter = createRateLimiter({
-  windowMs: 60000,
-  maxRequests: 200,
 });
 
 /**
@@ -44,30 +42,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const clientId = getClientIdentifier(request);
     const withSession = (response: NextResponse): NextResponse =>
       withFetchTxAnonymousSessionCookie(response, anonymousSessionIdToSet);
-    const globalRateLimit = globalRateLimiter.check('global');
-
-    if (!globalRateLimit.allowed) {
-      return withSession(
-        createRateLimitErrorResponse({
-          limit: 200,
-          message: 'Service is busy. Please try again later.',
-          resetAt: globalRateLimit.resetAt,
-        })
-      );
-    }
-
-    if (clientId) {
-      const rateLimit = rateLimiter.check(clientId);
-
-      if (!rateLimit.allowed) {
-        return withSession(
-          createRateLimitErrorResponse({
-            limit: 10,
-            message: 'Too many requests. Please try again later.',
-            resetAt: rateLimit.resetAt,
-          })
-        );
-      }
+    const rateLimitResponse = checkOracleRouteRateLimits({
+      clientId,
+      clientMaxRequests: 10,
+      globalMaxRequests: 200,
+      limiters: routeRateLimiters,
+      messages: {
+        client: 'Too many requests. Please try again later.',
+        global: 'Service is busy. Please try again later.',
+      },
+    });
+    if (rateLimitResponse) {
+      return withSession(rateLimitResponse);
     }
     const bodyResult = await parseSecureJsonWithError(request, {
       maxSize: 1024 * 10,
@@ -142,8 +128,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export const mapErrorToResponse = mapFetchTxErrorToResponse;
 
 export function __disposeOracleFetchRouteForTests(): void {
-  rateLimiter.dispose();
-  globalRateLimiter.dispose();
+  disposeOracleRouteRateLimiters(routeRateLimiters);
   disposeFetchTxReplayProtection();
   resetCachedOracleSignerForTests();
 }

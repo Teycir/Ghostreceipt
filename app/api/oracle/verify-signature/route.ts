@@ -1,47 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
+import { getClientIdentifier } from '@/lib/security/rate-limit';
 import {
   createJsonErrorResponse,
-  createRateLimitErrorResponse,
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
+  checkOracleRouteRateLimits,
+  createOracleRouteRateLimiters,
+  disposeOracleRouteRateLimiters,
   parseSecureJsonWithError,
   validateBodyWithSchema,
   VerifySignatureRequestSchema,
   verifyOracleSignature,
 } from '@ghostreceipt/backend-core/http';
 
-const rateLimiter = createRateLimiter({
+const routeRateLimiters = createOracleRouteRateLimiters({
+  clientMaxRequests: 20,
+  globalMaxRequests: 200,
   windowMs: 60000,
-  maxRequests: 20,
-});
-
-const globalRateLimiter = createRateLimiter({
-  windowMs: 60000,
-  maxRequests: 200,
 });
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const clientId = getClientIdentifier(request);
-  const globalRateLimit = globalRateLimiter.check('global');
-  if (!globalRateLimit.allowed) {
-    return createRateLimitErrorResponse({
-      limit: 200,
-      message: 'Service is busy. Please try again later.',
-      resetAt: globalRateLimit.resetAt,
-    });
-  }
-
-  if (clientId) {
-    const rateLimit = rateLimiter.check(clientId);
-    if (!rateLimit.allowed) {
-      return createRateLimitErrorResponse({
-        limit: 20,
-        message: 'Too many requests. Please try again later.',
-        resetAt: rateLimit.resetAt,
-      });
-    }
+  const rateLimitResponse = checkOracleRouteRateLimits({
+    clientId,
+    clientMaxRequests: 20,
+    globalMaxRequests: 200,
+    limiters: routeRateLimiters,
+    messages: {
+      client: 'Too many requests. Please try again later.',
+      global: 'Service is busy. Please try again later.',
+    },
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   const bodyResult = await parseSecureJsonWithError(request, {
@@ -80,7 +72,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export function __disposeOracleVerifyRouteForTests(): void {
-  rateLimiter.dispose();
-  globalRateLimiter.dispose();
+  disposeOracleRouteRateLimiters(routeRateLimiters);
   resetCachedOracleSignerForTests();
 }
