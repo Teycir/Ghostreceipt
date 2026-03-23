@@ -1,26 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  CanonicalTxDataSchema,
   type ErrorResponse,
-  type OraclePayloadV1,
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
-import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
-import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
-import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
-import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
-import { ProviderCascade } from '@ghostreceipt/backend-core/providers/cascade';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { replayProtection } from '@/lib/security/replay';
 import { parseSecureJson } from '@/lib/security/secure-json';
 import { secureError } from '@/lib/security/secure-logging';
-import type { Provider, ProviderError } from '@ghostreceipt/backend-core/providers/types';
-import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import {
   createRateLimitErrorResponse,
-  getCachedOracleSignerFromEnv,
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
+import {
+  fetchAndSignOracleTransaction,
+  mapFetchTxErrorToResponse,
+} from '@ghostreceipt/backend-core/http';
 
 const rateLimiter = createRateLimiter({
   windowMs: 60000,
@@ -61,136 +55,6 @@ function withAnonymousSessionCookie(
   });
 
   return response;
-}
-
-function mapErrorToResponse(error: unknown): {
-  code: ErrorResponse['error']['code'];
-  message: string;
-  status: number;
-} {
-  const code: ErrorResponse['error']['code'] = 'INTERNAL_ERROR';
-  let message = 'Internal server error';
-  const status = 500;
-
-  if (!(error instanceof Error)) {
-    return { code, message, status };
-  }
-
-  message = error.message;
-  const normalizedMessage = message.toLowerCase();
-  const providerCode = (error as Partial<ProviderError>).code;
-
-  if (providerCode === 'NOT_FOUND') {
-    return {
-      code: 'TRANSACTION_NOT_FOUND',
-      message,
-      status: 404,
-    };
-  }
-
-  if (providerCode === 'TIMEOUT') {
-    return {
-      code: 'PROVIDER_TIMEOUT',
-      message,
-      status: 504,
-    };
-  }
-
-  if (providerCode === 'RATE_LIMIT') {
-    return {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message,
-      status: 429,
-    };
-  }
-
-  if (providerCode === 'REVERTED') {
-    return {
-      code: 'TRANSACTION_REVERTED',
-      message,
-      status: 422,
-    };
-  }
-
-  if (providerCode === 'PROVIDER_ERROR') {
-    return {
-      code: 'PROVIDER_ERROR',
-      message,
-      status: 502,
-    };
-  }
-
-  if (
-    normalizedMessage.includes('invalid') &&
-    normalizedMessage.includes('transaction hash')
-  ) {
-    return {
-      code: 'INVALID_HASH',
-      message,
-      status: 400,
-    };
-  }
-
-  if (normalizedMessage.includes('not found')) {
-    return {
-      code: 'TRANSACTION_NOT_FOUND',
-      message,
-      status: 404,
-    };
-  }
-
-  if (normalizedMessage.includes('timeout')) {
-    return {
-      code: 'PROVIDER_TIMEOUT',
-      message,
-      status: 504,
-    };
-  }
-
-  if (
-    normalizedMessage.includes('rate limit') ||
-    normalizedMessage.includes('too many requests')
-  ) {
-    return {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message,
-      status: 429,
-    };
-  }
-
-  if (normalizedMessage.includes('revert')) {
-    return {
-      code: 'TRANSACTION_REVERTED',
-      message,
-      status: 422,
-    };
-  }
-
-  if (normalizedMessage.includes('provider')) {
-    return {
-      code: 'PROVIDER_ERROR',
-      message,
-      status: 502,
-    };
-  }
-
-  return { code, message, status };
-}
-
-function loadEtherscanKeysFromEnv(): string[] {
-  const candidates = [
-    process.env['ETHERSCAN_API_KEY'],
-    process.env['ETHERSCAN_API_KEY_1'],
-    process.env['ETHERSCAN_API_KEY_2'],
-    process.env['ETHERSCAN_API_KEY_3'],
-    process.env['ETHERSCAN_API_KEY_4'],
-    process.env['ETHERSCAN_API_KEY_5'],
-    process.env['ETHERSCAN_API_KEY_6'],
-  ]
-    .map((value) => value?.trim() ?? '')
-    .filter((value) => value.length > 0);
-
-  return Array.from(new Set(candidates));
 }
 
 /**
@@ -300,81 +164,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       reservedReplayKey = replayKey;
     }
 
-    // Initialize providers based on chain
-    let cascade: ProviderCascade;
+    const blockchairApiKey = process.env['BLOCKCHAIR_API_KEY'];
+    const signedResult = await fetchAndSignOracleTransaction(
+      chain,
+      txHash,
+      blockchairApiKey ? { blockchairApiKey } : {}
+    );
 
-    if (chain === 'bitcoin') {
-      const blockchairApiKey = process.env['BLOCKCHAIR_API_KEY'];
-      const providers: Provider[] = [
-        new MempoolSpaceProvider(),
-        new BlockchairProvider(
-          blockchairApiKey ? { apiKey: blockchairApiKey } : undefined
-        ),
-      ];
-
-      cascade = new ProviderCascade(providers, {
-        maxRetries: 3,
-        retryDelayMs: 50,
-        timeoutMs: 10000,
-        concurrencyLimit: 5,
-      });
-    } else if (chain === 'ethereum') {
-      const etherscanKeys = loadEtherscanKeysFromEnv();
-      const providers: Provider[] = [];
-
-      // API-first strategy for multi-user reliability under RPC instability.
-      if (etherscanKeys.length > 0) {
-        providers.push(
-          new EtherscanProvider({
-            keys: etherscanKeys,
-            rotationStrategy: 'round-robin',
-            shuffleOnStartup: true,
-          })
-        );
-      }
-
-      // RPC is intentionally the final fallback attempt.
-      providers.push(new EthereumPublicRpcProvider());
-
-      cascade = new ProviderCascade(providers, {
-        maxRetries: 3,
-        retryDelayMs: 50,
-        timeoutMs: 10000,
-        concurrencyLimit: 5,
-      });
-    } else {
-      const errorResponse: ErrorResponse = {
-        error: {
-          code: 'UNSUPPORTED_CHAIN',
-          message: `Unsupported chain: ${chain}`,
-        },
-      };
-      return withSession(NextResponse.json(errorResponse, { status: 400 }));
-    }
-
-    // Fetch transaction with cascade
-    const result = await cascade.fetchTransaction(txHash);
-    const canonicalDataResult = CanonicalTxDataSchema.safeParse(result.data);
-    if (!canonicalDataResult.success) {
-      throw new Error('Provider returned invalid canonical data');
-    }
-
-    // Sign canonical data
-    const signer = getCachedOracleSignerFromEnv();
-    const messageHash = await computeOracleCommitment(canonicalDataResult.data);
-    const signedPayload: OraclePayloadV1 = {
-      ...canonicalDataResult.data,
-      messageHash,
-      oracleSignature: signer.sign(messageHash),
-      oraclePubKeyId: signer.getPublicKeyId(),
-      schemaVersion: 'v1',
-      signedAt: Math.floor(Date.now() / 1000),
-    };
-
-    // Return signed payload
     return withSession(NextResponse.json({
-      data: signedPayload,
-      cached: result.cached,
+      data: signedResult.data,
+      cached: signedResult.cached,
     }));
   } catch (error) {
     if (reservedReplayKey) {
@@ -383,7 +182,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     secureError('[Oracle API] Error:', error);
 
-    const mapped = mapErrorToResponse(error);
+    const mapped = mapFetchTxErrorToResponse(error);
 
     const errorResponse: ErrorResponse = {
       error: {
@@ -399,7 +198,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export { mapErrorToResponse };
+export const mapErrorToResponse = mapFetchTxErrorToResponse;
 
 export function __disposeOracleFetchRouteForTests(): void {
   rateLimiter.dispose();

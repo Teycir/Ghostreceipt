@@ -1,3 +1,25 @@
+# Task Plan: Phase 2 Extraction - Oracle Fetch Orchestration to `backend-core/http`
+
+- [x] Extract provider factory + Etherscan key loading from fetch route into package-style backend-core module.
+- [x] Extract canonical-data signing flow into backend-core reusable function.
+- [x] Extract fetch route error mapping into backend-core reusable function and keep route test compatibility.
+- [x] Rewire `app/api/oracle/fetch-tx/route.ts` to call extracted backend-core helpers.
+- [x] Verify with typecheck.
+
+## Review
+- Added backend-core HTTP extraction files:
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Exported HTTP helpers from backend-core root via [`lib/libraries/backend-core/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/index.ts).
+- Refactored [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts) to use:
+  - `fetchAndSignOracleTransaction`
+  - `mapFetchTxErrorToResponse`
+- Preserved test compatibility with:
+  - `export const mapErrorToResponse = mapFetchTxErrorToResponse`.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/fetch-tx-route.test.ts --runInBand` passes.
+
 # Task Plan: Phase 2 Package-Style Core Libraries (`backend-core` + `zk-core`)
 
 - [x] Create package-style module roots for reusable `backend-core` and `zk-core`.
