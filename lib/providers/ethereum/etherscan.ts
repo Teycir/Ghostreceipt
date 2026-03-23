@@ -58,10 +58,14 @@ export class EtherscanProvider implements EthereumProvider {
   private readonly baseUrl = 'https://api.etherscan.io/v2/api';
   private apiKeys: string[];
   private currentKeyIndex: number;
+  private readonly rotationStrategy: ApiKeyConfig['rotationStrategy'];
+  private keyUsageCounts: number[];
 
   constructor(apiKeyConfig: ApiKeyConfig) {
     this.apiKeys = this.shuffleKeys(apiKeyConfig);
     this.currentKeyIndex = 0;
+    this.rotationStrategy = apiKeyConfig.rotationStrategy;
+    this.keyUsageCounts = new Array(this.apiKeys.length).fill(0);
   }
 
   /**
@@ -80,18 +84,36 @@ export class EtherscanProvider implements EthereumProvider {
     return shuffled;
   }
 
-  /**
-   * Get next API key (round-robin)
-   */
-  private getNextKey(): string {
-    const key = this.apiKeys[this.currentKeyIndex];
-    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-
-    if (!key) {
-      throw new Error('No API keys available');
+  private buildKeyAttemptOrder(): number[] {
+    if (this.apiKeys.length === 0) {
+      return [];
     }
 
-    return key;
+    if (this.rotationStrategy === 'least-used') {
+      return this.apiKeys
+        .map((_, index) => index)
+        .sort((a, b) => {
+          const usageDelta = this.keyUsageCounts[a]! - this.keyUsageCounts[b]!;
+          if (usageDelta !== 0) {
+            return usageDelta;
+          }
+          return a - b;
+        });
+    }
+
+    let startIndex = 0;
+    if (this.rotationStrategy === 'random') {
+      startIndex = Math.floor(Math.random() * this.apiKeys.length);
+    } else {
+      startIndex = this.currentKeyIndex;
+      this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+    }
+
+    const order: number[] = [];
+    for (let offset = 0; offset < this.apiKeys.length; offset++) {
+      order.push((startIndex + offset) % this.apiKeys.length);
+    }
+    return order;
   }
 
   async fetchTransaction(
@@ -107,14 +129,21 @@ export class EtherscanProvider implements EthereumProvider {
     // Try each API key
     let lastError: Error | null = null;
 
-    for (let i = 0; i < this.apiKeys.length; i++) {
-      if (i > 0) {
+    const keyAttemptOrder = this.buildKeyAttemptOrder();
+
+    for (let attempt = 0; attempt < keyAttemptOrder.length; attempt++) {
+      if (attempt > 0) {
         await this.delay(50);
       }
 
-      const apiKey = this.getNextKey();
+      const keyIndex = keyAttemptOrder[attempt]!;
+      const apiKey = this.apiKeys[keyIndex];
+      if (!apiKey) {
+        throw new Error('No API keys available');
+      }
 
       try {
+        this.keyUsageCounts[keyIndex] = (this.keyUsageCounts[keyIndex] ?? 0) + 1;
         return await this.fetchWithKey(txHash, apiKey, signal);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
@@ -130,7 +159,7 @@ export class EtherscanProvider implements EthereumProvider {
         }
 
         secureWarn(
-          `[${this.name}] Key ${i + 1} failed (${lastError.message}), trying next key`
+          `[${this.name}] Key ${keyIndex + 1} failed (${lastError.message}), trying next key`
         );
         continue;
       }

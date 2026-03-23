@@ -15,6 +15,8 @@ export interface OracleRouteBodyEnvelopeOptions<T> {
   rateLimit: {
     clientMaxRequests: number;
     globalMaxRequests: number;
+    clientBurstMaxRequests?: number;
+    globalBurstMaxRequests?: number;
     limiters: OracleRouteRateLimiters;
     messages: OracleRouteRateLimitMessages;
     globalScopeKey?: string;
@@ -39,6 +41,12 @@ export async function parseRateLimitedOracleRouteBody<T>({
     clientId,
     clientMaxRequests: rateLimit.clientMaxRequests,
     globalMaxRequests: rateLimit.globalMaxRequests,
+    ...(rateLimit.clientBurstMaxRequests !== undefined
+      ? { clientBurstMaxRequests: rateLimit.clientBurstMaxRequests }
+      : {}),
+    ...(rateLimit.globalBurstMaxRequests !== undefined
+      ? { globalBurstMaxRequests: rateLimit.globalBurstMaxRequests }
+      : {}),
     limiters: rateLimit.limiters,
     messages: rateLimit.messages,
     ...(rateLimit.globalScopeKey !== undefined

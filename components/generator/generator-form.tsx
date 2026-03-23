@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ReceiptSuccess } from './receipt-success';
 import { announceToScreenReader } from '@/lib/accessibility';
-import type { Chain } from '@/lib/validation/schemas';
+import type { Chain, OraclePayloadV1 } from '@/lib/validation/schemas';
 
 interface FormData {
   chain: Chain;
@@ -29,6 +29,15 @@ interface ProofData {
   chain: Chain;
   claimedAmount: string;
   minDate: string;
+}
+
+interface ApiErrorPayload {
+  error?: {
+    message?: string;
+    details?: {
+      retryAfterSeconds?: number;
+    };
+  };
 }
 
 export function GeneratorForm(): React.JSX.Element {
@@ -89,14 +98,30 @@ export function GeneratorForm(): React.JSX.Element {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        data?: OraclePayloadV1;
+      } & ApiErrorPayload;
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const retryAfterSeconds = data.error?.details?.retryAfterSeconds;
+          const waitSeconds =
+            typeof retryAfterSeconds === 'number' && retryAfterSeconds > 0
+              ? Math.ceil(retryAfterSeconds)
+              : 60;
+          const waitLabel = waitSeconds === 1 ? '1 second' : `${waitSeconds} seconds`;
+          throw new Error(`Rate limit reached. Please wait ${waitLabel} and try again.`);
+        }
+
         throw new Error(data.error?.message || 'Failed to fetch transaction');
       }
 
       setState('validating');
       announceToScreenReader('Validating transaction data');
+
+      if (!data.data) {
+        throw new Error('Invalid response: missing oracle payload');
+      }
       
       // Build witness from oracle payload and user claim
       const { buildWitness, validateWitness } = await import('@/lib/zk/witness');

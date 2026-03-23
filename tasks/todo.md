@@ -1,3 +1,226 @@
+# Task Plan: API Request-Per-Second Limits + User Wait Messaging
+
+- [x] Add explicit per-second burst limits in shared oracle rate-limit envelope (in addition to existing rolling window limits).
+- [x] Include machine-readable retry metadata in `429` responses (`Retry-After`, retry seconds, reset timestamp).
+- [x] Rewire oracle routes to define and use both per-second and rolling-window limits with clear user-facing messages.
+- [x] Update generator UX to show clear “wait and try later” messaging when `429` is returned.
+- [x] Update verifier UX to surface rate-limit wait messaging instead of a generic signature failure.
+- [x] Add/adjust tests for rate-limit response metadata and route behavior.
+- [x] Verify with typecheck and focused unit tests.
+
+## Review
+- Added burst-limiter support to shared oracle rate-limit envelope and disposal lifecycle:
+  - [`lib/libraries/backend-core/http/rate-limit-envelope.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/rate-limit-envelope.ts)
+  - [`lib/libraries/backend-core/http/oracle-route-envelope.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/oracle-route-envelope.ts)
+- Added `Retry-After` + retry details payload for `429` responses:
+  - [`lib/libraries/backend/http-errors.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend/http-errors.ts)
+- Rewired route rate-limit configs to define per-second and per-minute limits (env-overridable) and clearer wait messaging:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- Updated UX to surface explicit wait-and-retry messaging for `429` responses:
+  - [`components/generator/generator-form.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/generator-form.tsx)
+  - [`app/verify/page.tsx`](/home/teycir/Repos/GhostReceipt/app/verify/page.tsx)
+- Added targeted unit test for rate-limit response metadata:
+  - [`tests/unit/backend/http-errors.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/backend/http-errors.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/backend/http-errors.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
+
+# Task Plan: Provider Key Rollout Constraints (Helius Now, Alchemy/Monero Later)
+
+- [ ] Configure Helius key pool in local/deployment secret stores only (no tracked file commits).
+- [ ] Add Solana provider integration to consume Helius key cascade from secrets.
+- [ ] Add runtime health metrics for Helius key rotation and failover.
+- [ ] Create deferred implementation track for Alchemy integration (blocked by technical constraints).
+- [ ] Create deferred implementation track for Monero provider/circuit integration (blocked by technical constraints).
+- [ ] Revisit deferred tracks after constraints are resolved and move them into active milestone execution.
+
+# Task Plan: Enhancement Phase 1 (Cryptographic Robustness + Speed)
+
+## Decision Snapshot
+- [ ] Use `ENHANCEMENT_ROADMAP.md` as primary execution source for this track.
+- [ ] Keep proving flow target as a hard SLO: `p95 < 60s`, `p50 < 25s`.
+- [ ] Keep security hardening off the proof hot path unless required for correctness.
+- [ ] Keep existing circuit constraints unchanged for this phase to avoid immediate proving slowdown.
+- [ ] Assume no VPS/self-hosted infrastructure for current rollout; design around managed/freemium providers only.
+
+## Workstream A: Oracle Attestation v2 (Bound Signature Envelope)
+- [ ] Define `oracleAuthV2` schema with `messageHash`, `nonce`, `signedAt`, `expiresAt`, `oraclePubKeyId`, `signatureVersion`, `oracleSignature`.
+- [ ] Canonicalize and sign the full v2 envelope (not `messageHash` alone).
+- [ ] Update fetch route signing path to emit v2 envelope.
+- [ ] Update verify-signature route to validate v2 envelope signature binding.
+- [ ] Keep backward-compatible verification support for existing v1 payloads during migration.
+- [ ] Add focused unit tests for envelope tampering cases (field swap, timestamp change, nonce change).
+
+## Workstream B: Replay Protection (Nonce + Time Window)
+- [ ] Add nonce replay registry abstraction with adapters:
+- [ ] In-memory adapter for local tests/dev.
+- [ ] Durable/shared adapter interface for production deployment target.
+- [ ] Enforce replay window checks (`signedAt` skew + expiry checks).
+- [ ] Reject nonce reuse for different payloads; allow idempotent re-verification of identical payload.
+- [ ] Add route-level error codes/messages for replay outcomes.
+- [ ] Add unit/integration tests for replay allow/deny matrix.
+
+## Workstream C: Nullifier Registry (Anti-Equivocation)
+- [ ] Define nullifier derivation (`chain + txHash` or commitment-derived variant) and document rationale.
+- [ ] Add nullifier to share payload metadata.
+- [ ] Implement server-side nullifier registry with conflict semantics:
+- [ ] same nullifier + same claim -> allow.
+- [ ] same nullifier + different claim -> reject.
+- [ ] Update verifier flow to query/check nullifier status.
+- [ ] Add tests for collision/conflict behavior and regression coverage.
+
+## Workstream D: Oracle Transparency Log
+- [ ] Define append-only transparency log JSON schema (`keyId`, `publicKey`, `validFrom`, `validUntil`, `status`, chain hash fields).
+- [ ] Add repository-hosted log artifact and update policy.
+- [ ] Add verifier checks that key was valid at `signedAt`.
+- [ ] Add key rotation runbook updates and CI validation for log consistency.
+- [ ] Add tests for revoked/expired/unknown key behavior.
+
+## Workstream E: Speed Track (Must Ship Alongside Security)
+- [ ] Add first-class performance telemetry around generator steps:
+- [ ] `fetch_ms`, `witness_ms`, `prove_ms`, `package_ms`, `total_ms`.
+- [ ] Preload/proactively fetch proof artifacts (`wasm`, `zkey`, `vkey`) on generator idle.
+- [ ] Move proof generation to Web Worker to prevent main-thread blocking.
+- [ ] Add artifact caching strategy (memory + persistent cache) with safe version invalidation.
+- [ ] Keep security checks in lightweight API/verifier paths, not in-circuit additions for this phase.
+- [ ] Add UX guardrails: show fallback message and next action when prove step crosses threshold.
+
+## Workstream F: Verification And Gates
+- [ ] Add a dedicated performance test that tracks proof flow timing budgets on CI-friendly fixtures.
+- [ ] Add regression tests for v1/v2 payload compatibility.
+- [ ] Run and record validation commands:
+- [ ] `npm run typecheck`
+- [ ] `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand`
+- [ ] `npm run test -- tests/unit/zk/prover.test.ts tests/integration/proof-generation.test.ts --runInBand`
+- [ ] `npm run test -- tests/e2e/generator.spec.ts --runInBand`
+
+## Workstream G: Priority Expansion Backlog (Beyond Phase 1 Hardening)
+- [ ] P0: Move multi-oracle quorum design up from long-term backlog and produce MVP architecture doc (`2-of-3` signing quorum).
+- [ ] P0: Add on-chain Solidity verifier milestone (snarkjs-generated verifier + deployment plan) in near-term roadmap.
+- [ ] P0: Keep replay window + transparency log mandatory in same release train as Attestation v2.
+- [ ] P1: Add ERC-20 transfer/event-log receipt proofs (USDT + USDC first, then DAI).
+- [ ] P1: Add Monero receipt track (dedicated circuit + view-key-based witness model + trust-model docs).
+- [ ] P1: Add proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` migration rationale).
+- [ ] P1: Add batch verification experience (`/verify/batch`) with import + pass/fail table.
+- [ ] P2: Add selective disclosure circuit modes (partial reveal controls).
+- [ ] P2: Add PDF export for invoice/compliance workflow.
+- [ ] P2: Add receipt labels/categories in payload metadata.
+- [ ] P2: Add local receipt history (`/history`, IndexedDB, export JSON).
+- [ ] P2: Add Solana adapter track with fallback provider strategy.
+- [ ] P2: Add webhook/embed API (`POST /api/generate-receipt`) with auth + rate limits.
+- [ ] P2: Add proof payload compression/versioning to improve share-link and QR usability.
+- [ ] P3: Add range-proof mode for bounded amount disclosure.
+- [ ] P3: Add TLS-notary feasibility track and integration design options.
+
+## Workstream H: Feature Design Specs (Write Before Build)
+- [ ] Write an RFC for multi-oracle quorum key management, signer selection, and verifier semantics.
+- [ ] Write an RFC for nullifier semantics (claim binding policy and verifier conflict outcomes).
+- [ ] Write an RFC for ERC-20 event proof format (token metadata, decimals handling, normalization rules).
+- [ ] Write an RFC for selective disclosure and range proof public input contracts.
+- [ ] Write an RFC for on-chain verifier integration (ABI, contract addresses, gas targets, trust boundaries).
+- [ ] Write an RFC for proof compression + backward-compatible share payload parsing.
+- [ ] Write an RFC for batch verify UX and report export schema.
+- [ ] Write an RFC for webhook/embed API auth model and abuse controls.
+
+## Workstream I: Performance Guardrails For New Features
+- [ ] Define per-feature latency budgets before implementation (API, proving, verify, batch verify).
+- [ ] Require feature PRs to report `before/after` metrics for `p50/p95` generate and verify flows.
+- [ ] For any circuit growth, require proving benchmark evidence that `p95` target remains under `60s`.
+- [ ] Keep optional heavy features (batch, PDF, history indexing) off critical initial render path.
+- [ ] Add feature flags for high-risk features so performance regressions can be rolled back safely.
+
+## Milestone Plan (Execution Buckets)
+
+### Milestone M1: Trust + Speed Baseline (Immediate)
+- [ ] Deliver Attestation v2 (`nonce`, `signedAt`, `expiresAt`, fully bound signature envelope).
+- [ ] Deliver replay-window + nonce registry enforcement.
+- [ ] Deliver nullifier registry conflict checks.
+- [ ] Deliver transparency-log key validity checks at verification time.
+- [ ] Deliver proof-path speed baseline:
+- [ ] artifact preload (`wasm`, `zkey`, `vkey`),
+- [ ] worker-based proving,
+- [ ] timing telemetry and UX threshold fallbacks.
+- [ ] Exit criteria:
+- [ ] cryptographic checks active and tested,
+- [ ] generator `p95 < 60s`, `p50 < 25s` in benchmark environment.
+
+### Milestone M2: Trustless Integration Starter
+- [ ] Generate and test Solidity verifier contract from current circuit.
+- [ ] Add contract deployment runbook + verification docs.
+- [ ] Add minimal integration example (contract-side verification of receipt proof).
+- [ ] Exit criteria:
+- [ ] deployed verifier addresses documented,
+- [ ] end-to-end contract verification demo passes.
+
+### Milestone M3: Payment Coverage Expansion (EVM + Monero)
+- [ ] Add ERC-20 event-log proof support (USDT + USDC first, then DAI and other tokens).
+- [ ] Start with explicit stablecoin allowlist and expand only after validation:
+- [ ] `USDT` (Tether),
+- [ ] `USDC`,
+- [ ] `DAI`.
+- [ ] Add Monero adapter track with dedicated witness/circuit constraints:
+- [ ] tx key + view key input model,
+- [ ] Monero-specific proof semantics,
+- [ ] explicit trust-model differences in docs.
+- [ ] Implement Monero provider cascade as managed APIs only (no self-hosted `monerod` requirement in this milestone).
+- [ ] Preserve baseline BTC/ETH UX speed while adding new chains.
+- [ ] Exit criteria:
+- [ ] stablecoin proof flow works in integration tests,
+- [ ] USDT and USDC flows are validated before enabling broader token list,
+- [ ] Monero proof flow works on stagenet/testnet fixtures.
+
+### Milestone M4: Verification + Operations UX
+- [ ] Add batch verification (`/verify/batch`) with multi-file input and pass/fail table.
+- [ ] Add PDF export path with QR + human-readable proof summary.
+- [ ] Add labels/categories + local history (`/history`, IndexedDB, JSON export).
+- [ ] Exit criteria:
+- [ ] accounting/compliance workflow validated by E2E tests.
+
+### Milestone M5: Integrations + Shareability
+- [ ] Add webhook/embed API (`POST /api/generate-receipt`) with auth + rate-limit policy.
+- [ ] Add proof payload compression/versioning with backward-compatible parsing.
+- [ ] Add Solana adapter track with fallback strategy.
+- [ ] Exit criteria:
+- [ ] integration API docs published,
+- [ ] compressed share payloads remain verifiable and scannable by QR.
+
+### Milestone M6: Advanced Trust Minimization
+- [ ] Deliver multi-oracle quorum alpha (`2-of-3` signing/verification model).
+- [ ] Deliver selective-disclosure and range-proof design + implementation tranche.
+- [ ] Publish TLS-notary integration feasibility and phased adoption plan.
+- [ ] Exit criteria:
+- [ ] single-key compromise no longer a single point of total trust failure.
+
+## Sequence (Execution Order)
+- [ ] Step 1: Implement Attestation v2 schema + signing + verification compatibility layer.
+- [ ] Step 2: Implement nonce replay registry + replay window enforcement.
+- [ ] Step 3: Implement nullifier registry + verifier conflict checks.
+- [ ] Step 4: Implement transparency log validation on verifier path.
+- [ ] Step 5: Implement speed track changes (artifact preload/cache + worker proving + UX thresholds).
+- [ ] Step 6: Run gates, document metrics deltas, and finalize rollout notes.
+- [ ] Step 7: Deliver on-chain verifier MVP (contract artifact + docs + integration tests).
+- [ ] Step 8: Deliver ERC-20 event-log proof support + Monero receipt track MVP.
+- [ ] Step 9: Deliver batch verify + PDF export + labels/history product slice.
+- [ ] Step 10: Deliver Solana + webhook/embed API integrations + payload compression.
+- [ ] Step 11: Deliver multi-oracle quorum alpha and document TLS-notary path.
+
+## Acceptance Criteria
+- [ ] Cryptographic robustness:
+- [ ] Signature envelope is fully bound and tamper-resistant.
+- [ ] Replay attempts are rejected within configured window.
+- [ ] Nullifier conflict attacks are rejected.
+- [ ] Revoked/expired oracle keys fail verification.
+- [ ] Speed:
+- [ ] Generator flow `p95 < 60s` and `p50 < 25s` on defined benchmark environment.
+- [ ] No major UI thread stalls during proof generation.
+- [ ] User-facing fallback guidance appears before abandonment thresholds.
+- [ ] Product and ecosystem:
+- [ ] On-chain verifier contract path available for trustless integrations.
+- [ ] ERC-20 transfer proof flow validated for major stablecoins.
+- [ ] Batch verify and export workflows available for accounting/compliance users.
+- [ ] Multi-oracle quorum plan is implementation-ready with explicit rollout milestones.
+
 # Task Plan: Phase 2 Extraction - Unified Oracle Route Body Envelope
 
 - [x] Extract a reusable oracle route body pipeline that combines rate-limit checks + secure JSON parse + zod validation.

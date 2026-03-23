@@ -15,12 +15,17 @@ interface VerificationResult {
   error?: string | undefined;
 }
 
+interface OracleSignatureVerificationResult {
+  valid: boolean;
+  error?: string;
+}
+
 async function verifyOracleSignature(oracleAuth: {
   messageHash: string;
   oracleSignature: string;
   oraclePubKeyId: string;
   signedAt: number;
-}): Promise<boolean> {
+}): Promise<OracleSignatureVerificationResult> {
   const response = await fetch('/api/oracle/verify-signature', {
     method: 'POST',
     headers: {
@@ -30,11 +35,45 @@ async function verifyOracleSignature(oracleAuth: {
   });
 
   if (!response.ok) {
-    return false;
+    try {
+      const payload = (await response.json()) as {
+        error?: {
+          message?: string;
+          details?: {
+            retryAfterSeconds?: number;
+          };
+        };
+      };
+      if (response.status === 429) {
+        const retryAfterSeconds = payload.error?.details?.retryAfterSeconds;
+        const waitSeconds =
+          typeof retryAfterSeconds === 'number' && retryAfterSeconds > 0
+            ? Math.ceil(retryAfterSeconds)
+            : 60;
+        const waitLabel = waitSeconds === 1 ? '1 second' : `${waitSeconds} seconds`;
+        return {
+          valid: false,
+          error: `Rate limit reached. Please wait ${waitLabel} and try again.`,
+        };
+      }
+
+      return {
+        valid: false,
+        error: payload.error?.message ?? 'Oracle signature verification failed',
+      };
+    } catch {
+      return {
+        valid: false,
+        error: 'Oracle signature verification failed',
+      };
+    }
   }
 
   const payload = (await response.json()) as { valid?: boolean };
-  return payload.valid === true;
+  return {
+    valid: payload.valid === true,
+    ...(payload.valid === true ? {} : { error: 'Oracle signature verification failed' }),
+  };
 }
 
 function VerifyContent(): React.JSX.Element {
@@ -114,13 +153,15 @@ function VerifyContent(): React.JSX.Element {
         return;
       }
 
-      const oracleSignatureValid = await verifyOracleSignature(oracleAuth);
-      if (!oracleSignatureValid) {
+      const oracleSignatureVerification = await verifyOracleSignature(oracleAuth);
+      if (!oracleSignatureVerification.valid) {
         setResult({
           valid: false,
           claimedAmount: '',
           minDate: '',
-          error: 'Oracle signature verification failed',
+          error:
+            oracleSignatureVerification.error ??
+            'Oracle signature verification failed',
         });
         return;
       }

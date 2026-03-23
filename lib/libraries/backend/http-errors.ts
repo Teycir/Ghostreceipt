@@ -47,9 +47,20 @@ export function createRateLimitErrorResponse({
   message,
   resetAt,
 }: RateLimitErrorOptions): NextResponse {
+  const retryAfterSeconds = Math.max(
+    1,
+    Math.ceil((resetAt - Date.now()) / 1000)
+  );
+
   return createJsonErrorResponse({
     code: 'RATE_LIMIT_EXCEEDED',
+    details: {
+      limit,
+      resetAt: new Date(resetAt).toISOString(),
+      retryAfterSeconds,
+    },
     headers: {
+      'Retry-After': String(retryAfterSeconds),
       'X-RateLimit-Limit': String(limit),
       'X-RateLimit-Remaining': '0',
       'X-RateLimit-Reset': new Date(resetAt).toISOString(),

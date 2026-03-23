@@ -140,4 +140,81 @@ describe('EtherscanProvider', () => {
       provider.fetchTransaction(`0x${'c'.repeat(64)}`)
     ).rejects.toThrow('Etherscan error: NOTOK');
   });
+
+  it('starts from a random key and fails over sequentially across keys', async () => {
+    const provider = new EtherscanProvider({
+      keys: ['key-1', 'key-2', 'key-3'],
+      rotationStrategy: 'random',
+      shuffleOnStartup: false,
+    });
+    const txHash = `0x${'d'.repeat(64)}`;
+
+    jest.spyOn(Math, 'random').mockReturnValue(0.4); // start at index 1 -> key-2
+
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            hash: txHash,
+            value: '0x1',
+            blockNumber: '0x10',
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            blockNumber: '0x10',
+            status: '0x1',
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x14',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            timestamp: '0x5f5e100',
+          },
+        }),
+      } as Response);
+
+    const result = await provider.fetchTransaction(txHash);
+
+    expect(result.txHash).toBe(txHash);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+
+    const firstCallUrl = String(fetchMock.mock.calls[0]?.[0] ?? '');
+    const secondCallUrl = String(fetchMock.mock.calls[1]?.[0] ?? '');
+    expect(firstCallUrl).toContain('apikey=key-2');
+    expect(secondCallUrl).toContain('apikey=key-3');
+  });
 });

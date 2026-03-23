@@ -194,7 +194,7 @@ export function createProviderCascadeForChain(
     providers.push(
       new EtherscanProvider({
         keys: etherscanKeys,
-        rotationStrategy: 'round-robin',
+        rotationStrategy: 'random',
         shuffleOnStartup: true,
       })
     );

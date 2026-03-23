@@ -1,5 +1,17 @@
 # Lessons Learned
 
+## 2026-03-23 - Provider Rollout Must Respect User-Stated Technical Constraints
+- When the user provides provider keys for one integration (for example Helius) and defers others (for example Alchemy/Monero), execute only the approved provider track and explicitly park the rest in `tasks/todo.md`.
+- Treat secrets provided in-chat as sensitive; never commit them to tracked files and prefer local/deployment secret stores.
+
+## 2026-03-23 - Infrastructure Constraints Must Drive Provider Design
+- If the user states there is no VPS/self-hosting capacity, avoid proposing self-hosted node requirements as part of the primary implementation path.
+- Default to managed/freemium provider cascades, and treat self-hosted options as optional future upgrades only.
+
+## 2026-03-23 - Roadmap References Must Match User-Declared Source
+- When the user says the active roadmap is `docs/project/ENHANCEMENT_ROADMAP.md`, treat it as the primary execution plan for implementation sequencing.
+- Avoid defaulting to `docs/project/ROADMAP.md` as the driver unless the user explicitly switches back.
+
 ## 2026-03-23 - Unexpected Files Should Respect Explicit User Scope
 - If an unexpected file appears during active work, pause and ask before touching it.
 - When the user explicitly says to ignore it for now, leave it untouched and continue the requested implementation scope.
