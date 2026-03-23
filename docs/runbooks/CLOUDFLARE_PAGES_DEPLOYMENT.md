@@ -1,0 +1,175 @@
+# Cloudflare Pages Configuration for GhostReceipt
+
+## Project Settings
+
+- **Project Name**: `ghostreceipt`
+- **Production Branch**: `main`
+- **Production URL**: `https://ghostreceipt.pages.dev`
+
+## Build Configuration
+
+### Framework Preset
+- **Framework**: Next.js (Static HTML Export)
+
+### Build Settings
+- **Build command**: `npm run build`
+- **Build output directory**: `.next`
+- **Root directory**: `/` (project root)
+- **Node version**: `20.9.0`
+
+## Environment Variables
+
+Set these in Cloudflare Pages dashboard:
+`Settings > Environment Variables`
+
+### Public Variables (All Environments)
+```
+NEXT_PUBLIC_APP_URL=https://ghostreceipt.pages.dev
+NEXT_PUBLIC_APP_NAME=GhostReceipt
+```
+
+### Production Environment Variables
+```
+ORACLE_PRIVATE_KEY=<your_oracle_private_key>
+ETHERSCAN_API_KEY=<your_primary_etherscan_key>
+ETHERSCAN_API_KEY_2=<your_fallback_key_1>
+ETHERSCAN_API_KEY_3=<your_fallback_key_2>
+TRUST_PROXY_HEADERS=true
+LOG_LEVEL=info
+DEBUG=false
+```
+
+### Preview Environment Variables (Optional)
+```
+NEXT_PUBLIC_APP_URL=https://preview.ghostreceipt.pages.dev
+ORACLE_PRIVATE_KEY=<staging_oracle_key>
+ETHERSCAN_API_KEY=<staging_etherscan_key>
+TRUST_PROXY_HEADERS=true
+LOG_LEVEL=debug
+DEBUG=true
+```
+
+## Deployment Steps
+
+### 1. Connect Repository to Cloudflare Pages
+
+1. Go to: https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pages
+2. Click "Create a project"
+3. Select "Connect to Git"
+4. Choose your GitHub repository: `Teycir/GhostReceipt`
+5. Configure build settings:
+   - **Production branch**: `main`
+   - **Build command**: `npm run build`
+   - **Build output directory**: `.next`
+   - **Root directory**: `/`
+
+### 2. Set Environment Variables
+
+1. Go to: `Settings > Environment Variables`
+2. Add all variables listed above
+3. Set different values for Production vs Preview environments
+
+### 3. Deploy
+
+- **Automatic**: Push to `main` branch triggers production deployment
+- **Manual**: Click "Create deployment" in Pages dashboard
+
+### 4. Custom Domain (Optional)
+
+1. Go to: `Custom domains`
+2. Add: `ghostreceipt.com` or your custom domain
+3. Follow DNS configuration instructions
+
+## Cloudflare Pages Functions (API Routes)
+
+Next.js API routes in `app/api/` are automatically deployed as Cloudflare Pages Functions.
+
+### Supported Routes
+- `/api/oracle/fetch-tx` - Oracle transaction fetching endpoint
+
+### Function Configuration
+Functions run in Cloudflare's edge network with:
+- **Memory**: 128MB default
+- **Timeout**: 10s default
+- **Concurrency**: Automatic scaling
+
+## Monitoring
+
+### Analytics
+- https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pages/view/ghostreceipt/analytics
+
+### Deployment Logs
+- https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pages/view/ghostreceipt/deployments
+
+### Real-time Logs
+```bash
+npx wrangler pages deployment tail
+```
+
+## Troubleshooting
+
+### Build Fails
+- Check Node.js version matches `.node-version` (20.9.0)
+- Verify all dependencies in `package.json`
+- Check build logs in deployment details
+
+### Environment Variables Not Working
+- Ensure variables are set in correct environment (Production/Preview)
+- Redeploy after adding new variables
+- Check variable names match exactly (case-sensitive)
+
+### API Routes Not Working
+- Verify routes are in `app/api/` directory
+- Check function logs in deployment details
+- Ensure environment variables are set
+
+### Static Assets Not Loading
+- Verify `public/` directory structure
+- Check build output includes static files
+- Ensure paths are relative, not absolute
+
+## Performance Optimization
+
+### Caching
+Cloudflare Pages automatically caches:
+- Static assets (images, CSS, JS)
+- HTML pages (with smart invalidation)
+
+### Edge Network
+- Global CDN with 300+ locations
+- Automatic HTTPS
+- HTTP/3 support
+
+### Build Optimization
+- Enable Next.js static optimization
+- Minimize bundle size
+- Use image optimization
+
+## Security
+
+### Headers
+Security headers are configured in `next.config.mjs`:
+- HSTS
+- X-Frame-Options
+- CSP
+- X-Content-Type-Options
+
+### Secrets Management
+- Never commit secrets to git
+- Use Cloudflare Pages environment variables
+- Rotate keys regularly
+- Use different keys for production/preview
+
+## Cost
+
+Cloudflare Pages Free Tier:
+- **Builds**: 500 builds/month
+- **Bandwidth**: Unlimited
+- **Requests**: Unlimited
+- **Functions**: 100,000 requests/day
+
+## Support
+
+- Cloudflare Pages Docs: https://developers.cloudflare.com/pages/
+- Next.js on Pages: https://developers.cloudflare.com/pages/framework-guides/nextjs/
+- Community: https://community.cloudflare.com/

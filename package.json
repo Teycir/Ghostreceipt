@@ -14,7 +14,9 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:secrets": "bash scripts/check-secrets.sh",
-    "compile:circuit": "bash scripts/compile-circuit.sh"
+    "compile:circuit": "bash scripts/compile-circuit.sh",
+    "deploy:check": "bash scripts/deploy-check.sh",
+    "security:audit": "bash scripts/security-audit.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

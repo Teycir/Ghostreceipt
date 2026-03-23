@@ -1,0 +1,75 @@
+# Cloudflare Pages Ignore File
+# Files and directories to exclude from deployment
+
+# Development
+.env.local
+.env*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+tests/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+jest.config.js
+jest.setup.js
+playwright.config.ts
+
+# Build artifacts (keep .next for deployment)
+.turbo/
+.swc/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (optional - remove if you want docs deployed)
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Trunk
+.trunk/
+
+# History
+.history/
+
+# Tasks
+tasks/
+
+# Scripts (build scripts not needed in production)
+scripts/
+
+# Circuit compilation (keep compiled artifacts in public/zk/)
+circuits/
+circomlibjs.d.ts
+
+# Node modules (will be installed during build)
+node_modules/
+
+# Lock files (npm ci uses package-lock.json during build)
+# Keep package-lock.json for reproducible builds
