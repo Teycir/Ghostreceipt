@@ -5,6 +5,8 @@ import {
 } from '@/lib/libraries/backend';
 import {
   createOracleRouteRateLimiters,
+  disposeSharedOracleAuthReplayRegistryForTests,
+  getSharedOracleAuthReplayRegistry,
   disposeOracleRouteRateLimiters,
   parseRateLimitedOracleRouteBody,
   VerifySignatureRequestSchema,
@@ -47,6 +49,20 @@ const VERIFY_SIGNATURE_RATE_LIMIT = {
 } as const;
 
 const routeRateLimiters = createOracleRouteRateLimiters(VERIFY_SIGNATURE_RATE_LIMIT);
+const verifyReplayRegistry = getSharedOracleAuthReplayRegistry({
+  cleanupIntervalMs: parsePositiveIntEnv(
+    'ORACLE_VERIFY_REPLAY_CLEANUP_INTERVAL_MS',
+    60_000
+  ),
+  maxEntries: parsePositiveIntEnv(
+    'ORACLE_VERIFY_REPLAY_MAX_ENTRIES',
+    5_000
+  ),
+  maxFutureSkewSeconds: parsePositiveIntEnv(
+    'ORACLE_VERIFY_REPLAY_MAX_FUTURE_SKEW_SECONDS',
+    30
+  ),
+});
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const envelope = await parseRateLimitedOracleRouteBody({
@@ -81,6 +97,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   }
 
+  if (verification.valid) {
+    const replay = await verifyReplayRegistry.check({
+      payload: envelope.data,
+      scope: envelope.data.oraclePubKeyId,
+    });
+
+    if (!replay.allowed) {
+      return createJsonErrorResponse({
+        code: 'REPLAY_DETECTED',
+        details: {
+          reasonCode: replay.reason,
+        },
+        message: replay.message,
+        status: 409,
+      });
+    }
+  }
+
   return NextResponse.json({
     valid: verification.valid,
   });
@@ -88,5 +122,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 export function __disposeOracleVerifyRouteForTests(): void {
   disposeOracleRouteRateLimiters(routeRateLimiters);
+  void disposeSharedOracleAuthReplayRegistryForTests();
   resetCachedOracleSignerForTests();
 }

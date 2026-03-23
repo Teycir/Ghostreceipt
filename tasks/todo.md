@@ -1,3 +1,37 @@
+# Task Plan: Enhancement M1 Step 3 - Nullifier Registry + Verifier Conflict Checks
+
+- [ ] Define nullifier derivation from oracle commitment and document rationale in code/docs.
+- [ ] Add nullifier metadata to oracle payload/share payload path.
+- [ ] Implement server-side nullifier registry abstraction (adapter + in-memory default).
+- [ ] Enforce conflict semantics: same nullifier + same claim allow, same nullifier + different claim reject.
+- [ ] Add dedicated nullifier-check API route and wire verifier flow to call it.
+- [ ] Add focused unit tests for nullifier module and nullifier route behavior.
+- [ ] Verify with typecheck and focused tests.
+
+# Task Plan: Enhancement M1 Step 2 - Nonce Replay Registry + Window Enforcement
+
+- [x] Add nonce replay registry abstraction with adapter interface for production/durable backends.
+- [x] Implement in-memory nonce replay adapter for local/dev/tests.
+- [x] Enforce replay window checks on verify route (`signedAt` future skew + `expiresAt` expiry).
+- [x] Enforce nonce conflict policy: same nonce + same payload allowed (idempotent), same nonce + different payload rejected.
+- [x] Add route-level replay error responses with structured reason metadata.
+- [x] Add focused unit tests for replay allow/deny matrix and verify-route behavior.
+- [x] Verify with typecheck and focused tests.
+
+## Review
+- Added reusable replay-registry abstraction + local in-memory adapter:
+  - [`lib/libraries/backend-core/http/oracle-auth-replay.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/oracle-auth-replay.ts)
+- Exported replay helpers through backend-core HTTP index:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Wired verify route replay-window + nonce conflict enforcement:
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- Added focused tests for registry behavior and verify-route replay outcomes:
+  - [`tests/unit/backend-core/http/oracle-auth-replay.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/backend-core/http/oracle-auth-replay.test.ts)
+  - [`tests/unit/api/oracle-verify-signature-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-verify-signature-route.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/backend-core/http/oracle-auth-replay.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/oracle-signer.test.ts tests/unit/security/replay.test.ts --runInBand` passes.
+
 # Task Plan: Canonical Oracle Auth Structure (Single Schema, No Version Labels)
 
 - [x] Remove `v1`/`v2` schema branching and keep one canonical oracle payload shape.
@@ -215,13 +249,13 @@
 - [x] Add focused unit tests for envelope tampering cases (field swap, timestamp change, nonce change).
 
 ## Workstream B: Replay Protection (Nonce + Time Window)
-- [ ] Add nonce replay registry abstraction with adapters:
-- [ ] In-memory adapter for local tests/dev.
-- [ ] Durable/shared adapter interface for production deployment target.
-- [ ] Enforce replay window checks (`signedAt` skew + expiry checks).
-- [ ] Reject nonce reuse for different payloads; allow idempotent re-verification of identical payload.
-- [ ] Add route-level error codes/messages for replay outcomes.
-- [ ] Add unit/integration tests for replay allow/deny matrix.
+- [x] Add nonce replay registry abstraction with adapters:
+- [x] In-memory adapter for local tests/dev.
+- [x] Durable/shared adapter interface for production deployment target.
+- [x] Enforce replay window checks (`signedAt` skew + expiry checks).
+- [x] Reject nonce reuse for different payloads; allow idempotent re-verification of identical payload.
+- [x] Add route-level error codes/messages for replay outcomes.
+- [x] Add unit/integration tests for replay allow/deny matrix.
 
 ## Workstream C: Nullifier Registry (Anti-Equivocation)
 - [ ] Define nullifier derivation (`chain + txHash` or commitment-derived variant) and document rationale.
@@ -356,7 +390,7 @@
 
 ## Sequence (Execution Order)
 - [x] Step 1: Implement Attestation v2 schema + signing + verification compatibility layer.
-- [ ] Step 2: Implement nonce replay registry + replay window enforcement.
+- [x] Step 2: Implement nonce replay registry + replay window enforcement.
 - [ ] Step 3: Implement nullifier registry + verifier conflict checks.
 - [ ] Step 4: Implement transparency log validation on verifier path.
 - [ ] Step 5: Implement speed track changes (artifact preload/cache + worker proving + UX thresholds).

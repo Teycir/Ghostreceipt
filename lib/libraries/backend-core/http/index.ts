@@ -55,3 +55,19 @@ export type {
   OracleRouteBodyEnvelopeOptions,
   OracleRouteBodyEnvelopeResult,
 } from './oracle-route-envelope';
+export {
+  disposeSharedOracleAuthReplayRegistryForTests,
+  getSharedOracleAuthReplayRegistry,
+  InMemoryOracleAuthReplayAdapter,
+  OracleAuthReplayRegistry,
+} from './oracle-auth-replay';
+export type {
+  CheckOracleAuthReplayInput,
+  OracleAuthReplayAdapter,
+  OracleAuthReplayDecision,
+  OracleAuthReplayEntry,
+  OracleAuthReplayPayload,
+  OracleAuthReplayRegistryOptions,
+  OracleAuthReplayRejectReason,
+  SharedOracleAuthReplayRegistryOptions,
+} from './oracle-auth-replay';
