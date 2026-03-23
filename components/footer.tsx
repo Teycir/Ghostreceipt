@@ -5,6 +5,7 @@ const links = [
   { label: 'FAQ',        href: '/docs/faq.html' },
   { label: 'Security',   href: '/docs/security.html' },
   { label: 'License',    href: '/docs/license.html' },
+  { label: 'Source Code', href: 'https://github.com/Teycir/Ghostreceipt#readme', external: true },
   { label: 'Made by Teycir', href: 'https://teycirbensoltane.tn', external: true },
 ];
 

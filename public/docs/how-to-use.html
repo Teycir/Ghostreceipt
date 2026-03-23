@@ -79,61 +79,67 @@
     a:hover { text-decoration: underline; }
     code { background: #1a1a1a; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
     .back-link { display: inline-block; margin-bottom: 2rem; }
+    .tip { background: #142a4f; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; }
   </style>
 </head>
 <body>
   <a href="/" class="back-link">← Back to GhostReceipt</a>
-  
+
   <h1>How to Use GhostReceipt</h1>
-  <p>Generate zero-knowledge payment receipts in 3 simple steps.</p>
+  <p>Generate a privacy-preserving payment receipt and share a verifiable proof link.</p>
 
   <h2>Step 1: Enter Transaction Details</h2>
   <ul>
-    <li><strong>Chain:</strong> Select Bitcoin or Ethereum</li>
-    <li><strong>Transaction Hash:</strong> The on-chain transaction ID you want to prove</li>
-    <li><strong>Claimed Amount:</strong> Minimum amount to prove (in satoshis for Bitcoin, wei for Ethereum)</li>
-    <li><strong>Minimum Date:</strong> Earliest date the transaction could have occurred</li>
+    <li><strong>Chain:</strong> Choose <code>Bitcoin</code> or <code>Ethereum</code>.</li>
+    <li><strong>Transaction Hash:</strong> Paste the on-chain transaction identifier.</li>
+    <li><strong>Claimed Amount:</strong> Enter your minimum claim threshold (satoshis for BTC, wei for ETH).</li>
+    <li><strong>Minimum Date:</strong> Set the earliest acceptable transaction date.</li>
   </ul>
 
   <h2>Step 2: Generate Proof</h2>
-  <p>Click "Generate Receipt" and wait while:</p>
+  <p>Click <code>Generate Receipt</code>. GhostReceipt will:</p>
   <ol>
-    <li>The oracle fetches canonical transaction data from the blockchain</li>
-    <li>Your browser validates the data against your claim</li>
-    <li>A zero-knowledge proof is generated locally (no data leaves your browser)</li>
+    <li>Fetch oracle-signed canonical chain data for the transaction hash.</li>
+    <li>Build a local witness from your claim and signed payload.</li>
+    <li>Generate the zero-knowledge proof in your browser.</li>
   </ol>
 
+  <div class="tip">
+    <strong>Tip:</strong> On modern devices, the full flow is usually under 60 seconds.
+  </div>
+
   <h2>Step 3: Share Receipt</h2>
-  <p>Once generated, you can:</p>
+  <p>After successful generation, you can:</p>
   <ul>
-    <li><strong>Copy Link:</strong> Share a verification URL with anyone</li>
-    <li><strong>Download QR:</strong> Save a QR code for offline sharing</li>
-    <li><strong>View Receipt:</strong> See the verified proof details</li>
+    <li><strong>Copy URL:</strong> Share a verification link directly.</li>
+    <li><strong>Native Share:</strong> Open your device share sheet (when available).</li>
+    <li><strong>Social Share:</strong> Post to X, Reddit, or LinkedIn.</li>
+    <li><strong>QR Export:</strong> Download and share a QR code.</li>
   </ul>
 
-  <h2>What Gets Proven?</h2>
-  <p>The receipt proves:</p>
+  <h2>What Verification Confirms</h2>
   <ul>
-    <li>✓ Transaction amount ≥ claimed amount</li>
-    <li>✓ Transaction timestamp ≥ minimum date</li>
-    <li>✓ Oracle signature is valid</li>
+    <li>Claimed amount threshold is satisfied.</li>
+    <li>Claimed minimum date threshold is satisfied.</li>
+    <li>Proof and signature validations pass cryptographic checks.</li>
   </ul>
 
-  <h2>What Stays Private?</h2>
-  <p>The receipt does NOT reveal:</p>
+  <h2>What Stays Private</h2>
   <ul>
-    <li>✗ Actual transaction amount (only proves minimum)</li>
-    <li>✗ Exact timestamp (only proves after date)</li>
-    <li>✗ Sender address</li>
-    <li>✗ Receiver address</li>
-    <li>✗ Transaction hash</li>
+    <li>Sender and receiver wallet details are not exposed in receipt claims.</li>
+    <li>Exact raw transaction details are not required for the verifier to validate claims.</li>
+    <li>Sensitive witness inputs remain client-side during proof generation.</li>
   </ul>
 
-  <h2>Verification</h2>
-  <p>Anyone with the receipt link can verify the proof cryptographically without seeing sensitive details.</p>
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>Invalid hash format:</strong> BTC expects 64 hex chars, ETH expects <code>0x</code> + 64 hex chars.</li>
+    <li><strong>Proof failure:</strong> Re-check that claim amount/date are consistent with the on-chain transaction.</li>
+    <li><strong>Clipboard errors:</strong> Allow browser clipboard permissions and retry.</li>
+  </ul>
 
   <footer style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #333; color: #888; font-size: 0.9em;">
-    <p>GhostReceipt - Zero-knowledge payment proofs | <a href="/">Home</a> | <a href="/docs/faq.html">FAQ</a> | <a href="/docs/security.html">Security</a></p>
+    <p>GhostReceipt - Zero-knowledge payment proofs | <a href="/">Home</a> | <a href="/docs/faq.html">FAQ</a> | <a href="/docs/security.html">Security</a> | <a href="https://github.com/Teycir/Ghostreceipt#readme" target="_blank" rel="noopener noreferrer">Source Code</a></p>
   </footer>
 </body>
 </html>

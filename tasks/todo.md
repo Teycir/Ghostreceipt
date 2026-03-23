@@ -1,3 +1,43 @@
+# Task Plan: Match HTML Docs Design + Add Source Code Footer Link
+
+- [x] Make `public/docs/how-to-use.html` use the same design language as the existing docs pages.
+- [x] Add `Source Code` link to the main app footer.
+- [x] Add `Source Code` link in static docs footers for consistency.
+- [x] Verify with link checks and typecheck.
+
+## Review
+- Updated [`public/docs/how-to-use.html`](/home/teycir/Repos/GhostReceipt/public/docs/how-to-use.html) to match the visual system used in other static docs pages:
+  - same layout width/padding,
+  - same background/ambient gradients,
+  - same typography/link/code styles,
+  - same footer structure.
+- Added `Source Code` link (`https://github.com/Teycir/Ghostreceipt#readme`) to:
+  - main app footer in [`components/footer.tsx`](/home/teycir/Repos/GhostReceipt/components/footer.tsx),
+  - static docs footers in [`public/docs/how-to-use.html`](/home/teycir/Repos/GhostReceipt/public/docs/how-to-use.html), [`public/docs/faq.html`](/home/teycir/Repos/GhostReceipt/public/docs/faq.html), [`public/docs/security.html`](/home/teycir/Repos/GhostReceipt/public/docs/security.html), and [`public/docs/license.html`](/home/teycir/Repos/GhostReceipt/public/docs/license.html).
+- Verification:
+  - footer/source link presence verified with `rg`,
+  - `npm run typecheck` passes.
+
+# Task Plan: Add/Refresh How-To-Use HTML Page
+
+- [x] Create or refresh a complete `How to Use` static HTML page for GhostReceipt docs.
+- [x] Ensure the page is reachable via docs path and direct HTML alias.
+- [x] Keep styling and navigation consistent with existing docs pages.
+- [x] Verify links and run typecheck.
+
+## Review
+- Replaced [`public/docs/how-to-use.html`](/home/teycir/Repos/GhostReceipt/public/docs/how-to-use.html) with a fuller step-by-step guide:
+  - quick start,
+  - structured input explanations,
+  - proof generation + sharing flow,
+  - verifier/privacy expectations,
+  - troubleshooting section.
+- Added direct alias [`public/how-to-use.html`](/home/teycir/Repos/GhostReceipt/public/how-to-use.html) that redirects to `/docs/how-to-use.html`.
+- Kept docs navigation consistent with existing static pages (`FAQ`, `Security`, `License`, `Home`).
+- Verification:
+  - link/path checks pass via `rg` scan,
+  - `npm run typecheck` passes.
+
 # Task Plan: Timeseal Footer Social Share Ports (X/Reddit/LinkedIn)
 
 - [x] Copy Timeseal-style footer social share actions (X, Reddit, LinkedIn) into GhostReceipt footer.

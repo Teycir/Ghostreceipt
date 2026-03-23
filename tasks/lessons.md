@@ -1,5 +1,13 @@
 # Lessons Learned
 
+## 2026-03-23 - Docs Page Requests Should Keep Exact Static-Docs Style Parity
+- When the user asks to keep the "same design as other HTML pages", reuse the exact docs page style baseline (body, typography, spacing, footer structure) rather than introducing a variant visual system.
+- If a footer-link addition is requested, apply it consistently to both the runtime app footer and all static docs footers to avoid split navigation behavior.
+
+## 2026-03-23 - Static Docs Requests Should Ship Both Content And Simple Entry URL
+- When the user asks to add a docs HTML page, do not stop at confirming an old file exists; refresh content quality and make the page easy to reach.
+- For static docs in `public/docs`, add a lightweight alias route in `public/` when helpful (for example `/how-to-use.html` -> `/docs/how-to-use.html`) to reduce path friction.
+
 ## 2026-03-23 - Footer Social Requests Should Mirror Timeseal Links Exactly
 - When the user asks to "copy from Timeseal", port the exact social destinations (X, Reddit, LinkedIn) and icon interaction model from `Timeseal/app/components/Footer.tsx`.
 - Keep GhostReceipt-specific message + URL content, but preserve the visible `Share:` block placement in the footer for discoverability.
