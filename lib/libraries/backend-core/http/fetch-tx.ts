@@ -8,6 +8,7 @@ import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
+import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
 import { ProviderCascade } from '../providers/cascade';
@@ -23,6 +24,7 @@ export interface OracleFetchOptions {
   blockchairApiKey?: string;
   cascadeConfig?: CascadeConfig;
   etherscanKeys?: string[];
+  heliusKeys?: string[];
   nowMs?: number;
 }
 
@@ -95,7 +97,10 @@ export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
 
   if (
     normalizedMessage.includes('invalid') &&
-    normalizedMessage.includes('transaction hash')
+    (
+      normalizedMessage.includes('transaction hash') ||
+      normalizedMessage.includes('transaction signature')
+    )
   ) {
     return {
       code: 'INVALID_HASH',
@@ -188,7 +193,10 @@ export function loadHeliusKeysFromEnv(
 
 export function createProviderCascadeForChain(
   chain: Chain,
-  options: Pick<OracleFetchOptions, 'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys'> = {}
+  options: Pick<
+    OracleFetchOptions,
+    'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
+  > = {}
 ): ProviderCascade {
   const cascadeConfig = options.cascadeConfig ?? DEFAULT_CASCADE_CONFIG;
   if (chain === 'bitcoin') {
@@ -199,6 +207,23 @@ export function createProviderCascadeForChain(
           ? { apiKey: options.blockchairApiKey }
           : undefined
       ),
+    ];
+
+    return new ProviderCascade(providers, cascadeConfig);
+  }
+
+  if (chain === 'solana') {
+    const heliusKeys = options.heliusKeys ?? loadHeliusKeysFromEnv();
+    if (heliusKeys.length === 0) {
+      throw new Error('No Helius API keys configured for Solana requests');
+    }
+
+    const providers: Provider[] = [
+      new HeliusProvider({
+        keys: heliusKeys,
+        rotationStrategy: 'random',
+        shuffleOnStartup: true,
+      }),
     ];
 
     return new ProviderCascade(providers, cascadeConfig);
@@ -231,7 +256,7 @@ export async function fetchAndSignOracleTransaction(
 ): Promise<SignedOracleFetchResult> {
   const cascadeOptions: Pick<
     OracleFetchOptions,
-    'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys'
+    'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
   > = {};
   if (options.blockchairApiKey !== undefined) {
     cascadeOptions.blockchairApiKey = options.blockchairApiKey;
@@ -241,6 +266,9 @@ export async function fetchAndSignOracleTransaction(
   }
   if (options.etherscanKeys !== undefined) {
     cascadeOptions.etherscanKeys = options.etherscanKeys;
+  }
+  if (options.heliusKeys !== undefined) {
+    cascadeOptions.heliusKeys = options.heliusKeys;
   }
 
   const cascade = createProviderCascadeForChain(chain, cascadeOptions);

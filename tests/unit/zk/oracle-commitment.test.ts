@@ -29,4 +29,19 @@ describe('computeOracleCommitment', () => {
 
     expect(bitcoinCommitment).not.toBe(ethereumCommitment);
   });
+
+  it('supports deterministic commitments for solana signatures', async () => {
+    const solanaData: CanonicalTxData = {
+      ...baseData,
+      chain: 'solana',
+      txHash: '1111111111111111111111111111111111111111111111111111111111111111',
+      blockHash: 'RecentBlockHash11111111111111111111111111111',
+    };
+
+    const first = await computeOracleCommitment(solanaData);
+    const second = await computeOracleCommitment(solanaData);
+
+    expect(first).toBe(second);
+    expect(first).toMatch(/^[0-9]+$/);
+  });
 });

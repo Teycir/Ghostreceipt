@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Shared Infra Requirements Should Trigger Immediate Core Abstraction
+- When the user asks for cross-project reuse of a subsystem (for example API key cascade), avoid provider-specific duplication and extract a provider-agnostic core utility immediately.
+- Ensure existing integrations are migrated to the shared abstraction in the same change so behavior stays consistent and reusable by default.
+
 ## 2026-03-23 - Provider Rollout Must Respect User-Stated Technical Constraints
 - When the user provides provider keys for one integration (for example Helius) and defers others (for example Alchemy/Monero), execute only the approved provider track and explicitly park the rest in `tasks/todo.md`.
 - Treat secrets provided in-chat as sensitive; never commit them to tracked files and prefer local/deployment secret stores.

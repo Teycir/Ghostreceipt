@@ -31,6 +31,12 @@ export function buildWitness(
   oraclePayload: OraclePayloadV1,
   userClaim: UserClaim
 ): ReceiptWitness {
+  if (oraclePayload.chain !== 'bitcoin' && oraclePayload.chain !== 'ethereum') {
+    throw new Error(
+      `Unsupported chain for current receipt circuit: ${oraclePayload.chain}. Supported: bitcoin, ethereum.`
+    );
+  }
+
   // Convert tx hash to array of 32-bit chunks
   const txHashChunks = hexToChunks(oraclePayload.txHash, 8);
 

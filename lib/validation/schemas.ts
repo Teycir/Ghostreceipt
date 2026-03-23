@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * Supported blockchain networks
  */
-export const ChainSchema = z.enum(['bitcoin', 'ethereum']);
+export const ChainSchema = z.enum(['bitcoin', 'ethereum', 'solana']);
 export type Chain = z.infer<typeof ChainSchema>;
 
 /**
@@ -23,6 +23,16 @@ export const EthereumTxHashSchema = z
   .string()
   .length(66)
   .regex(/^0x[a-f0-9]{64}$/i, 'Invalid Ethereum transaction hash');
+
+/**
+ * Solana transaction signature validation (base58)
+ * Typical signatures are 64-88 chars and must avoid non-base58 characters.
+ */
+export const SolanaTxHashSchema = z
+  .string()
+  .min(64)
+  .max(88)
+  .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'Invalid Solana transaction signature');
 
 /**
  * Oracle fetch transaction request
@@ -56,6 +66,17 @@ export const OracleFetchTxRequestSchema = z.object({
         code: z.ZodIssueCode.custom,
         path: ['txHash'],
         message: 'Invalid Ethereum transaction hash',
+      });
+    }
+  }
+
+  if (data.chain === 'solana') {
+    const parsed = SolanaTxHashSchema.safeParse(data.txHash);
+    if (!parsed.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['txHash'],
+        message: 'Invalid Solana transaction signature',
       });
     }
   }

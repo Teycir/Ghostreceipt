@@ -3,6 +3,7 @@ export type {
   BitcoinProvider,
   CascadeConfig,
   EthereumProvider,
+  SolanaProvider,
   Provider,
   ProviderConfig,
   ProviderError,

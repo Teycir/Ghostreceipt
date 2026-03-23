@@ -3,6 +3,7 @@ import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureWarn, secureError } from '@/lib/security/secure-logging';
+import { ApiKeyCascade } from '@/lib/libraries/backend-core/providers/api-key-cascade';
 
 /**
  * Etherscan proxy API response types
@@ -56,64 +57,10 @@ export class EtherscanProvider implements EthereumProvider {
   };
 
   private readonly baseUrl = 'https://api.etherscan.io/v2/api';
-  private apiKeys: string[];
-  private currentKeyIndex: number;
-  private readonly rotationStrategy: ApiKeyConfig['rotationStrategy'];
-  private keyUsageCounts: number[];
+  private readonly keyCascade: ApiKeyCascade;
 
   constructor(apiKeyConfig: ApiKeyConfig) {
-    this.apiKeys = this.shuffleKeys(apiKeyConfig);
-    this.currentKeyIndex = 0;
-    this.rotationStrategy = apiKeyConfig.rotationStrategy;
-    this.keyUsageCounts = new Array(this.apiKeys.length).fill(0);
-  }
-
-  /**
-   * Shuffle API keys on startup to distribute load
-   */
-  private shuffleKeys(config: ApiKeyConfig): string[] {
-    if (!config.shuffleOnStartup) {
-      return config.keys;
-    }
-
-    const shuffled = [...config.keys];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
-    }
-    return shuffled;
-  }
-
-  private buildKeyAttemptOrder(): number[] {
-    if (this.apiKeys.length === 0) {
-      return [];
-    }
-
-    if (this.rotationStrategy === 'least-used') {
-      return this.apiKeys
-        .map((_, index) => index)
-        .sort((a, b) => {
-          const usageDelta = this.keyUsageCounts[a]! - this.keyUsageCounts[b]!;
-          if (usageDelta !== 0) {
-            return usageDelta;
-          }
-          return a - b;
-        });
-    }
-
-    let startIndex = 0;
-    if (this.rotationStrategy === 'random') {
-      startIndex = Math.floor(Math.random() * this.apiKeys.length);
-    } else {
-      startIndex = this.currentKeyIndex;
-      this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-    }
-
-    const order: number[] = [];
-    for (let offset = 0; offset < this.apiKeys.length; offset++) {
-      order.push((startIndex + offset) % this.apiKeys.length);
-    }
-    return order;
+    this.keyCascade = new ApiKeyCascade(apiKeyConfig);
   }
 
   async fetchTransaction(
@@ -126,50 +73,39 @@ export class EtherscanProvider implements EthereumProvider {
       throw new Error(`Invalid Ethereum transaction hash: ${txHash}`);
     }
 
-    // Try each API key
-    let lastError: Error | null = null;
-
-    const keyAttemptOrder = this.buildKeyAttemptOrder();
-
-    for (let attempt = 0; attempt < keyAttemptOrder.length; attempt++) {
-      if (attempt > 0) {
-        await this.delay(50);
-      }
-
-      const keyIndex = keyAttemptOrder[attempt]!;
-      const apiKey = this.apiKeys[keyIndex];
-      if (!apiKey) {
-        throw new Error('No API keys available');
-      }
-
-      try {
-        this.keyUsageCounts[keyIndex] = (this.keyUsageCounts[keyIndex] ?? 0) + 1;
-        return await this.fetchWithKey(txHash, apiKey, signal);
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        const normalizedMessage = lastError.message.toLowerCase();
-
-        // Non-retryable transaction-level failures should stop key cascade immediately.
-        if (
-          normalizedMessage.includes('transaction not found') ||
-          normalizedMessage.includes('transaction reverted') ||
-          normalizedMessage.includes('invalid ethereum transaction hash')
-        ) {
-          throw lastError;
+    try {
+      return await this.keyCascade.execute(
+        async (apiKey) => this.fetchWithKey(txHash, apiKey, signal),
+        {
+          isNonRetryableError: (error) => {
+            const normalizedMessage = error.message.toLowerCase();
+            return (
+              normalizedMessage.includes('transaction not found') ||
+              normalizedMessage.includes('transaction reverted') ||
+              normalizedMessage.includes('invalid ethereum transaction hash')
+            );
+          },
+          onAttemptFailure: (error, context) => {
+            secureWarn(
+              `[${this.name}] Key ${context.keyIndex + 1} failed (${error.message}), trying next key`
+            );
+          },
         }
-
-        secureWarn(
-          `[${this.name}] Key ${keyIndex + 1} failed (${lastError.message}), trying next key`
-        );
-        continue;
+      );
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error('Unknown error');
+      if (normalizedError.message.startsWith('All API keys exhausted')) {
+        const causeMessage =
+          normalizedError.cause instanceof Error
+            ? normalizedError.cause.message
+            : normalizedError.message;
+        throw new Error(`All Etherscan API keys exhausted. Last error: ${causeMessage}`, {
+          cause: normalizedError.cause instanceof Error ? normalizedError.cause : normalizedError,
+        });
       }
-    }
 
-    // All keys exhausted
-    throw new Error(
-      `All Etherscan API keys exhausted. Last error: ${lastError?.message || 'Unknown'}`,
-      { cause: lastError }
-    );
+      throw normalizedError;
+    }
   }
 
   /**
@@ -378,7 +314,7 @@ export class EtherscanProvider implements EthereumProvider {
 
   async isHealthy(): Promise<boolean> {
     try {
-      const apiKey = this.apiKeys[0];
+      const apiKey = this.keyCascade.keys[0];
       if (!apiKey) {
         return false;
       }
@@ -394,9 +330,5 @@ export class EtherscanProvider implements EthereumProvider {
       secureError(`[${this.name}] Health check failed:`, error);
       return false;
     }
-  }
-
-  private async delay(ms: number): Promise<void> {
-    await new Promise<void>((resolve) => setTimeout(resolve, ms));
   }
 }

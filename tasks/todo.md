@@ -1,3 +1,53 @@
+# Task Plan: CI Stress Test Rate-Limit Alignment
+
+- [x] Diagnose `npm run test:stress:oracle` CI failure and identify rate-limit bottleneck.
+- [x] Ensure stress test command sets burst/per-minute route limits high enough for synthetic CI load.
+- [x] Re-run stress test command and confirm success-rate gate passes (`>= 0.99`).
+
+## Review
+- Updated stress script to set fetch/verify minute + burst limits before route modules initialize:
+  - [`package.json`](/home/teycir/Repos/GhostReceipt/package.json)
+- Verification:
+  - `npm run test:stress:oracle` passes.
+  - Summary after fix: `successRate=1`, `failureCount=0`, `fetchP95=440ms`, `verifyP95=6ms`.
+
+# Task Plan: Reusable API Key Cascade Core (Cross-Project)
+
+- [x] Extract a provider-agnostic API key cascade utility in backend-core (`rotation`, `attempt order`, `usage tracking`, `failover`).
+- [x] Migrate Etherscan provider to the shared cascade utility (no behavior regression).
+- [x] Migrate Helius provider to the shared cascade utility (random start + sequential failover).
+- [x] Keep provider-specific non-retryable error guards while centralizing generic retry/failover mechanics.
+- [x] Add focused unit tests for the shared key-cascade utility.
+- [x] Re-run provider tests to prove migration parity.
+
+## Review
+- Added reusable API-key cascade utility:
+  - [`lib/libraries/backend-core/providers/api-key-cascade.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/api-key-cascade.ts)
+  - [`lib/libraries/backend-core/providers/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/index.ts)
+  - [`lib/providers/api-key-cascade.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/api-key-cascade.ts)
+- Migrated providers to shared utility:
+  - [`lib/providers/ethereum/etherscan.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/ethereum/etherscan.ts)
+  - [`lib/providers/solana/helius.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/solana/helius.ts)
+- Added Solana fetch-path support and validation:
+  - [`lib/validation/schemas.ts`](/home/teycir/Repos/GhostReceipt/lib/validation/schemas.ts)
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+  - [`lib/zk/oracle-commitment.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/oracle-commitment.ts)
+  - [`lib/libraries/zk-core/witness.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/zk-core/witness.ts)
+- Added/updated tests:
+  - [`tests/unit/providers/api-key-cascade.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/api-key-cascade.test.ts)
+  - [`tests/unit/providers/helius.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/helius.test.ts)
+  - [`tests/unit/providers/etherscan.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/providers/etherscan.test.ts)
+  - [`tests/unit/api/fetch-tx-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/fetch-tx-route.test.ts)
+  - [`tests/unit/api/oracle-fetch-tx.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-fetch-tx.test.ts)
+  - [`tests/unit/zk/oracle-commitment.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/oracle-commitment.test.ts)
+  - [`tests/unit/zk/witness.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/witness.test.ts)
+- Updated local env template key slots to match runtime loaders:
+  - [`.env.example`](/home/teycir/Repos/GhostReceipt/.env.example)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/providers/api-key-cascade.test.ts tests/unit/providers/etherscan.test.ts tests/unit/providers/helius.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts tests/unit/zk/oracle-commitment.test.ts tests/unit/zk/witness.test.ts --runInBand` passes.
+  - `npm run test -- tests/unit/backend-core/http/fetch-tx-keys.test.ts --runInBand` passes.
+
 # Task Plan: API Request-Per-Second Limits + User Wait Messaging
 
 - [x] Add explicit per-second burst limits in shared oracle rate-limit envelope (in addition to existing rolling window limits).
@@ -53,7 +103,7 @@
 # Task Plan: Provider Key Rollout Constraints (Helius Now, Alchemy/Monero Later)
 
 - [ ] Configure Helius key pool in local/deployment secret stores only (no tracked file commits).
-- [ ] Add Solana provider integration to consume Helius key cascade from secrets.
+- [x] Add Solana provider integration to consume Helius key cascade from secrets.
 - [ ] Add runtime health metrics for Helius key rotation and failover.
 - [ ] Create deferred implementation track for Alchemy integration (blocked by technical constraints).
 - [ ] Create deferred implementation track for Monero provider/circuit integration (blocked by technical constraints).

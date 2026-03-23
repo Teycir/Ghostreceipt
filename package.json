@@ -12,7 +12,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:live:oracle": "bash scripts/run-live-oracle-tests.sh",
-    "test:stress:oracle": "STRESS_TEST=1 jest tests/integration/stress-oracle-volume.test.ts --runInBand --ci --testTimeout=180000",
+    "test:stress:oracle": "STRESS_TEST=1 ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_MINUTE=300 ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_MINUTE=1200 ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_SECOND=30 ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_SECOND=600 ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_MINUTE=300 ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_MINUTE=1200 ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_SECOND=30 ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_SECOND=600 jest tests/integration/stress-oracle-volume.test.ts --runInBand --ci --testTimeout=180000",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:secrets": "bash scripts/check-secrets.sh",

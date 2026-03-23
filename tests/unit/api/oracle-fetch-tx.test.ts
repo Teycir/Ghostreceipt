@@ -1,15 +1,18 @@
 import { POST, __disposeOracleFetchRouteForTests } from '@/app/api/oracle/fetch-tx/route';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
+import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { NextRequest } from 'next/server';
 
 describe('Oracle API - /api/oracle/fetch-tx', () => {
   const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
   const originalEtherscanKey1 = process.env['ETHERSCAN_API_KEY_1'];
+  const originalHeliusKey1 = process.env['HELIUS_API_KEY_1'];
 
   beforeEach(() => {
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
     process.env['ETHERSCAN_API_KEY_1'] = 'test-etherscan-key';
+    process.env['HELIUS_API_KEY_1'] = 'test-helius-key';
   });
 
   afterEach(() => {
@@ -23,6 +26,12 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
       delete process.env['ETHERSCAN_API_KEY_1'];
     } else {
       process.env['ETHERSCAN_API_KEY_1'] = originalEtherscanKey1;
+    }
+
+    if (originalHeliusKey1 === undefined) {
+      delete process.env['HELIUS_API_KEY_1'];
+    } else {
+      process.env['HELIUS_API_KEY_1'] = originalHeliusKey1;
     }
 
     jest.restoreAllMocks();
@@ -111,6 +120,22 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
       expect(data.error.code).toBe('INVALID_HASH');
     });
 
+    it('should reject invalid Solana tx signature format', async () => {
+      const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
+        method: 'POST',
+        body: JSON.stringify({
+          chain: 'solana',
+          txHash: 'invalid-signature',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error.code).toBe('INVALID_HASH');
+    });
+
     it('should accept valid Bitcoin request', async () => {
       jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
         chain: 'bitcoin',
@@ -151,6 +176,29 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
         body: JSON.stringify({
           chain: 'ethereum',
           txHash: '0xa1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
+        }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should accept valid Solana request', async () => {
+      jest.spyOn(HeliusProvider.prototype, 'fetchTransaction').mockResolvedValue({
+        chain: 'solana',
+        txHash: '1111111111111111111111111111111111111111111111111111111111111111',
+        valueAtomic: '1000000',
+        timestampUnix: 1700000000,
+        confirmations: 8,
+        blockNumber: 319000000,
+      });
+
+      const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
+        method: 'POST',
+        body: JSON.stringify({
+          chain: 'solana',
+          txHash: '1111111111111111111111111111111111111111111111111111111111111111',
         }),
       });
 

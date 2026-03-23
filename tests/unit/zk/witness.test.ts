@@ -48,6 +48,22 @@ describe('Witness Builder', () => {
         expect(BigInt(chunk)).toBeGreaterThanOrEqual(0n);
       });
     });
+
+    it('should reject unsupported chains for current circuit', () => {
+      const userClaim: UserClaim = {
+        claimedAmount: '1',
+        minDate: 1,
+      };
+
+      const solanaPayload = {
+        ...mockOraclePayload,
+        chain: 'solana' as const,
+      };
+
+      expect(() => buildWitness(solanaPayload, userClaim)).toThrow(
+        'Unsupported chain for current receipt circuit'
+      );
+    });
   });
 
   describe('validateWitness', () => {

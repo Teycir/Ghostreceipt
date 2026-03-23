@@ -67,6 +67,13 @@ export interface EthereumProvider extends Provider {
 }
 
 /**
+ * Solana provider interface
+ */
+export interface SolanaProvider extends Provider {
+  chain: 'solana';
+}
+
+/**
  * Provider cascade manager configuration
  */
 export interface CascadeConfig {
