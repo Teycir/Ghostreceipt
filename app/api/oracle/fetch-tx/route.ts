@@ -2,24 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
-import { getClientIdentifier } from '@/lib/security/rate-limit';
 import { secureError } from '@/lib/security/secure-logging';
 import {
   createJsonErrorResponse,
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
-  checkOracleRouteRateLimits,
   createOracleRouteRateLimiters,
   disposeOracleRouteRateLimiters,
   disposeFetchTxReplayProtection,
   FETCH_TX_ANON_IDEMPOTENCY_COOKIE,
   fetchAndSignOracleTransaction,
   mapFetchTxErrorToResponse,
-  parseSecureJsonWithError,
+  parseRateLimitedOracleRouteBody,
   releaseFetchTxReplayKey,
   reserveFetchTxReplayKey,
-  validateBodyWithSchema,
   withFetchTxAnonymousSessionCookie,
 } from '@ghostreceipt/backend-core/http';
 
@@ -39,42 +36,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let anonymousSessionIdToSet: string | null = null;
 
   try {
-    const clientId = getClientIdentifier(request);
     const withSession = (response: NextResponse): NextResponse =>
       withFetchTxAnonymousSessionCookie(response, anonymousSessionIdToSet);
-    const rateLimitResponse = checkOracleRouteRateLimits({
-      clientId,
-      clientMaxRequests: 10,
-      globalMaxRequests: 200,
-      limiters: routeRateLimiters,
-      messages: {
-        client: 'Too many requests. Please try again later.',
-        global: 'Service is busy. Please try again later.',
+    const envelope = await parseRateLimitedOracleRouteBody({
+      invalidRequestMessage: 'Invalid request parameters',
+      maxBodySizeBytes: 1024 * 10,
+      rateLimit: {
+        clientMaxRequests: 10,
+        globalMaxRequests: 200,
+        limiters: routeRateLimiters,
+        messages: {
+          client: 'Too many requests. Please try again later.',
+          global: 'Service is busy. Please try again later.',
+        },
       },
-    });
-    if (rateLimitResponse) {
-      return withSession(rateLimitResponse);
-    }
-    const bodyResult = await parseSecureJsonWithError(request, {
-      maxSize: 1024 * 10,
-    });
-    if (!bodyResult.ok) {
-      return withSession(bodyResult.response);
-    }
-
-    const validationResult = validateBodyWithSchema({
-      body: bodyResult.data,
-      options: {
-        code: 'INVALID_HASH',
-        message: 'Invalid request parameters',
-      },
+      request,
       schema: OracleFetchTxRequestSchema,
     });
-    if (!validationResult.ok) {
-      return withSession(validationResult.response);
+    if (!envelope.ok) {
+      return withSession(envelope.response);
     }
 
-    const { chain, txHash, idempotencyKey } = validationResult.data;
+    const { clientId, data } = envelope;
+    const { chain, txHash, idempotencyKey } = data;
 
     const replayReservation = reserveFetchTxReplayKey({
       anonymousSessionIdFromCookie:

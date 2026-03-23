@@ -1,3 +1,26 @@
+# Task Plan: Phase 2 Extraction - Unified Oracle Route Body Envelope
+
+- [x] Extract a reusable oracle route body pipeline that combines rate-limit checks + secure JSON parse + zod validation.
+- [x] Rewire `fetch-tx` route to use the unified oracle route body envelope helper.
+- [x] Rewire `verify-signature` route to use the unified oracle route body envelope helper.
+- [x] Keep route behavior/status/messages stable for existing tests.
+- [x] Verify with typecheck.
+- [x] Verify with focused oracle route unit tests.
+
+## Review
+- Added unified route-body envelope module:
+  - [`lib/libraries/backend-core/http/oracle-route-envelope.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/oracle-route-envelope.ts)
+- Extended backend-core HTTP exports:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Refactored routes to consume the unified envelope helper:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- Updated extraction docs:
+  - [`lib/libraries/README.md`](/home/teycir/Repos/GhostReceipt/lib/libraries/README.md)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
+
 # Task Plan: Phase 2 Extraction - Shared Oracle Rate-Limit Envelope
 
 - [x] Extract reusable route rate-limit helper (global + client checks) into backend-core HTTP module.

@@ -47,3 +47,10 @@ export type {
   OracleRouteRateLimiters,
   OracleRouteRateLimitMessages,
 } from './rate-limit-envelope';
+export {
+  parseRateLimitedOracleRouteBody,
+} from './oracle-route-envelope';
+export type {
+  OracleRouteBodyEnvelopeOptions,
+  OracleRouteBodyEnvelopeResult,
+} from './oracle-route-envelope';
