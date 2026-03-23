@@ -20,16 +20,16 @@ export const PREMIUM_SELECT_CLASSES = {
     'backdrop-blur-xl transition-all duration-200 focus-visible:outline-none ' +
     'focus-visible:ring-2 focus-visible:ring-blue-300/70 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-40',
   panel:
-    'absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-white/20 ' +
-    'bg-[linear-gradient(165deg,rgba(255,255,255,0.16),rgba(255,255,255,0.04)_38%,rgba(23,57,126,0.36))] ' +
-    'shadow-[0_16px_40px_rgba(4,10,35,0.65),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-2xl',
+    'absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-white/16 ' +
+    'bg-[linear-gradient(160deg,rgba(8,12,30,0.96),rgba(5,9,24,0.94)_48%,rgba(15,33,84,0.90))] ' +
+    'shadow-[0_22px_54px_rgba(2,6,22,0.86),inset_0_1px_0_rgba(255,255,255,0.10)] backdrop-blur-2xl',
   optionBase: 'flex w-full items-center px-3 py-2.5 text-left text-sm transition-colors duration-150',
   optionDisabled: 'cursor-not-allowed text-white/30',
-  optionEnabled: 'text-white/88',
+  optionEnabled: 'text-white/92',
   optionHighlighted:
-    'bg-[linear-gradient(120deg,rgba(120,170,255,0.40),rgba(62,108,208,0.34))]',
+    'bg-[linear-gradient(120deg,rgba(66,110,212,0.70),rgba(44,82,178,0.72))]',
   optionHover:
-    'bg-transparent hover:bg-[linear-gradient(120deg,rgba(120,170,255,0.22),rgba(62,108,208,0.22))]',
+    'bg-transparent hover:bg-[linear-gradient(120deg,rgba(54,94,196,0.54),rgba(30,62,149,0.58))]',
   optionSelected: 'font-semibold text-white',
 } as const;
 

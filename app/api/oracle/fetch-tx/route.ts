@@ -4,7 +4,6 @@ import {
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
-import { replayProtection } from '@/lib/security/replay';
 import { parseSecureJson } from '@/lib/security/secure-json';
 import { secureError } from '@/lib/security/secure-logging';
 import {
@@ -12,8 +11,13 @@ import {
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
+  disposeFetchTxReplayProtection,
+  FETCH_TX_ANON_IDEMPOTENCY_COOKIE,
   fetchAndSignOracleTransaction,
   mapFetchTxErrorToResponse,
+  releaseFetchTxReplayKey,
+  reserveFetchTxReplayKey,
+  withFetchTxAnonymousSessionCookie,
 } from '@ghostreceipt/backend-core/http';
 
 const rateLimiter = createRateLimiter({
@@ -25,37 +29,6 @@ const globalRateLimiter = createRateLimiter({
   windowMs: 60000,
   maxRequests: 200,
 });
-
-const ANON_IDEMPOTENCY_COOKIE = 'gr_sid';
-
-function createAnonymousSessionId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-}
-
-function withAnonymousSessionCookie(
-  response: NextResponse,
-  anonymousSessionId: string | null
-): NextResponse {
-  if (!anonymousSessionId) {
-    return response;
-  }
-
-  response.cookies.set({
-    name: ANON_IDEMPOTENCY_COOKIE,
-    value: anonymousSessionId,
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env['NODE_ENV'] === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30,
-  });
-
-  return response;
-}
 
 /**
  * POST /api/oracle/fetch-tx
@@ -69,7 +42,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const clientId = getClientIdentifier(request);
     const withSession = (response: NextResponse): NextResponse =>
-      withAnonymousSessionCookie(response, anonymousSessionIdToSet);
+      withFetchTxAnonymousSessionCookie(response, anonymousSessionIdToSet);
     const globalRateLimit = globalRateLimiter.check('global');
 
     if (!globalRateLimit.allowed) {
@@ -136,33 +109,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { chain, txHash, idempotencyKey } = validationResult.data;
 
-    const normalizedIdempotencyKey = idempotencyKey?.trim();
-    if (normalizedIdempotencyKey) {
-      const anonymousSessionIdFromCookie =
-        request.cookies.get(ANON_IDEMPOTENCY_COOKIE)?.value ?? null;
-      const anonymousSessionId =
-        anonymousSessionIdFromCookie ?? createAnonymousSessionId();
-      const idempotencyScope = clientId ?? `sid:${anonymousSessionId}`;
-
-      if (!clientId && !anonymousSessionIdFromCookie) {
-        anonymousSessionIdToSet = anonymousSessionId;
-      }
-
-      const replayKey = `${idempotencyScope}:${normalizedIdempotencyKey}`;
-      const replayCheck = replayProtection.check(replayKey, Date.now());
-
-      if (!replayCheck.allowed) {
-        const errorResponse: ErrorResponse = {
-          error: {
-            code: 'REPLAY_DETECTED',
-            message: replayCheck.reason ?? 'Duplicate idempotency key',
-          },
-        };
-        return withSession(NextResponse.json(errorResponse, { status: 409 }));
-      }
-
-      reservedReplayKey = replayKey;
+    const replayReservation = reserveFetchTxReplayKey({
+      anonymousSessionIdFromCookie:
+        request.cookies.get(FETCH_TX_ANON_IDEMPOTENCY_COOKIE)?.value ?? null,
+      clientId,
+      ...(idempotencyKey !== undefined ? { idempotencyKey } : {}),
+    });
+    if (replayReservation.anonymousSessionIdToSet) {
+      anonymousSessionIdToSet = replayReservation.anonymousSessionIdToSet;
     }
+    if (replayReservation.replayConflictReason) {
+      const errorResponse: ErrorResponse = {
+        error: {
+          code: 'REPLAY_DETECTED',
+          message: replayReservation.replayConflictReason,
+        },
+      };
+      return withSession(NextResponse.json(errorResponse, { status: 409 }));
+    }
+    reservedReplayKey = replayReservation.replayKey;
 
     const blockchairApiKey = process.env['BLOCKCHAIR_API_KEY'];
     const signedResult = await fetchAndSignOracleTransaction(
@@ -176,9 +141,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       cached: signedResult.cached,
     }));
   } catch (error) {
-    if (reservedReplayKey) {
-      replayProtection.release(reservedReplayKey);
-    }
+    releaseFetchTxReplayKey(reservedReplayKey);
 
     secureError('[Oracle API] Error:', error);
 
@@ -191,7 +154,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     };
 
-    return withAnonymousSessionCookie(
+    return withFetchTxAnonymousSessionCookie(
       NextResponse.json(errorResponse, { status: mapped.status }),
       anonymousSessionIdToSet
     );
@@ -203,6 +166,6 @@ export const mapErrorToResponse = mapFetchTxErrorToResponse;
 export function __disposeOracleFetchRouteForTests(): void {
   rateLimiter.dispose();
   globalRateLimiter.dispose();
-  replayProtection.dispose();
+  disposeFetchTxReplayProtection();
   resetCachedOracleSignerForTests();
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneratorForm } from '@/components/generator/generator-form';
 import { Footer } from '@/components/footer';
@@ -78,8 +77,6 @@ export function HomeShell(): React.JSX.Element {
     return () => window.clearInterval(rotateTimer);
   }, [loading]);
 
-  const activeUseCase = LOADER_USE_CASES[useCaseIndex] ?? LOADER_USE_CASES[0];
-
   return (
     <>
       <EyeCandy onReady={() => setBackgroundReady(true)} />
@@ -99,32 +96,6 @@ export function HomeShell(): React.JSX.Element {
         <div className="startup-overlay__content">
           <p className="startup-overlay__brand">GhostReceipt</p>
           <p className="startup-overlay__tag">Prove the payment. Keep the privacy.</p>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.p
-              key={`${activeUseCase.title}-tagline-${useCaseIndex}`}
-              className="startup-overlay__tag-animated"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.28, ease: 'easeOut' }}
-            >
-              {`${activeUseCase.title}: ${activeUseCase.benefit}`.split('').map((char, index, arr) => (
-                <motion.span
-                  key={`${activeUseCase.title}-tag-char-${index}`}
-                  className="startup-overlay__usecase-char"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    duration: 0.14,
-                    delay: (arr.length - index - 1) * 0.008,
-                  }}
-                >
-                  {char === ' ' ? '\u00A0' : char}
-                </motion.span>
-              ))}
-            </motion.p>
-          </AnimatePresence>
           <p className="startup-overlay__status">Initializing secure verification engine...</p>
 
           <div className="startup-overlay__usecase">

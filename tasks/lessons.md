@@ -1,5 +1,13 @@
 # Lessons Learned
 
+## 2026-03-23 - Loader Cleanup Requests Must Remove Residual Animated Copy
+- When the user asks to remove loader animated text, remove the animated UI block itself (not only restyle it) and delete any now-unused loader animation classes/imports.
+- Keep the requested static sentence in place (`Prove the payment. Keep the privacy.`) while simplifying loader content.
+
+## 2026-03-23 - Premium Dropdowns Need Contrast Before Effects
+- For glass dropdowns on animated backgrounds, prioritize darker, higher-opacity panel surfaces so option text remains readable over background motion.
+- Keep premium styling in borders/shadows/gradients, but ensure dropdown item contrast clears readability first.
+
 ## 2026-03-23 - Phase-2 Reuse Should Use Package-Style Aliases With Compatibility Wrappers
 - For multi-app reuse, create package-style module roots (`backend-core`, `zk-core`) with dedicated import aliases instead of relying only on deep app-relative paths.
 - Preserve existing app/test imports during migration via thin wrapper files (`lib/providers/*`, `lib/zk/witness.ts`) so refactors stay low-risk.

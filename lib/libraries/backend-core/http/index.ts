@@ -9,3 +9,24 @@ export type {
   OracleFetchOptions,
   SignedOracleFetchResult,
 } from './fetch-tx';
+export {
+  VerifySignatureRequestSchema,
+  verifyOracleSignature,
+} from './verify-signature';
+export type {
+  VerifySignatureOptions,
+  VerifySignatureOutcome,
+  VerifySignatureRequest,
+} from './verify-signature';
+export {
+  createFetchTxAnonymousSessionId,
+  disposeFetchTxReplayProtection,
+  FETCH_TX_ANON_IDEMPOTENCY_COOKIE,
+  releaseFetchTxReplayKey,
+  reserveFetchTxReplayKey,
+  withFetchTxAnonymousSessionCookie,
+} from './fetch-tx-idempotency';
+export type {
+  FetchTxReplayReservation,
+  ReserveFetchTxReplayKeyInput,
+} from './fetch-tx-idempotency';

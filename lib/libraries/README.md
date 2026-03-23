@@ -24,7 +24,9 @@ This folder packages app code into reusable library slices for future zk applica
 - `lib/libraries/backend-core`
   - package-style backend core surface:
     - provider contracts + cascade orchestrator,
-    - fetch-tx HTTP orchestration helpers (provider factory, signer flow, error mapping).
+    - fetch-tx HTTP orchestration helpers (provider factory, signer flow, error mapping),
+    - fetch-tx idempotency/session helpers (replay reservation/release + cookie response utility),
+    - verify-signature HTTP helpers (request schema + key-aware verification flow).
   - import alias support:
     - `@ghostreceipt/backend-core`
     - `@ghostreceipt/backend-core/*`
@@ -47,12 +49,13 @@ This folder packages app code into reusable library slices for future zk applica
 
 These are simple candidates for future extraction as shared backend/zk libraries:
 
-- `app/api/oracle/verify-signature/route.ts`
-  - request schema and signature verification orchestration
-
 - `app/api/oracle/fetch-tx/route.ts`
-  - replay/idempotency guard flow
-  - session-cookie idempotency scope logic
+  - rate-limit and request-parse envelope
+  - HTTP response shaping around backend-core helper outcomes
+
+- `app/api/oracle/verify-signature/route.ts`
+  - rate-limit and request-parse envelope
+  - HTTP response shaping around backend-core verification outcomes
 
 - `lib/zk/witness.ts`
   - witness validation and public-signal extraction are already modular and can be promoted to a standalone package surface quickly.

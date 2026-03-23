@@ -305,17 +305,6 @@
     letter-spacing: 0.04em;
   }
 
-  .startup-overlay__tag-animated {
-    margin: 1px 0 2px;
-    font-size: clamp(12px, 1.65vw, 14px);
-    color: rgba(214, 232, 255, 0.9);
-    letter-spacing: 0.01em;
-    line-height: 1.35;
-    text-wrap: balance;
-    min-height: 1.8em;
-    max-width: min(840px, 92vw);
-  }
-
   .startup-overlay__status {
     margin: 4px 0 0;
     font-size: clamp(12px, 1.7vw, 15px);
@@ -338,10 +327,6 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     animation: loaderUseCaseIn 320ms ease;
-  }
-
-  .startup-overlay__usecase-char {
-    display: inline-block;
   }
 
   .startup-overlay__usecase-list {

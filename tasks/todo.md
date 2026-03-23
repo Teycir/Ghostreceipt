@@ -1,3 +1,52 @@
+# Task Plan: Dropdown Contrast + Loader Cleanup + Fetch Session Extraction
+
+- [x] Darken premium dropdown panel/item backgrounds to avoid text overlap with animated page background.
+- [x] Remove loader animated text block while preserving the privacy tagline and use-case list flow.
+- [x] Extract fetch route replay/idempotency/session-cookie helpers into `backend-core/http`.
+- [x] Rewire fetch route to consume extracted session/replay helpers and keep behavior stable.
+- [x] Verify with typecheck.
+- [x] Verify with focused fetch-route unit tests.
+
+## Review
+- Updated dropdown contrast in reusable UI primitive:
+  - [`lib/libraries/ui/premium-select.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/ui/premium-select.ts)
+- Removed loader animated copy block and unused loader animation class usage:
+  - [`components/home-shell.tsx`](/home/teycir/Repos/GhostReceipt/components/home-shell.tsx)
+  - [`app/globals.css`](/home/teycir/Repos/GhostReceipt/app/globals.css)
+- Added fetch session/idempotency extraction module:
+  - [`lib/libraries/backend-core/http/fetch-tx-idempotency.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx-idempotency.ts)
+- Extended backend-core HTTP exports:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Refactored fetch route to consume extracted session/replay helpers:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts)
+- Updated extraction docs:
+  - [`lib/libraries/README.md`](/home/teycir/Repos/GhostReceipt/lib/libraries/README.md)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/fetch-tx-route.test.ts --runInBand` passes.
+
+# Task Plan: Phase 2 Extraction - Oracle Verify Orchestration to `backend-core/http`
+
+- [x] Extract verify-signature request schema into backend-core HTTP module.
+- [x] Extract key-aware signature verification flow into backend-core helper.
+- [x] Rewire verify-signature API route to consume extracted backend-core helpers.
+- [x] Keep route behavior and test compatibility unchanged.
+- [x] Verify with typecheck.
+- [x] Verify with focused verify-route unit tests.
+
+## Review
+- Added verify extraction module:
+  - [`lib/libraries/backend-core/http/verify-signature.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/verify-signature.ts)
+- Extended backend-core HTTP exports in:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Refactored route to use extracted schema + verification helper:
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+- Updated reusable library docs:
+  - [`lib/libraries/README.md`](/home/teycir/Repos/GhostReceipt/lib/libraries/README.md)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
+
 # Task Plan: Phase 2 Extraction - Oracle Fetch Orchestration to `backend-core/http`
 
 - [x] Extract provider factory + Etherscan key loading from fetch route into package-style backend-core module.
