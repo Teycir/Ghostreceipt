@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { POST } from '@/app/api/oracle/verify-signature/route';
+import { POST, __disposeOracleVerifyRouteForTests } from '@/app/api/oracle/verify-signature/route';
 import { OracleSigner } from '@/lib/oracle/signer';
 
 describe('POST /api/oracle/verify-signature', () => {
@@ -30,6 +30,10 @@ describe('POST /api/oracle/verify-signature', () => {
     } else {
       process.env['ORACLE_PUBLIC_KEY'] = originalOraclePublicKey;
     }
+  });
+
+  afterAll(() => {
+    __disposeOracleVerifyRouteForTests();
   });
 
   it('returns valid=true for matching signature and key id', async () => {

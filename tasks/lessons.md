@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - Unit Tests Must Not Depend on Live Provider Network Paths
+- For route unit tests, mock provider calls for "valid request" cases instead of allowing real network cascade retries/timeouts.
+- Any unit test importing oracle route modules should call route dispose hooks in `afterAll` to avoid lingering interval/timer handles.
+
 ## 2026-03-23 - Full-Term Purge Means Case-Insensitive Repo Sweep
 - When the user requests a full platform-term purge, do a case-insensitive repo-wide search and remove all residual docs references, not only runtime config.
 - After documentation cleanups, always run a final zero-match verification command before closing.

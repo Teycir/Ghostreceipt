@@ -1,4 +1,8 @@
-import { POST, mapErrorToResponse } from '@/app/api/oracle/fetch-tx/route';
+import {
+  POST,
+  mapErrorToResponse,
+  __disposeOracleFetchRouteForTests,
+} from '@/app/api/oracle/fetch-tx/route';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
@@ -78,6 +82,10 @@ describe('POST /api/oracle/fetch-tx', () => {
     }
 
     jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    __disposeOracleFetchRouteForTests();
   });
 
   it('returns 400 for invalid ethereum tx hash before provider calls', async () => {

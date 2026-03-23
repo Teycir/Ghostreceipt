@@ -1,3 +1,21 @@
+# Task Plan: Fix Oracle Fetch-Tx Unit Timeout + Jest Teardown Leak
+
+- [x] Make `tests/unit/api/oracle-fetch-tx.test.ts` deterministic by mocking provider network calls in "valid request" cases.
+- [x] Add explicit route-level dispose teardown in unit tests that import oracle route modules.
+- [x] Run targeted unit test commands to verify timeout and open-handle issues are resolved.
+- [x] Document verification outcomes.
+
+## Review
+- Updated [`tests/unit/api/oracle-fetch-tx.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-fetch-tx.test.ts) to mock provider fetches for valid BTC/ETH requests, removing slow/flaky live network dependency from this unit suite.
+- Added explicit route cleanup in unit suites:
+  - [`tests/unit/api/oracle-fetch-tx.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-fetch-tx.test.ts)
+  - [`tests/unit/api/fetch-tx-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/fetch-tx-route.test.ts)
+  - [`tests/unit/api/oracle-verify-signature-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-verify-signature-route.test.ts)
+  by calling `__disposeOracleFetchRouteForTests()` / `__disposeOracleVerifyRouteForTests()` in `afterAll`.
+- Verification:
+  - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand --detectOpenHandles` passes.
+  - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts` passes with `should accept valid Ethereum request` completing quickly.
+
 # Task Plan: Integrate Liquid Silk Background
 
 - [x] Add Three.js runtime dependency for shader-based background rendering.

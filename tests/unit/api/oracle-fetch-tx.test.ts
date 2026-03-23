@@ -1,4 +1,6 @@
-import { POST } from '@/app/api/oracle/fetch-tx/route';
+import { POST, __disposeOracleFetchRouteForTests } from '@/app/api/oracle/fetch-tx/route';
+import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
+import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { NextRequest } from 'next/server';
 
 describe('Oracle API - /api/oracle/fetch-tx', () => {
@@ -22,6 +24,12 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
     } else {
       process.env['ETHERSCAN_API_KEY_1'] = originalEtherscanKey1;
     }
+
+    jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    __disposeOracleFetchRouteForTests();
   });
 
   describe('Input Validation', () => {
@@ -104,6 +112,16 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
     });
 
     it('should accept valid Bitcoin request', async () => {
+      jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
+        chain: 'bitcoin',
+        txHash: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
+        valueAtomic: '1000',
+        timestampUnix: 1700000000,
+        confirmations: 6,
+        blockNumber: 800000,
+        blockHash: 'b'.repeat(64),
+      });
+
       const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
         method: 'POST',
         body: JSON.stringify({
@@ -114,10 +132,20 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
 
       const response = await POST(request);
 
-      expect([200, 404, 429, 502, 504]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
 
     it('should accept valid Ethereum request', async () => {
+      jest.spyOn(EtherscanProvider.prototype, 'fetchTransaction').mockResolvedValue({
+        chain: 'ethereum',
+        txHash: '0xa1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
+        valueAtomic: '1000000000000000000',
+        timestampUnix: 1700000000,
+        confirmations: 12,
+        blockNumber: 19000000,
+        blockHash: `0x${'c'.repeat(64)}`,
+      });
+
       const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
         method: 'POST',
         body: JSON.stringify({
@@ -128,7 +156,7 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
 
       const response = await POST(request);
 
-      expect([200, 404, 422, 429, 502, 504]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
   });
 
