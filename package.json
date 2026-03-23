@@ -11,7 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:live:oracle": "LIVE_INTEGRATION=1 jest tests/integration/live-oracle-flows.test.ts --runInBand",
+    "test:live:oracle": "bash scripts/run-live-oracle-tests.sh",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check:secrets": "bash scripts/check-secrets.sh",

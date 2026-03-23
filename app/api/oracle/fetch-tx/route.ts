@@ -436,3 +436,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export { mapErrorToResponse };
+
+export function __disposeOracleFetchRouteForTests(): void {
+  rateLimiter.dispose();
+  globalRateLimiter.dispose();
+  replayProtection.dispose();
+}

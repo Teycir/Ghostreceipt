@@ -1,9 +1,18 @@
 import { NextRequest } from 'next/server';
-import { POST as fetchTxPost } from '@/app/api/oracle/fetch-tx/route';
-import { POST as verifySignaturePost } from '@/app/api/oracle/verify-signature/route';
+import {
+  POST as fetchTxPost,
+  __disposeOracleFetchRouteForTests,
+} from '@/app/api/oracle/fetch-tx/route';
+import {
+  POST as verifySignaturePost,
+  __disposeOracleVerifyRouteForTests,
+} from '@/app/api/oracle/verify-signature/route';
 import { SuccessResponseSchema } from '@/lib/validation/schemas';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { buildWitness, validateWitness } from '@/lib/zk/witness';
+import { groth16 } from 'snarkjs';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 const describeLive = process.env['LIVE_INTEGRATION'] === '1' ? describe : describe.skip;
 
@@ -21,6 +30,9 @@ const ETH_PUBLIC_RPC_URLS = [
   'https://eth.llamarpc.com',
   'https://ethereum.publicnode.com',
 ];
+const ZK_WASM_PATH = path.join(process.cwd(), 'public/zk/receipt_js/receipt.wasm');
+const ZK_ZKEY_PATH = path.join(process.cwd(), 'public/zk/receipt_final.zkey');
+const ZK_VKEY_PATH = path.join(process.cwd(), 'public/zk/verification_key.json');
 
 async function fetchText(url: string): Promise<string> {
   const response = await fetch(url, { method: 'GET' });
@@ -140,6 +152,24 @@ async function getLiveEthereumTxHash(): Promise<string> {
   );
 }
 
+async function proveAndVerifyLiveWitness(witness: ReturnType<typeof buildWitness>): Promise<void> {
+  const { proof, publicSignals } = await groth16.fullProve(
+    witness as any,
+    ZK_WASM_PATH,
+    ZK_ZKEY_PATH
+  );
+
+  const vkeyRaw = await readFile(ZK_VKEY_PATH, 'utf8');
+  const vkey = JSON.parse(vkeyRaw) as Record<string, unknown>;
+  const proofValid = await groth16.verify(
+    vkey,
+    publicSignals as any,
+    proof as any
+  );
+
+  expect(proofValid).toBe(true);
+}
+
 function createJsonRequest(path: string, body: unknown): NextRequest {
   return new NextRequest(`http://localhost:3000${path}`, {
     method: 'POST',
@@ -215,6 +245,9 @@ describeLive('Live E2E Oracle Flow (BTC + ETH)', () => {
     } else {
       process.env['ETHERSCAN_API_KEY_3'] = originalEnv.etherscanApiKey3;
     }
+
+    __disposeOracleFetchRouteForTests();
+    __disposeOracleVerifyRouteForTests();
   });
 
   async function runFlowForChain(
@@ -265,6 +298,8 @@ describeLive('Live E2E Oracle Flow (BTC + ETH)', () => {
     });
     const witnessValidation = validateWitness(witness);
     expect(witnessValidation.valid).toBe(true);
+
+    await proveAndVerifyLiveWitness(witness);
 
     const verifyResponse = await verifySignaturePost(
       createJsonRequest('/api/oracle/verify-signature', {

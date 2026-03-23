@@ -1,3 +1,31 @@
+# Task Plan: CI/CD Reliability Hardening (Live Integration)
+
+- [x] Eliminate open-handle warnings from live integration tests via explicit route-level timer teardown.
+- [x] Make live oracle test command CI-safe (`--ci` + bounded retries).
+- [x] Add a dedicated GitHub Actions workflow for live BTC/ETH integration checks (scheduled + manual).
+- [x] Keep main CI deterministic by avoiding mandatory external-network live tests on PR quality gates.
+- [x] Run typecheck and live command to verify stability.
+
+## Review
+- Added route-level teardown hooks for tests:
+  - `app/api/oracle/fetch-tx/route.ts` -> `__disposeOracleFetchRouteForTests()`
+  - `app/api/oracle/verify-signature/route.ts` -> `__disposeOracleVerifyRouteForTests()`
+- Wired teardown hooks into live suite `afterAll` in `tests/integration/live-oracle-flows.test.ts`.
+- Added resilient live test runner script: `scripts/run-live-oracle-tests.sh`
+  - bounded retry (`MAX_ATTEMPTS=2`),
+  - CI mode (`--ci`),
+  - long timeout for proof generation (`--testTimeout=180000`),
+  - forced process exit (`--forceExit`) to prevent CI hangs.
+- Updated `package.json`:
+  - `test:live:oracle` now calls `bash scripts/run-live-oracle-tests.sh`.
+- Added dedicated workflow:
+  - `.github/workflows/live-integration.yml`
+  - runs on `workflow_dispatch` and nightly `schedule`,
+  - does not alter existing PR/push quality gates (`ci.yml`) to keep deterministic CI.
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test:live:oracle` passes (BTC + ETH live flows) and exits cleanly.
+
 # Task Plan: Live E2E Oracle Integration (BTC + ETH)
 
 - [x] Add a live integration test suite that fetches real BTC and ETH transaction hashes at runtime.
@@ -15,12 +43,14 @@
     - schema + canonical payload assertions,
     - commitment recomputation parity check (`computeOracleCommitment`),
     - witness build/validate check with payload-derived claim bounds,
+    - Groth16 live proof generation (`groth16.fullProve`) using `public/zk/receipt_js/receipt.wasm` + `public/zk/receipt_final.zkey`,
+    - Groth16 live proof verification (`groth16.verify`) using `public/zk/verification_key.json`,
     - `POST /api/oracle/verify-signature` and `valid === true`.
 - Added explicit command in `package.json`:
   - `test:live:oracle` => `LIVE_INTEGRATION=1 jest tests/integration/live-oracle-flows.test.ts --runInBand`
 - Verification:
   - `npm run typecheck` passes.
-  - `npm run test:live:oracle` passes (BTC and ETH live flows).
+  - `npm run test:live:oracle` passes (BTC and ETH live flows including live prove/verify).
 
 # Task Plan: Review-Driven Trust Clarity + Public Docs Hygiene
 

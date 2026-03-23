@@ -161,3 +161,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     ),
   });
 }
+
+export function __disposeOracleVerifyRouteForTests(): void {
+  rateLimiter.dispose();
+  globalRateLimiter.dispose();
+}
