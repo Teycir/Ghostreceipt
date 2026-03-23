@@ -1,3 +1,37 @@
+# Task Plan: Phase 2 Package-Style Core Libraries (`backend-core` + `zk-core`)
+
+- [x] Create package-style module roots for reusable `backend-core` and `zk-core`.
+- [x] Move provider cascade + provider contracts into `backend-core` and keep old `lib/providers/*` paths as wrappers.
+- [x] Move witness builder/validator into `zk-core` and keep old `lib/zk/witness.ts` as wrapper.
+- [x] Add import aliases (`@ghostreceipt/backend-core`, `@ghostreceipt/zk-core`) in tsconfig.
+- [x] Switch key runtime imports to new aliases to validate the package-style surface.
+- [x] Verify with typecheck.
+
+## Review
+- Added package-style backend core modules:
+  - [`lib/libraries/backend-core/providers/types.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/types.ts)
+  - [`lib/libraries/backend-core/providers/cascade.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/cascade.ts)
+  - [`lib/libraries/backend-core/providers/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/providers/index.ts)
+  - [`lib/libraries/backend-core/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/index.ts)
+- Added package-style zk core modules:
+  - [`lib/libraries/zk-core/witness.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/zk-core/witness.ts)
+  - [`lib/libraries/zk-core/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/zk-core/index.ts)
+- Preserved backward compatibility via wrappers:
+  - [`lib/providers/types.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/types.ts)
+  - [`lib/providers/cascade.ts`](/home/teycir/Repos/GhostReceipt/lib/providers/cascade.ts)
+  - [`lib/zk/witness.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/witness.ts)
+- Added package-style alias paths in [`tsconfig.json`](/home/teycir/Repos/GhostReceipt/tsconfig.json):
+  - `@ghostreceipt/backend-core`
+  - `@ghostreceipt/backend-core/*`
+  - `@ghostreceipt/zk-core`
+  - `@ghostreceipt/zk-core/*`
+- Switched key runtime imports to alias surfaces:
+  - [`app/api/oracle/fetch-tx/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/fetch-tx/route.ts) now imports provider contracts/cascade from `@ghostreceipt/backend-core/*`.
+  - [`lib/zk/prover.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/prover.ts) now imports `ReceiptWitness` type from `@ghostreceipt/zk-core`.
+- Expanded library docs in [`lib/libraries/README.md`](/home/teycir/Repos/GhostReceipt/lib/libraries/README.md) with `backend-core` and `zk-core` packaging guidance.
+- Verification:
+  - `npm run typecheck` passes.
+
 # Task Plan: Reusable Libraries Split (UI + Backend + ZK)
 
 - [x] Create reusable library namespaces under `lib/libraries/` for `ui`, `backend`, and `zk`.

@@ -21,10 +21,25 @@ This folder packages app code into reusable library slices for future zk applica
 - `lib/libraries/index.ts`
   - top-level namespace exports (`UiLibrary`, `BackendLibrary`, `ZkLibrary`).
 
+- `lib/libraries/backend-core`
+  - package-style backend core surface (provider contracts + cascade orchestrator).
+  - import alias support:
+    - `@ghostreceipt/backend-core`
+    - `@ghostreceipt/backend-core/*`
+
+- `lib/libraries/zk-core`
+  - package-style zk core surface (witness build/validate/extract).
+  - import alias support:
+    - `@ghostreceipt/zk-core`
+    - `@ghostreceipt/zk-core/*`
+
 ## Backward Compatibility
 
 - Existing app import path `components/ui/select.tsx` is kept as a compatibility wrapper:
   - `Select` now re-exports `PremiumSelect` from `lib/libraries/ui`.
+- Existing provider/zk import paths are kept as wrappers:
+  - `lib/providers/cascade.ts` and `lib/providers/types.ts` re-export backend-core modules.
+  - `lib/zk/witness.ts` re-exports zk-core witness modules.
 
 ## Low-Effort Next Extractions (Identified)
 

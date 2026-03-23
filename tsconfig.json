@@ -32,6 +32,18 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@ghostreceipt/backend-core": [
+        "./lib/libraries/backend-core/index.ts"
+      ],
+      "@ghostreceipt/backend-core/*": [
+        "./lib/libraries/backend-core/*"
+      ],
+      "@ghostreceipt/zk-core": [
+        "./lib/libraries/zk-core/index.ts"
+      ],
+      "@ghostreceipt/zk-core/*": [
+        "./lib/libraries/zk-core/*"
       ]
     },
     "plugins": [

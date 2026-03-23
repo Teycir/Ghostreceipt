@@ -1,5 +1,5 @@
 import { groth16 } from 'snarkjs';
-import type { ReceiptWitness } from './witness';
+import type { ReceiptWitness } from '@ghostreceipt/zk-core';
 import {
   decodeSharePayload,
   encodeSharePayload,

@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-23 - Phase-2 Reuse Should Use Package-Style Aliases With Compatibility Wrappers
+- For multi-app reuse, create package-style module roots (`backend-core`, `zk-core`) with dedicated import aliases instead of relying only on deep app-relative paths.
+- Preserve existing app/test imports during migration via thin wrapper files (`lib/providers/*`, `lib/zk/witness.ts`) so refactors stay low-risk.
+- Prove new package surfaces in real runtime imports early (for example route + prover imports) before expanding migration breadth.
+
 ## 2026-03-23 - Cross-App Reuse Requests Should Become Concrete Library Boundaries
 - When the user asks for future-project reuse, extract concrete primitives/components into explicit `lib/libraries/{ui,backend,zk}` namespaces instead of keeping logic inside app routes/components.
 - Keep existing app imports stable with thin compatibility wrappers while moving implementation into library modules.

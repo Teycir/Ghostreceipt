@@ -5,16 +5,16 @@ import {
   type OraclePayloadV1,
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
-import { ProviderCascade } from '@/lib/providers/cascade';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
+import { ProviderCascade } from '@ghostreceipt/backend-core/providers/cascade';
 import { createRateLimiter, getClientIdentifier } from '@/lib/security/rate-limit';
 import { replayProtection } from '@/lib/security/replay';
 import { parseSecureJson } from '@/lib/security/secure-json';
 import { secureError } from '@/lib/security/secure-logging';
-import type { Provider, ProviderError } from '@/lib/providers/types';
+import type { Provider, ProviderError } from '@ghostreceipt/backend-core/providers/types';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import {
   createRateLimitErrorResponse,

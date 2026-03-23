@@ -1,3 +1,4 @@
+export { ProviderCascade } from './cascade';
 export type {
   ApiKeyConfig,
   BitcoinProvider,
@@ -7,4 +8,4 @@ export type {
   ProviderConfig,
   ProviderError,
   ProviderResult,
-} from '@/lib/libraries/backend-core/providers/types';
+} from './types';
