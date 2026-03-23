@@ -33,8 +33,8 @@ _Scan the QR code or copy the wallet address above._
 ### _"Prove the payment. Keep the privacy."_
 
 Status:
-- Release: `Unreleased` (pre-`v0.1.0`)
-- Live demo: `Not published yet`
+- Release: `v0.1.0-alpha` (Live on Cloudflare Pages)
+- Live demo: **[https://ghostreceipt.pages.dev](https://ghostreceipt.pages.dev)**
 
 > ⚠️ **Trust Assumptions (Current):**
 > A GhostReceipt proof is valid relative to oracle-signed canonical transaction facts. The oracle is currently centralized; if it is unavailable or compromised, new receipt generation is impacted and trust in newly issued payloads is degraded. See the [Threat Model](./docs/runbooks/THREAT_MODEL.md).
@@ -244,8 +244,9 @@ Open `http://localhost:3000`.
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)
-- Cloudflare deployment: [docs/CLOUDFLARE_DEPLOYMENT.md](./docs/CLOUDFLARE_DEPLOYMENT.md)
-- Deployment checklist: [docs/DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md)
+- Deployment guide: [docs/DEPLOYMENT_READY.md](./docs/DEPLOYMENT_READY.md)
+- Quick deploy: [docs/runbooks/QUICK_DEPLOY.md](./docs/runbooks/QUICK_DEPLOY.md)
+- Cloudflare Pages: [docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md](./docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
 - Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
 - Execution roadmap: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
 - Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
