@@ -115,12 +115,17 @@ export const OracleNonceSchema = z
   .string()
   .regex(/^[a-f0-9]{32,128}$/i, 'Invalid oracle nonce format');
 
+export const OracleNullifierSchema = z
+  .string()
+  .regex(/^[a-f0-9]{64}$/i, 'Invalid oracle nullifier format');
+
 /**
  * Oracle signed payload
  * Signature is bound to the full auth envelope (messageHash + nonce + timestamps + key id).
  */
 export const OraclePayloadSchema = CanonicalTxDataSchema.extend({
   messageHash: OracleCommitmentSchema,
+  nullifier: OracleNullifierSchema,
   oracleSignature: OracleSignatureHexSchema,
   oraclePubKeyId: OraclePubKeyIdSchema,
   nonce: OracleNonceSchema,
@@ -153,6 +158,7 @@ export const ErrorCodeSchema = z.enum([
   'TRANSACTION_REVERTED',
   'INSUFFICIENT_CONFIRMATIONS',
   'REPLAY_DETECTED',
+  'NULLIFIER_CONFLICT',
   'INTERNAL_ERROR',
 ]);
 

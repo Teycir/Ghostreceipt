@@ -71,3 +71,22 @@ export type {
   OracleAuthReplayRejectReason,
   SharedOracleAuthReplayRegistryOptions,
 } from './oracle-auth-replay';
+export {
+  CheckNullifierRequestSchema,
+  deriveClaimDigest,
+  deriveNullifier,
+  disposeSharedNullifierRegistryForTests,
+  getSharedNullifierRegistry,
+  InMemoryNullifierRegistryAdapter,
+  NullifierRegistry,
+} from './oracle-nullifier';
+export type {
+  CheckNullifierRequest,
+  InMemoryNullifierRegistryAdapterOptions,
+  NullifierRegistryAdapter,
+  NullifierRegistryCheckInput,
+  NullifierRegistryDecision,
+  NullifierRegistryEntry,
+  NullifierRegistryOptions,
+  SharedNullifierRegistryOptions,
+} from './oracle-nullifier';

@@ -243,6 +243,7 @@ describe('POST /api/oracle/fetch-tx', () => {
       data: {
         expiresAt: number;
         messageHash: string;
+        nullifier: string;
         nonce: string;
         oracleSignature: string;
         oraclePubKeyId: string;
@@ -253,6 +254,7 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(response.status).toBe(200);
     expect(typeof body.data.expiresAt).toBe('number');
     expect(body.data.messageHash).toMatch(/^[0-9]{1,78}$/);
+    expect(body.data.nullifier).toMatch(/^[a-f0-9]{64}$/i);
     expect(body.data.nonce).toMatch(/^[a-f0-9]{32}$/i);
     expect(body.data.oracleSignature).toMatch(/^[a-f0-9]{128}$/i);
     expect(body.data.oraclePubKeyId).toMatch(/^[a-f0-9]{16}$/i);

@@ -10,6 +10,7 @@ describe('Generator Form Integration', () => {
     confirmations: 6,
     expiresAt: 1700000400,
     messageHash: '12345678901234567890',
+    nullifier: 'e'.repeat(64),
     nonce: 'a'.repeat(32),
     oracleSignature: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     oraclePubKeyId: 'test-key-1',

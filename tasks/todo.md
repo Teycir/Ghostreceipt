@@ -1,12 +1,38 @@
 # Task Plan: Enhancement M1 Step 3 - Nullifier Registry + Verifier Conflict Checks
 
-- [ ] Define nullifier derivation from oracle commitment and document rationale in code/docs.
-- [ ] Add nullifier metadata to oracle payload/share payload path.
-- [ ] Implement server-side nullifier registry abstraction (adapter + in-memory default).
-- [ ] Enforce conflict semantics: same nullifier + same claim allow, same nullifier + different claim reject.
-- [ ] Add dedicated nullifier-check API route and wire verifier flow to call it.
-- [ ] Add focused unit tests for nullifier module and nullifier route behavior.
-- [ ] Verify with typecheck and focused tests.
+- [x] Define nullifier derivation from oracle commitment and document rationale in code/docs.
+- [x] Add nullifier metadata to oracle payload/share payload path.
+- [x] Implement server-side nullifier registry abstraction (adapter + in-memory default).
+- [x] Enforce conflict semantics: same nullifier + same claim allow, same nullifier + different claim reject.
+- [x] Add dedicated nullifier-check API route and wire verifier flow to call it.
+- [x] Add focused unit tests for nullifier module and nullifier route behavior.
+- [x] Verify with typecheck and focused tests.
+
+## Review
+- Added reusable nullifier derivation + claim digest helpers, registry abstraction, and in-memory adapter:
+  - [`lib/libraries/backend-core/http/oracle-nullifier.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/oracle-nullifier.ts)
+- Exported nullifier module through backend-core HTTP index:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Added nullifier metadata to signed oracle payload and share payload validation path:
+  - [`lib/validation/schemas.ts`](/home/teycir/Repos/GhostReceipt/lib/validation/schemas.ts)
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+  - [`components/generator/generator-form.tsx`](/home/teycir/Repos/GhostReceipt/components/generator/generator-form.tsx)
+  - [`lib/zk/prover.ts`](/home/teycir/Repos/GhostReceipt/lib/zk/prover.ts)
+- Added dedicated nullifier-check API route and verifier integration:
+  - [`app/api/oracle/check-nullifier/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/check-nullifier/route.ts)
+  - [`app/verify/page.tsx`](/home/teycir/Repos/GhostReceipt/app/verify/page.tsx)
+- Added focused tests:
+  - [`tests/unit/backend-core/http/oracle-nullifier.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/backend-core/http/oracle-nullifier.test.ts)
+  - [`tests/unit/api/oracle-check-nullifier-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-check-nullifier-route.test.ts)
+  - Updated impacted tests:
+    - [`tests/unit/api/fetch-tx-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/fetch-tx-route.test.ts)
+    - [`tests/unit/zk/prover.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/prover.test.ts)
+    - [`tests/unit/zk/witness.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/zk/witness.test.ts)
+    - [`tests/unit/generator/witness-integration.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/generator/witness-integration.test.ts)
+    - [`tests/integration/proof-generation.test.ts`](/home/teycir/Repos/GhostReceipt/tests/integration/proof-generation.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/backend-core/http/oracle-nullifier.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/zk/prover.test.ts tests/unit/zk/witness.test.ts tests/unit/generator/witness-integration.test.ts tests/integration/proof-generation.test.ts --runInBand` passes.
 
 # Task Plan: Enhancement M1 Step 2 - Nonce Replay Registry + Window Enforcement
 
@@ -258,13 +284,13 @@
 - [x] Add unit/integration tests for replay allow/deny matrix.
 
 ## Workstream C: Nullifier Registry (Anti-Equivocation)
-- [ ] Define nullifier derivation (`chain + txHash` or commitment-derived variant) and document rationale.
-- [ ] Add nullifier to share payload metadata.
-- [ ] Implement server-side nullifier registry with conflict semantics:
-- [ ] same nullifier + same claim -> allow.
-- [ ] same nullifier + different claim -> reject.
-- [ ] Update verifier flow to query/check nullifier status.
-- [ ] Add tests for collision/conflict behavior and regression coverage.
+- [x] Define nullifier derivation (`chain + txHash` or commitment-derived variant) and document rationale.
+- [x] Add nullifier to share payload metadata.
+- [x] Implement server-side nullifier registry with conflict semantics:
+- [x] same nullifier + same claim -> allow.
+- [x] same nullifier + different claim -> reject.
+- [x] Update verifier flow to query/check nullifier status.
+- [x] Add tests for collision/conflict behavior and regression coverage.
 
 ## Workstream D: Oracle Transparency Log
 - [ ] Define append-only transparency log JSON schema (`keyId`, `publicKey`, `validFrom`, `validUntil`, `status`, chain hash fields).
@@ -391,7 +417,7 @@
 ## Sequence (Execution Order)
 - [x] Step 1: Implement Attestation v2 schema + signing + verification compatibility layer.
 - [x] Step 2: Implement nonce replay registry + replay window enforcement.
-- [ ] Step 3: Implement nullifier registry + verifier conflict checks.
+- [x] Step 3: Implement nullifier registry + verifier conflict checks.
 - [ ] Step 4: Implement transparency log validation on verifier path.
 - [ ] Step 5: Implement speed track changes (artifact preload/cache + worker proving + UX thresholds).
 - [ ] Step 6: Run gates, document metrics deltas, and finalize rollout notes.

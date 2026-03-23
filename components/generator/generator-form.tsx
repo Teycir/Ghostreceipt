@@ -148,6 +148,7 @@ export function GeneratorForm(): React.JSX.Element {
       const shareableProof = prover.exportProof(proofResult, {
         expiresAt: data.data.expiresAt,
         messageHash: data.data.messageHash,
+        nullifier: data.data.nullifier,
         nonce: data.data.nonce,
         oracleSignature: data.data.oracleSignature,
         oraclePubKeyId: data.data.oraclePubKeyId,

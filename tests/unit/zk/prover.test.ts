@@ -39,6 +39,7 @@ describe('ProofGenerator share payload encoding', () => {
     const exported = generator.exportProof(sampleProof, {
       expiresAt: 1700000300,
       messageHash: '123456789',
+      nullifier: 'd'.repeat(64),
       nonce: 'c'.repeat(32),
       oracleSignature: 'a'.repeat(128),
       oraclePubKeyId: 'b'.repeat(16),
@@ -50,6 +51,7 @@ describe('ProofGenerator share payload encoding', () => {
     expect(imported.oracleAuth).toEqual({
       expiresAt: 1700000300,
       messageHash: '123456789',
+      nullifier: 'd'.repeat(64),
       nonce: 'c'.repeat(32),
       oracleSignature: 'a'.repeat(128),
       oraclePubKeyId: 'b'.repeat(16),

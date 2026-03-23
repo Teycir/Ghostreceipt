@@ -11,6 +11,7 @@ describe('Witness Builder', () => {
     confirmations: 12,
     expiresAt: 1234568190,
     messageHash: '123456789012345678901234567890',
+    nullifier: 'e'.repeat(64),
     nonce: 'b'.repeat(32),
     oracleSignature: 'c'.repeat(128),
     oraclePubKeyId: 'd'.repeat(16),

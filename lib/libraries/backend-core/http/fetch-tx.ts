@@ -14,6 +14,7 @@ import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
 import { ProviderCascade } from '../providers/cascade';
 import type { CascadeConfig, Provider, ProviderError } from '../providers/types';
+import { deriveNullifier } from './oracle-nullifier';
 
 export interface FetchTxMappedError {
   code: ErrorResponse['error']['code'];
@@ -285,6 +286,7 @@ export async function fetchAndSignOracleTransaction(
 
   const signer = getCachedOracleSignerFromEnv();
   const messageHash = await computeOracleCommitment(canonicalDataResult.data);
+  const nullifier = deriveNullifier(messageHash);
   const signedAtMs = options.nowMs ?? Date.now();
   const signedAt = Math.floor(signedAtMs / 1000);
   const requestedTtlSeconds =
@@ -309,6 +311,7 @@ export async function fetchAndSignOracleTransaction(
     data: {
       ...canonicalDataResult.data,
       ...authSignature.envelope,
+      nullifier,
       oracleSignature: authSignature.oracleSignature,
     },
     fetchedAt: result.fetchedAt,

@@ -23,6 +23,7 @@ export interface ProofResult {
 export interface OracleAuthData {
   expiresAt: number;
   messageHash: string;
+  nullifier: string;
   nonce: string;
   oracleSignature: string;
   oraclePubKeyId: string;
@@ -175,6 +176,7 @@ export class ProofGenerator {
         const hasRequiredFields =
           typeof parsed.oracleAuth.expiresAt === 'number' &&
           typeof parsed.oracleAuth.messageHash === 'string' &&
+          typeof parsed.oracleAuth.nullifier === 'string' &&
           typeof parsed.oracleAuth.nonce === 'string' &&
           typeof parsed.oracleAuth.oracleSignature === 'string' &&
           typeof parsed.oracleAuth.oraclePubKeyId === 'string' &&
