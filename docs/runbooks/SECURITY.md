@@ -18,6 +18,7 @@ These files contain secrets and must NEVER be committed to git:
 3. **API Keys & Secrets**
    - Oracle private keys
    - Etherscan API keys
+   - Helius API keys
    - Blockchair API keys
    - Any provider API keys
 
@@ -56,6 +57,11 @@ ETHERSCAN_API_KEY_1=your_primary_key
 ETHERSCAN_API_KEY_2=your_fallback_key_1
 ETHERSCAN_API_KEY_3=your_fallback_key_2
 
+# Helius API keys (get from: https://dashboard.helius.dev)
+HELIUS_API_KEY_1=your_primary_key
+HELIUS_API_KEY_2=your_fallback_key_1
+HELIUS_API_KEY_3=your_fallback_key_2
+
 # Optional: Blockchair API key
 BLOCKCHAIR_API_KEY=your_blockchair_key
 ```
@@ -77,6 +83,9 @@ wrangler secret put ORACLE_PRIVATE_KEY --env production
 wrangler secret put ETHERSCAN_API_KEY_1 --env production
 wrangler secret put ETHERSCAN_API_KEY_2 --env production
 wrangler secret put ETHERSCAN_API_KEY_3 --env production
+wrangler secret put HELIUS_API_KEY_1 --env production
+wrangler secret put HELIUS_API_KEY_2 --env production
+wrangler secret put HELIUS_API_KEY_3 --env production
 ```
 
 ## Verification Checklist
@@ -121,9 +130,11 @@ wrangler secret put ORACLE_PRIVATE_KEY --env production
 ```bash
 # Update in .env.local
 ETHERSCAN_API_KEY_1=new_key_here
+HELIUS_API_KEY_1=new_key_here
 
 # Update in Cloudflare
 wrangler secret put ETHERSCAN_API_KEY_1 --env production
+wrangler secret put HELIUS_API_KEY_1 --env production
 ```
 
 ## Oracle Key Management Policy

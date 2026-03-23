@@ -26,6 +26,30 @@
   - `npm run typecheck` passes.
   - `npm run test -- tests/unit/backend/http-errors.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
 
+# Task Plan: Helius Local Key Pool Scaffolding
+
+- [x] Add env loader utility for Helius API keys (same style as Etherscan).
+- [x] Export Helius key loader through backend-core HTTP index.
+- [x] Add `.env.example` placeholders for local Helius key pool setup.
+- [x] Add focused unit tests for env key loading/deduplication behavior.
+- [x] Update security runbook examples to treat Helius keys as secrets.
+- [x] Verify with typecheck and focused unit tests.
+
+## Review
+- Added Helius key loader in backend-core HTTP module:
+  - [`lib/libraries/backend-core/http/fetch-tx.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/fetch-tx.ts)
+- Exported new loader:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Added local-env placeholders for managed Helius key pool:
+  - [`.env.example`](/home/teycir/Repos/GhostReceipt/.env.example)
+- Updated security runbook to include Helius key handling/rotation examples:
+  - [`docs/runbooks/SECURITY.md`](/home/teycir/Repos/GhostReceipt/docs/runbooks/SECURITY.md)
+- Added focused unit tests:
+  - [`tests/unit/backend-core/http/fetch-tx-keys.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/backend-core/http/fetch-tx-keys.test.ts)
+- Verification:
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/providers/etherscan.test.ts --runInBand` passes.
+
 # Task Plan: Provider Key Rollout Constraints (Helius Now, Alchemy/Monero Later)
 
 - [ ] Configure Helius key pool in local/deployment secret stores only (no tracked file commits).

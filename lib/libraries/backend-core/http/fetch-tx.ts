@@ -168,6 +168,24 @@ export function loadEtherscanKeysFromEnv(
   return Array.from(new Set(candidates));
 }
 
+export function loadHeliusKeysFromEnv(
+  env: NodeJS.ProcessEnv = process.env
+): string[] {
+  const candidates = [
+    env['HELIUS_API_KEY'],
+    env['HELIUS_API_KEY_1'],
+    env['HELIUS_API_KEY_2'],
+    env['HELIUS_API_KEY_3'],
+    env['HELIUS_API_KEY_4'],
+    env['HELIUS_API_KEY_5'],
+    env['HELIUS_API_KEY_6'],
+  ]
+    .map((value) => value?.trim() ?? '')
+    .filter((value) => value.length > 0);
+
+  return Array.from(new Set(candidates));
+}
+
 export function createProviderCascadeForChain(
   chain: Chain,
   options: Pick<OracleFetchOptions, 'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys'> = {}

@@ -2,6 +2,7 @@ export {
   createProviderCascadeForChain,
   fetchAndSignOracleTransaction,
   loadEtherscanKeysFromEnv,
+  loadHeliusKeysFromEnv,
   mapFetchTxErrorToResponse,
 } from './fetch-tx';
 export type {
