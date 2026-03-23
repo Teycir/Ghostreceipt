@@ -20,7 +20,7 @@ _Scan the QR code or copy the wallet address above._
 
 <div align="center">
 
-![License](https://img.shields.io/badge/license-MIT-lightgrey?style=for-the-badge)
+![License](https://img.shields.io/badge/license-BSL%201.1-lightgrey?style=for-the-badge)
 ![Proof](https://img.shields.io/badge/Proof-Zero--Knowledge-111111?style=for-the-badge)
 ![Hosting](https://img.shields.io/badge/Hosting-No--Card%20Friendly-0f766e?style=for-the-badge)
 ![UX](https://img.shields.io/badge/UX-Zero%20Friction-1d4ed8?style=for-the-badge)
