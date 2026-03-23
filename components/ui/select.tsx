@@ -23,6 +23,7 @@ export function Select({
         className={`
           flex h-10 w-full rounded-lg border px-3 py-2 text-sm
           bg-white/[0.04] text-white
+          [color-scheme:dark]
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-0
           disabled:cursor-not-allowed disabled:opacity-40
           transition-colors duration-150
@@ -32,6 +33,7 @@ export function Select({
           }
           ${className}
         `}
+        style={{ colorScheme: 'dark' }}
         {...props}
       >
         {children}

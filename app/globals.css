@@ -128,6 +128,17 @@
     position: relative;
     z-index: 1;
   }
+
+  /* Keep native select dropdown menus readable in dark UI. */
+  select option {
+    background-color: #0b1220;
+    color: #f0f4ff;
+  }
+
+  select option:checked {
+    background-color: #1d4ed8;
+    color: #f8fbff;
+  }
 }
 
 /* ── Utilities ── */
