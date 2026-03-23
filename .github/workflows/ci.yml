@@ -32,6 +32,9 @@ jobs:
       - name: Secret scan
         run: npm run check:secrets
 
+      - name: Validate oracle transparency log
+        run: npm run check:oracle-transparency-log
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

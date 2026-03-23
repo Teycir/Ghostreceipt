@@ -161,6 +161,26 @@ This project currently operates a centralized oracle signing key for canonical t
 4. Verify signatures on newly issued payloads.
 5. Archive a short provenance note (date, operator, reason, impacted environments).
 
+### Transparency Log Policy (Required)
+- Oracle key validity windows are tracked in `config/oracle/transparency-log.json`.
+- The verifier rejects receipts when the `oraclePubKeyId` is:
+  - missing from the log,
+  - outside its `validFrom`/`validUntil` window at `signedAt`,
+  - marked as `revoked` for that window.
+- The log is append-only and hash-chained per entry (`prevEntryHash` -> `entryHash`).
+
+### Transparency Log Rotation Workflow
+1. Add a new entry to `config/oracle/transparency-log.json` with:
+   - `keyId` derived from the new public key,
+   - `publicKey` (hex),
+   - `validFrom` unix timestamp,
+   - `status` (`active`, `retired`, or `revoked`),
+   - chain fields (`prevEntryHash`, `entryHash`).
+2. If retiring/revoking a prior key, close its window with `validUntil`.
+3. Run `npm run check:oracle-transparency-log`.
+4. Run verifier route tests and confirm both old/new key expectations.
+5. Merge and deploy the key rotation change in the same release train as the secret update.
+
 ### Verification Endpoint Usage
 - The verifier path checks oracle-authenticated payloads via `POST /api/oracle/verify-signature`.
 - Oracle signatures are Ed25519 (`64` bytes, hex-encoded as `128` chars).

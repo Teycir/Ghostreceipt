@@ -8,6 +8,10 @@ import {
 import { OracleSigner, type OracleAuthEnvelope } from '@/lib/oracle/signer';
 import { safeHexEqual } from '@/lib/security/safe-compare';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
+import {
+  checkOracleKeyTransparencyValidity,
+  type OracleTransparencyRejectReason,
+} from './oracle-transparency-log';
 
 export const VerifySignatureRequestSchema = z.object({
   messageHash: OracleCommitmentSchema,
@@ -37,7 +41,12 @@ export interface VerifySignatureOptions {
 }
 
 export type VerifySignatureOutcome =
-  | { kind: 'verified'; valid: boolean }
+  | {
+      kind: 'verified';
+      valid: boolean;
+      reason?: OracleTransparencyRejectReason;
+      message?: string;
+    }
   | { kind: 'config_error'; message: string };
 
 const DEFAULT_MISSING_KEY_MESSAGE =
@@ -83,37 +92,54 @@ export function verifyOracleSignature(
   payload: VerifySignatureRequest,
   options: VerifySignatureOptions = {}
 ): VerifySignatureOutcome {
+  let signatureValid = false;
   const oraclePublicKey = options.oraclePublicKey ?? process.env['ORACLE_PUBLIC_KEY'];
   if (oraclePublicKey) {
+    signatureValid = verifyWithPublicKey(payload, oraclePublicKey);
+  } else {
+    const missingKeyMessage = options.missingKeyMessage ?? DEFAULT_MISSING_KEY_MESSAGE;
+    const oraclePrivateKey = options.oraclePrivateKey ?? process.env['ORACLE_PRIVATE_KEY'];
+
+    if (!oraclePrivateKey) {
+      return {
+        kind: 'config_error',
+        message: missingKeyMessage,
+      };
+    }
+
+    if (options.oraclePrivateKey !== undefined) {
+      const signer = new OracleSigner(oraclePrivateKey);
+      signatureValid = verifyWithSigner(payload, signer);
+    } else {
+      const signer = getCachedOracleSignerFromEnv({
+        missingKeyMessage,
+      });
+      signatureValid = verifyWithSigner(payload, signer);
+    }
+  }
+
+  if (!signatureValid) {
     return {
       kind: 'verified',
-      valid: verifyWithPublicKey(payload, oraclePublicKey),
+      valid: false,
     };
   }
 
-  const missingKeyMessage = options.missingKeyMessage ?? DEFAULT_MISSING_KEY_MESSAGE;
-  const oraclePrivateKey = options.oraclePrivateKey ?? process.env['ORACLE_PRIVATE_KEY'];
-
-  if (!oraclePrivateKey) {
-    return {
-      kind: 'config_error',
-      message: missingKeyMessage,
-    };
-  }
-
-  if (options.oraclePrivateKey !== undefined) {
-    const signer = new OracleSigner(oraclePrivateKey);
-    return {
-      kind: 'verified',
-      valid: verifyWithSigner(payload, signer),
-    };
-  }
-
-  const signer = getCachedOracleSignerFromEnv({
-    missingKeyMessage,
+  const transparencyCheck = checkOracleKeyTransparencyValidity({
+    keyId: payload.oraclePubKeyId,
+    signedAt: payload.signedAt,
   });
+  if (!transparencyCheck.valid) {
+    return {
+      kind: 'verified',
+      message: transparencyCheck.message,
+      reason: transparencyCheck.reason,
+      valid: false,
+    };
+  }
+
   return {
     kind: 'verified',
-    valid: verifyWithSigner(payload, signer),
+    valid: true,
   };
 }

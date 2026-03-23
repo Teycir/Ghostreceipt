@@ -13,6 +13,7 @@ Use this checklist before cutting the first public tag and announcing the live d
 
 - [ ] `ORACLE_PRIVATE_KEY` is set only in secret stores, never in repo.
 - [ ] Oracle key rotation status checked (last rotation date documented).
+- [ ] Transparency log updated/validated for current oracle key windows (`npm run check:oracle-transparency-log`).
 - [ ] `POST /api/oracle/verify-signature` returns valid/invalid results as expected.
 - [ ] Replay protection and rate-limit behavior validated in API route tests.
 - [ ] Secret scanning run and clean (`npm run check:secrets`).
@@ -45,6 +46,7 @@ Use this checklist before cutting the first public tag and announcing the live d
 - [ ] Run final validation:
   - [ ] `npm run lint`
   - [ ] `npm run typecheck`
+  - [ ] `npm run check:oracle-transparency-log`
   - [ ] `npm run test:coverage -- --ci --runInBand`
   - [ ] `npm run build`
 - [ ] Publish GitHub release with:

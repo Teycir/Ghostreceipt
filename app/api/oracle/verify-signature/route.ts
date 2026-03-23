@@ -4,6 +4,7 @@ import {
   resetCachedOracleSignerForTests,
 } from '@/lib/libraries/backend';
 import {
+  __resetOracleTransparencyLogCacheForTests,
   createOracleRouteRateLimiters,
   disposeSharedOracleAuthReplayRegistryForTests,
   getSharedOracleAuthReplayRegistry,
@@ -115,13 +116,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({
-    valid: verification.valid,
-  });
+  return NextResponse.json(
+    verification.valid
+      ? {
+          valid: true,
+        }
+      : {
+          valid: false,
+          ...(verification.reason ? { reason: verification.reason } : {}),
+          ...(verification.message ? { message: verification.message } : {}),
+        }
+  );
 }
 
 export function __disposeOracleVerifyRouteForTests(): void {
   disposeOracleRouteRateLimiters(routeRateLimiters);
   void disposeSharedOracleAuthReplayRegistryForTests();
+  __resetOracleTransparencyLogCacheForTests();
   resetCachedOracleSignerForTests();
 }

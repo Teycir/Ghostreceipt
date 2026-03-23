@@ -20,6 +20,23 @@ export type {
   VerifySignatureRequest,
 } from './verify-signature';
 export {
+  __resetOracleTransparencyLogCacheForTests,
+  __setOracleTransparencyLogForTests,
+  checkOracleKeyTransparencyValidity,
+  createOracleTransparencyEntryHash,
+  getOracleTransparencyLog,
+  OracleTransparencyEntrySchema,
+  OracleTransparencyLogSchema,
+  OracleTransparencyStatusSchema,
+} from './oracle-transparency-log';
+export type {
+  OracleTransparencyDecision,
+  OracleTransparencyEntry,
+  OracleTransparencyLog,
+  OracleTransparencyRejectReason,
+  OracleTransparencyStatus,
+} from './oracle-transparency-log';
+export {
   createFetchTxAnonymousSessionId,
   disposeFetchTxReplayProtection,
   FETCH_TX_ANON_IDEMPOTENCY_COOKIE,

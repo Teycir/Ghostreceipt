@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-23 - File Patch Edits Must Use apply_patch Tool Directly
+- When a change requires patch-style edits, call the dedicated `apply_patch` tool directly instead of invoking it through `exec_command`.
+- Keep `exec_command` for read/inspect commands and non-patch shell actions (for example test runs), to avoid tool-policy violations.
+
 ## 2026-03-23 - Versioned Schema Branches Should Be Removed Once Migration Window Closes
 - When the user decides to stop migration support, collapse `v1`/`v2` branches into one canonical structure immediately instead of keeping compatibility code.
 - Remove version-labelled naming (`*V1`, `*V2`, `schemaVersion`, `signatureVersion`) from runtime paths to keep maintenance low and reduce branching bugs.

@@ -87,10 +87,18 @@ async function verifyOracleSignature(oracleAuth: OracleAuthPayload): Promise<Ora
     }
   }
 
-  const payload = (await response.json()) as { valid?: boolean };
+  const payload = (await response.json()) as {
+    message?: string;
+    reason?: string;
+    valid?: boolean;
+  };
   return {
     valid: payload.valid === true,
-    ...(payload.valid === true ? {} : { error: 'Oracle signature verification failed' }),
+    ...(payload.valid === true
+      ? {}
+      : {
+          error: payload.message ?? 'Oracle signature verification failed',
+        }),
   };
 }
 

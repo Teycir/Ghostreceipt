@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-23T00:00:00.000Z",
+  "entries": [
+    {
+      "index": 0,
+      "keyId": "10ba682c8ad13513",
+      "publicKey": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "validFrom": 1704067200,
+      "validUntil": null,
+      "status": "active",
+      "prevEntryHash": null,
+      "entryHash": "f6c9976b5b358782efc640ff379c98afde86777591d10846fa30605586132cde"
+    },
+    {
+      "index": 1,
+      "keyId": "1325b850c2871916",
+      "publicKey": "a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0",
+      "validFrom": 1704067200,
+      "validUntil": null,
+      "status": "active",
+      "prevEntryHash": "f6c9976b5b358782efc640ff379c98afde86777591d10846fa30605586132cde",
+      "entryHash": "762e38f930130daf526d5da26b3f983b89ddf96fd2a8b7cda5375833d7aa0f88"
+    }
+  ]
+}

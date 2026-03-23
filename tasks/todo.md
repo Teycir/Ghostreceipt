@@ -1,3 +1,38 @@
+# Task Plan: Enhancement M1 Step 4 - Transparency Log Validation On Verifier Path
+
+- [x] Define and add append-only transparency log JSON schema + repository-hosted artifact.
+- [x] Implement transparency-log parser/validator with hash-chain integrity checks.
+- [x] Enforce `oraclePubKeyId` validity at `signedAt` during oracle signature verification.
+- [x] Add route/backend tests for unknown/revoked/expired key outcomes.
+- [x] Add key-rotation runbook guidance + CI validation command for log consistency.
+- [x] Verify with typecheck and focused tests.
+
+## Review
+- Added repository-hosted append-only transparency log artifact:
+  - [`config/oracle/transparency-log.json`](/home/teycir/Repos/GhostReceipt/config/oracle/transparency-log.json)
+- Added transparency-log parser/validator with hash-chain + key-id integrity checks:
+  - [`lib/libraries/backend-core/http/oracle-transparency-log.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/oracle-transparency-log.ts)
+- Wired transparency validity enforcement into signature verification path:
+  - [`lib/libraries/backend-core/http/verify-signature.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/verify-signature.ts)
+  - [`app/api/oracle/verify-signature/route.ts`](/home/teycir/Repos/GhostReceipt/app/api/oracle/verify-signature/route.ts)
+  - [`app/verify/page.tsx`](/home/teycir/Repos/GhostReceipt/app/verify/page.tsx)
+- Exported new transparency APIs through backend-core HTTP index:
+  - [`lib/libraries/backend-core/http/index.ts`](/home/teycir/Repos/GhostReceipt/lib/libraries/backend-core/http/index.ts)
+- Added tests for unknown/revoked/expired/log-tamper outcomes:
+  - [`tests/unit/backend-core/http/oracle-transparency-log.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/backend-core/http/oracle-transparency-log.test.ts)
+  - [`tests/unit/api/oracle-verify-signature-route.test.ts`](/home/teycir/Repos/GhostReceipt/tests/unit/api/oracle-verify-signature-route.test.ts)
+- Added CI + local validation command for transparency-log consistency:
+  - [`scripts/check-oracle-transparency-log.mjs`](/home/teycir/Repos/GhostReceipt/scripts/check-oracle-transparency-log.mjs)
+  - [`package.json`](/home/teycir/Repos/GhostReceipt/package.json)
+  - [`.github/workflows/ci.yml`](/home/teycir/Repos/GhostReceipt/.github/workflows/ci.yml)
+- Updated rotation/runbook + release checklist guidance:
+  - [`docs/runbooks/SECURITY.md`](/home/teycir/Repos/GhostReceipt/docs/runbooks/SECURITY.md)
+  - [`docs/project/RELEASE_READINESS_CHECKLIST.md`](/home/teycir/Repos/GhostReceipt/docs/project/RELEASE_READINESS_CHECKLIST.md)
+- Verification:
+  - `npm run check:oracle-transparency-log` passes.
+  - `npm run typecheck` passes.
+  - `npm run test -- tests/unit/backend-core/http/oracle-transparency-log.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand` passes.
+
 # Task Plan: Enhancement M1 Step 3 - Nullifier Registry + Verifier Conflict Checks
 
 - [x] Define nullifier derivation from oracle commitment and document rationale in code/docs.
@@ -293,11 +328,11 @@
 - [x] Add tests for collision/conflict behavior and regression coverage.
 
 ## Workstream D: Oracle Transparency Log
-- [ ] Define append-only transparency log JSON schema (`keyId`, `publicKey`, `validFrom`, `validUntil`, `status`, chain hash fields).
-- [ ] Add repository-hosted log artifact and update policy.
-- [ ] Add verifier checks that key was valid at `signedAt`.
-- [ ] Add key rotation runbook updates and CI validation for log consistency.
-- [ ] Add tests for revoked/expired/unknown key behavior.
+- [x] Define append-only transparency log JSON schema (`keyId`, `publicKey`, `validFrom`, `validUntil`, `status`, chain hash fields).
+- [x] Add repository-hosted log artifact and update policy.
+- [x] Add verifier checks that key was valid at `signedAt`.
+- [x] Add key rotation runbook updates and CI validation for log consistency.
+- [x] Add tests for revoked/expired/unknown key behavior.
 
 ## Workstream E: Speed Track (Must Ship Alongside Security)
 - [ ] Add first-class performance telemetry around generator steps:
@@ -358,7 +393,7 @@
 - [ ] Deliver Attestation v2 (`nonce`, `signedAt`, `expiresAt`, fully bound signature envelope).
 - [ ] Deliver replay-window + nonce registry enforcement.
 - [ ] Deliver nullifier registry conflict checks.
-- [ ] Deliver transparency-log key validity checks at verification time.
+- [x] Deliver transparency-log key validity checks at verification time.
 - [ ] Deliver proof-path speed baseline:
 - [ ] artifact preload (`wasm`, `zkey`, `vkey`),
 - [ ] worker-based proving,
@@ -418,7 +453,7 @@
 - [x] Step 1: Implement Attestation v2 schema + signing + verification compatibility layer.
 - [x] Step 2: Implement nonce replay registry + replay window enforcement.
 - [x] Step 3: Implement nullifier registry + verifier conflict checks.
-- [ ] Step 4: Implement transparency log validation on verifier path.
+- [x] Step 4: Implement transparency log validation on verifier path.
 - [ ] Step 5: Implement speed track changes (artifact preload/cache + worker proving + UX thresholds).
 - [ ] Step 6: Run gates, document metrics deltas, and finalize rollout notes.
 - [ ] Step 7: Deliver on-chain verifier MVP (contract artifact + docs + integration tests).
@@ -432,7 +467,7 @@
 - [ ] Signature envelope is fully bound and tamper-resistant.
 - [ ] Replay attempts are rejected within configured window.
 - [ ] Nullifier conflict attacks are rejected.
-- [ ] Revoked/expired oracle keys fail verification.
+- [x] Revoked/expired oracle keys fail verification.
 - [ ] Speed:
 - [ ] Generator flow `p95 < 60s` and `p50 < 25s` on defined benchmark environment.
 - [ ] No major UI thread stalls during proof generation.
