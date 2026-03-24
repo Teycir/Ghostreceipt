@@ -83,46 +83,48 @@ export function GeneratorForm(): React.JSX.Element {
       className="space-y-2.5 sm:space-y-3"
       id={`${formId}-form`}
     >
-      {/* ── Chain ── */}
-      <Select
-        label="Chain"
-        value={values.chain}
-        onChange={(e) => handleChainChange(e.target.value as Chain)}
-        disabled={isProcessing}
-        error={errors.chain}
-        labelClassName="text-xs"
-        className="h-9 rounded-lg px-2.5 py-1.5 text-[13px]"
-      >
-        <option value="bitcoin">Bitcoin</option>
-        <option value="ethereum">Ethereum</option>
-      </Select>
-
-      {/* ── Transaction hash ── */}
-      <div>
-        <div className="mb-1.5 flex items-center justify-between">
-          <label htmlFor={`${formId}-txhash`} className="text-xs font-medium text-white/70">
-            Transaction Hash
-          </label>
-          <button
-            type="button"
-            onClick={() => { void handlePaste('txHash'); }}
-            disabled={isProcessing}
-            className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60 transition-colors hover:bg-white/10 hover:text-white/85 disabled:opacity-40"
-            aria-label="Paste transaction hash from clipboard"
-          >
-            📋 Paste
-          </button>
-        </div>
-        <Input
-          id={`${formId}-txhash`}
-          type="text"
-          placeholder={values.chain === 'bitcoin' ? '64 hex characters' : '0x + 64 hex characters'}
-          value={values.txHash}
-          onChange={handleTxHashChange}
+      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+        {/* ── Chain ── */}
+        <Select
+          label="Chain"
+          value={values.chain}
+          onChange={(e) => handleChainChange(e.target.value as Chain)}
           disabled={isProcessing}
-          error={errors.txHash}
-          className="h-9 px-2.5 py-1.5 text-[13px]"
-        />
+          error={errors.chain}
+          labelClassName="text-xs"
+          className="h-9 rounded-lg px-2.5 py-1.5 text-[13px]"
+        >
+          <option value="bitcoin">Bitcoin</option>
+          <option value="ethereum">Ethereum</option>
+        </Select>
+
+        {/* ── Transaction hash ── */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label htmlFor={`${formId}-txhash`} className="text-xs font-medium text-white/70">
+              Transaction Hash
+            </label>
+            <button
+              type="button"
+              onClick={() => { void handlePaste('txHash'); }}
+              disabled={isProcessing}
+              className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60 transition-colors hover:bg-white/10 hover:text-white/85 disabled:opacity-40"
+              aria-label="Paste transaction hash from clipboard"
+            >
+              📋 Paste
+            </button>
+          </div>
+          <Input
+            id={`${formId}-txhash`}
+            type="text"
+            placeholder={values.chain === 'bitcoin' ? '64 hex characters' : '0x + 64 hex characters'}
+            value={values.txHash}
+            onChange={handleTxHashChange}
+            disabled={isProcessing}
+            error={errors.txHash}
+            className="h-9 px-2.5 py-1.5 text-[13px]"
+          />
+        </div>
       </div>
 
       {/* ── Claimed amount with live unit hint ── */}
@@ -253,7 +255,7 @@ export function GeneratorForm(): React.JSX.Element {
 
       {/* ── Submit ── */}
       {(state === 'idle' || state === 'error') && (
-        <Button type="submit" variant="primary" className="w-full">
+        <Button type="submit" variant="primary" className="w-full py-2 text-[13px]">
           Generate Receipt
         </Button>
       )}

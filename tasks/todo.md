@@ -2,23 +2,23 @@
 
 ## Objective
 
-Fix mobile form usability by reducing vertical footprint and hiding optional fields by default.
+Fix desktop generator layout so the full form fits common laptop viewports without forced vertical scrolling.
 
 ## Plan
 
-- [x] Compact generator form spacing, typography, and input/select heights for mobile.
-- [x] Add collapsible optional fields section (collapsed by default).
-- [x] Re-layout optional inputs in a tighter side-by-side grid.
-- [x] Validate with typecheck/lint and mobile e2e regression.
+- [x] Reduce desktop shell/header vertical footprint and widen the form container.
+- [x] Apply denser desktop field layout for required inputs.
+- [x] Add desktop e2e regression that checks no forced vertical overflow.
+- [x] Validate with typecheck/lint and desktop+mobile e2e.
 
 ## Review
 
 - Status: Completed
 - Notes:
-  - Updated `components/generator/generator-form.tsx` with compact field density, optional section toggle, and 2-column optional inputs.
-  - Updated `components/ui/input.tsx` and `lib/libraries/ui/components/premium-select.tsx` to support compact class overrides.
-  - Tightened home container spacing in `components/home-shell.tsx`.
+  - Reduced home-shell vertical footprint via compact `UnifiedPageShell` configuration and tighter card spacing.
+  - Densified required form layout in `GeneratorForm` with desktop two-column grouping.
+  - Added `tests/e2e/desktop-form-fit.spec.ts` to assert no forced vertical page overflow at `1366x768`.
   - Validation:
     - `npm run typecheck` pass
     - `npm run lint` pass
-    - `npm run test:e2e -- tests/e2e/mobile-happy-path.spec.ts --project=chromium` pass (`1 passed`)
+    - `npm run test:e2e -- tests/e2e/mobile-happy-path.spec.ts tests/e2e/desktop-form-fit.spec.ts --project=chromium` pass (`2 passed`)

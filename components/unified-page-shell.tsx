@@ -15,8 +15,11 @@ interface NavLinkConfig {
 interface UnifiedPageShellProps {
   centerContent?: boolean;
   children: React.ReactNode;
+  contentClassName?: string;
   description?: string;
+  headerClassName?: string;
   leftNavLink?: NavLinkConfig;
+  mainClassName?: string;
   mainShellClassName?: string;
   mainShellState?: 'loading' | 'ready';
   mainShellStyle?: React.CSSProperties;
@@ -25,13 +28,17 @@ interface UnifiedPageShellProps {
   rightNavLink?: NavLinkConfig;
   srTitle: string;
   tagline: string;
+  titleMinFontSize?: number;
 }
 
 export function UnifiedPageShell({
   centerContent = true,
   children,
+  contentClassName,
   description,
+  headerClassName,
   leftNavLink,
+  mainClassName,
   mainShellClassName,
   mainShellState = 'ready',
   mainShellStyle,
@@ -40,6 +47,7 @@ export function UnifiedPageShell({
   rightNavLink,
   srTitle,
   tagline,
+  titleMinFontSize = 52,
 }: Readonly<UnifiedPageShellProps>): React.JSX.Element {
   const shellStateClass =
     mainShellState === 'loading' ? 'main-shell--loading' : 'main-shell--ready';
@@ -72,16 +80,16 @@ export function UnifiedPageShell({
         <main
           className={`flex min-h-screen flex-col items-center p-4 pb-28 ${
             centerContent ? 'justify-center' : 'justify-start pt-8'
-          }`}
+          }${mainClassName ? ` ${mainClassName}` : ''}`}
         >
-          <div className={`w-full ${maxWidthClassName} space-y-6 fade-up`}>
-            <div className="text-center space-y-3">
+          <div className={`w-full ${maxWidthClassName} fade-up ${contentClassName ?? 'space-y-6'}`}>
+            <div className={`text-center space-y-3${headerClassName ? ` ${headerClassName}` : ''}`}>
               <h1 className="sr-only">{srTitle}</h1>
               <div aria-hidden="true">
                 <TextPressure
                   text="GhostReceipt"
                   textColor="#ffffff"
-                  minFontSize={52}
+                  minFontSize={titleMinFontSize}
                   className="glow-heading justify-center"
                 />
               </div>

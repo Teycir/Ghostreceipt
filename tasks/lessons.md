@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Mobile Fixes Must Be Verified Against Desktop Height Too
+- If a form-density fix is requested for mobile, also check desktop/laptop viewport fit before closing.
+- Centered `min-h-screen` shells can still force vertical scroll on laptop heights even when controls are compact; adjust shell/header spacing and container width together.
+- Add an explicit desktop no-overflow e2e assertion to prevent regression.
+
 ## 2026-03-24 - Mobile Form Height Must Be Treated As A Blocking UX Defect
 - If users report excessive scroll friction on mobile forms, prioritize vertical-density fixes immediately (spacing, font size, control height) before adding new features.
 - Optional fields should be collapsed by default behind an explicit toggle so the primary flow fits in one screen as much as possible.
