@@ -45,6 +45,10 @@ describe('Proof performance budget gate', () => {
   const shouldRun = process.env['PROOF_PERF_TEST'] === '1';
   const measuredIterations = envNumber('PROOF_PERF_ITERATIONS', 2);
   const warmupIterations = envNumber('PROOF_PERF_WARMUP_ITERATIONS', 1);
+  const totalP50BudgetMs = envNumber('PROOF_PERF_TOTAL_P50_BUDGET_MS', 25_000);
+  const proveP50BudgetMs = envNumber('PROOF_PERF_PROVE_P50_BUDGET_MS', 25_000);
+  const verifyP50BudgetMs = envNumber('PROOF_PERF_VERIFY_P50_BUDGET_MS', 2_500);
+  const witnessP50BudgetMs = envNumber('PROOF_PERF_WITNESS_P50_BUDGET_MS', 250);
   const totalP95BudgetMs = envNumber('PROOF_PERF_TOTAL_P95_BUDGET_MS', 60_000);
   const proveP95BudgetMs = envNumber('PROOF_PERF_PROVE_P95_BUDGET_MS', 60_000);
   const verifyP95BudgetMs = envNumber('PROOF_PERF_VERIFY_P95_BUDGET_MS', 5_000);
@@ -127,6 +131,10 @@ describe('Proof performance budget gate', () => {
         });
       }
 
+      const totalP50 = percentile(metrics.map(metric => metric.totalMs), 50);
+      const proveP50 = percentile(metrics.map(metric => metric.proveMs), 50);
+      const verifyP50 = percentile(metrics.map(metric => metric.verifyMs), 50);
+      const witnessP50 = percentile(metrics.map(metric => metric.witnessMs), 50);
       const totalP95 = percentile(metrics.map(metric => metric.totalMs), 95);
       const proveP95 = percentile(metrics.map(metric => metric.proveMs), 95);
       const verifyP95 = percentile(metrics.map(metric => metric.verifyMs), 95);
@@ -136,13 +144,21 @@ describe('Proof performance budget gate', () => {
         meanProveMs: Math.round(mean(metrics.map(metric => metric.proveMs))),
         meanTotalMs: Math.round(mean(metrics.map(metric => metric.totalMs))),
         measuredIterations,
+        proveP50: Math.round(proveP50),
         proveP95: Math.round(proveP95),
+        totalP50: Math.round(totalP50),
         totalP95: Math.round(totalP95),
+        verifyP50: Math.round(verifyP50),
         verifyP95: Math.round(verifyP95),
+        witnessP50: Math.round(witnessP50),
         witnessP95: Math.round(witnessP95),
       };
       console.info('[ghostreceipt][proof_performance_budget]', summary);
 
+      expect(totalP50).toBeLessThanOrEqual(totalP50BudgetMs);
+      expect(proveP50).toBeLessThanOrEqual(proveP50BudgetMs);
+      expect(verifyP50).toBeLessThanOrEqual(verifyP50BudgetMs);
+      expect(witnessP50).toBeLessThanOrEqual(witnessP50BudgetMs);
       expect(totalP95).toBeLessThanOrEqual(totalP95BudgetMs);
       expect(proveP95).toBeLessThanOrEqual(proveP95BudgetMs);
       expect(verifyP95).toBeLessThanOrEqual(verifyP95BudgetMs);

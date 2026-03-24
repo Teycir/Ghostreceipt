@@ -142,12 +142,12 @@ Exit criteria:
 
 - [x] CI-integrated performance budget tests for generator/prover flow.
 - [x] Proof-system decision + technical docs refresh.
-- [ ] Maintain `p95 < 60s`, `p50 < 25s` in benchmark environment.
-- [ ] Keep UI responsive during proof generation (worker path and fallbacks validated).
+- [x] Maintain `p95 < 60s`, `p50 < 25s` in benchmark environment.
+- [x] Keep UI responsive during proof generation (worker path and fallbacks validated).
 
 Exit criteria:
-- [ ] Performance regressions are caught automatically in CI.
-- [ ] Proof and verification paths remain stable under stress tests.
+- [x] Performance regressions are caught automatically in CI.
+- [x] Proof and verification paths remain stable under stress tests.
 
 ### Phase 3: UX and Workflow Expansion (P2)
 
@@ -243,6 +243,7 @@ Minimum required fields:
 - Proof system decision: [PROOF_SYSTEM_DECISION.md](./PROOF_SYSTEM_DECISION.md)
 - Selective disclosure contract: [SELECTIVE_DISCLOSURE_PUBLIC_INPUT_CONTRACT.md](./SELECTIVE_DISCLOSURE_PUBLIC_INPUT_CONTRACT.md)
 - Bounded amount/range-proof plan: [BOUNDED_AMOUNT_RANGE_PROOF_PLAN.md](./BOUNDED_AMOUNT_RANGE_PROOF_PLAN.md)
+- Phase 2 gate review note: [ROADMAP_REVIEW_NOTES_PHASE2_GATES_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE2_GATES_2026-03-24.md)
 - Roadmap review-note template: [ROADMAP_REVIEW_NOTES_TEMPLATE.md](./ROADMAP_REVIEW_NOTES_TEMPLATE.md)
 
 ---
@@ -253,6 +254,7 @@ Minimum required fields:
 - 2026-03-24: Added actionable execution waves (`Now`/`Next`/`Later`) with acceptance criteria and verification command sets for remaining P2/P3 items.
 - 2026-03-24: Completed `R-P3-02` by publishing the selective-disclosure public-input contract and phased hard-cutover plan.
 - 2026-03-24: Completed `R-P3-03` by publishing bounded amount/range-proof design with rollout safety gating and proving-time budget projections.
+- 2026-03-24: Closed remaining Phase-2 reliability/performance gates with p50+p95 proof budgets, worker-fallback validation, and stress-suite evidence.
 - 2026-03-24: Superseded and removed duplicate trackers:
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`

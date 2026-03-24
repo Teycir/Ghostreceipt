@@ -2,19 +2,23 @@
 
 ## Objective
 
-Fix history access visibility so users can clearly find/open receipt history from the home UI.
+Close next Phase-2 roadmap gates by validating proof performance budgets and worker fallback stability.
 
 ## Plan
 
-- [x] Add a clearly visible history CTA button in the home page flow.
-- [x] Make corner navigation links visually prominent so history/generator/verify actions are obvious.
-- [x] Run verification commands and capture summary.
+- [x] Add p50 budget enforcement to proof performance gate (alongside existing p95 checks).
+- [x] Add unit coverage for worker-path failure fallback to main-thread proving.
+- [x] Run targeted performance + runtime tests and capture evidence.
+- [x] Update roadmap checkboxes/review note for proven Phase-2 gates only.
 
 ## Review
 
 - Status: Complete
 - Notes:
-  - Redirected from roadmap-gate follow-up per user feedback: history action was not visible enough in UI.
-  - Added explicit `View Receipt History` button in `components/home-shell.tsx`.
-  - Updated `CornerNavLink` styling in `lib/libraries/ui/components/corner-nav-link.tsx` for stronger visibility.
-  - Verification: `npm run typecheck` and `npm run lint` both passed.
+  - Added p50 budget assertions to `tests/integration/proof-performance-budget.test.ts`.
+  - Updated `test:perf:proof` script budgets in `package.json` to include p50 thresholds.
+  - Added worker-error fallback coverage to `tests/unit/zk/prover-runtime.test.ts`.
+  - Verification commands run:
+    - `npm test -- tests/unit/zk/prover-runtime.test.ts --runInBand`
+    - `npm run test:perf:proof`
+    - `npm run test:stress:oracle`

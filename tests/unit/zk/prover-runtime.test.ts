@@ -51,6 +51,63 @@ describe('ProofGenerator runtime behavior', () => {
     expect(result.publicSignals).toEqual(['11', '12', '13']);
   });
 
+  it('falls back to direct fullProve when worker path errors at runtime', async () => {
+    const globalAny = globalThis as any;
+    const originalWindow = globalAny.window;
+    const originalWorker = globalAny.Worker;
+
+    globalAny.window = {};
+    globalAny.Worker = class MockWorker {
+      constructor() {
+        throw new Error('mock worker constructor failure');
+      }
+    };
+
+    mockedGroth16.fullProve.mockResolvedValue({
+      proof: {
+        pi_a: ['1', '2', '3'],
+        pi_b: [['4', '5'], ['6', '7']],
+        pi_c: ['8', '9', '10'],
+        protocol: 'groth16',
+        curve: 'bn128',
+      },
+      publicSignals: ['21', '22', '23'],
+    });
+
+    const generator = new ProofGenerator(
+      '/zk/receipt_js/receipt.wasm?v=test',
+      '/zk/receipt_final.zkey?v=test',
+      '/zk/verification_key.json?v=test'
+    );
+
+    try {
+      const result = await generator.generateProof({
+        chainId: '0',
+        claimedAmount: '1',
+        minDate: '1',
+        oracleCommitment: '1',
+        realTimestamp: '1',
+        realValue: '1',
+        txHash: Array.from({ length: 8 }, () => '1'),
+      });
+
+      expect(mockedGroth16.fullProve).toHaveBeenCalledTimes(1);
+      expect(result.publicSignals).toEqual(['21', '22', '23']);
+    } finally {
+      if (originalWindow === undefined) {
+        delete globalAny.window;
+      } else {
+        globalAny.window = originalWindow;
+      }
+
+      if (originalWorker === undefined) {
+        delete globalAny.Worker;
+      } else {
+        globalAny.Worker = originalWorker;
+      }
+    }
+  });
+
   it('reuses cached verification key across verifyProof calls', async () => {
     mockedGroth16.verify.mockResolvedValue(true);
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
