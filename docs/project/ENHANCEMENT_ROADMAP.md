@@ -29,6 +29,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added safe short-TTL canonical tx fetch cache (successful normalized responses only; no error caching).
 - [x] Added proof speed improvements: artifact preload, worker proving path, and timing telemetry.
 - [x] Kept roadmap constrained to zero-cost deliverables (removed paid/on-chain-required tracks).
+- [x] Added dedicated proof-performance regression gate with CI budget enforcement.
 
 ---
 
@@ -47,7 +48,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 ### Next Up (P1)
 
-- [ ] Add dedicated proof-performance regression gate with CI-friendly benchmarks.
+- [x] Add dedicated proof-performance regression gate with CI-friendly benchmarks.
 - [ ] Publish proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` path) with rationale and migration notes.
 - [ ] Add explicit per-feature latency budgets and require before/after metric deltas in roadmap review notes.
 - [ ] Add regression coverage around payload compatibility and verify path stability.
@@ -83,7 +84,7 @@ Exit criteria:
 
 ### Phase 2: Reliability and Performance Gates (P1)
 
-- [ ] CI-integrated performance budget tests for generator/prover flow.
+- [x] CI-integrated performance budget tests for generator/prover flow.
 - [ ] Proof-system decision + technical docs refresh.
 - [ ] Maintain `p95 < 60s`, `p50 < 25s` in benchmark environment.
 - [ ] Keep UI responsive during proof generation (worker path and fallbacks validated).

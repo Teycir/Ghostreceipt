@@ -56,6 +56,9 @@ jobs:
       - name: Run tests
         run: npm run test:coverage
 
+      - name: Run proof performance budget gate
+        run: npm run test:perf:proof
+
       - name: Run stress integration tests
         run: npm run test:stress:oracle
 
