@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Shell Alignment Overrides Can Cancel Intended Centering
+- If a screen should be centered, check for per-page `mainClassName` overrides like `justify-start` that silently defeat shell-level centering.
+- Use responsive alignment intentionally: top-first on mobile, centered on desktop, instead of one global alignment for all breakpoints.
+- Keep top/bottom shell padding balanced on centered screens; heavy bottom-only padding biases the frame upward.
+
 ## 2026-03-24 - Shader Visual Comfort Needs Peak-Brightness Guards
 - If users report occasional over-bright flashes in animated backgrounds, reduce specular highlight strength first before changing motion.
 - Add explicit shader uniforms for brightness/highlight tuning so visual comfort can be adjusted without rewriting the shader.

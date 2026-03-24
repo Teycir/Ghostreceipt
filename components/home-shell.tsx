@@ -137,7 +137,7 @@ export function HomeShell(): React.JSX.Element {
       </div>
 
       <UnifiedPageShell
-        centerContent={false}
+        centerContent
         srTitle="GhostReceipt"
         tagline="Prove the payment.  Keep the privacy."
         titleMinFontSize={34}
@@ -147,7 +147,7 @@ export function HomeShell(): React.JSX.Element {
           ariaLabel: 'Open local receipt history',
         }}
         maxWidthClassName="max-w-4xl"
-        mainClassName="justify-start pt-2 pb-14 sm:pt-3 sm:pb-16"
+        mainClassName="justify-start pt-2 pb-14 sm:justify-center sm:pt-0 sm:pb-24"
         contentClassName="space-y-2.5 sm:space-y-3"
         headerClassName="space-y-1 [&>p]:text-sm [@media(max-height:820px)]:[&>p]:hidden"
         onBackgroundReady={() => setBackgroundReady(true)}
