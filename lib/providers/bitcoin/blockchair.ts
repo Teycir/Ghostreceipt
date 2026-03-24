@@ -3,6 +3,10 @@ import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { BitcoinTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureError } from '@/lib/security/secure-logging';
+import {
+  resolveProviderThrottlePolicy,
+  waitForProviderThrottleSlot,
+} from '@/lib/libraries/backend-core/providers/provider-throttle';
 
 interface BlockchairTransaction {
   block_id: number;
@@ -40,13 +44,21 @@ export class BlockchairProvider implements BitcoinProvider {
     name: 'blockchair',
     priority: 2,
     requiresApiKey: false,
+    rateLimit: {
+      requestsPerSecond: 30 / 60,
+      requestsPerDay: 1000,
+    },
   };
 
   private readonly apiKey: string | undefined;
   private readonly baseUrl = 'https://api.blockchair.com/bitcoin';
+  private readonly throttlePolicy: ReturnType<typeof resolveProviderThrottlePolicy>;
 
   constructor(options?: BlockchairProviderOptions) {
     this.apiKey = options?.apiKey;
+    this.throttlePolicy = resolveProviderThrottlePolicy('blockchair', {
+      hasApiKey: Boolean(this.apiKey),
+    });
   }
 
   async fetchTransaction(
@@ -67,6 +79,11 @@ export class BlockchairProvider implements BitcoinProvider {
     if (!urlValidation.valid) {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
+
+    await waitForProviderThrottleSlot(
+      this.throttlePolicy.scope,
+      this.throttlePolicy.requestThrottleMs
+    );
 
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -145,6 +162,11 @@ export class BlockchairProvider implements BitcoinProvider {
       if (!urlValidation.valid) {
         throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
       }
+
+      await waitForProviderThrottleSlot(
+        this.throttlePolicy.scope,
+        this.throttlePolicy.requestThrottleMs
+      );
 
       const response = await fetch(healthUrl.toString(), { method: 'GET' });
       return response.ok;

@@ -34,6 +34,8 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added regression tests for canonical share-payload parsing and verifier route stability.
 - [x] Added compact canonical proof payload format with hard cutover (legacy format removed).
 - [x] Enforced API-only oracle provider policy (public RPC paths removed from active cascade; live integration now uses Exa-sourced BTC/ETH/SOL fixtures with API-key gating for ETH/SOL).
+- [x] Ported Etherscan v2 throttling/cascade pacing from `smartcontractpatternfinder` and validated full live BTC/ETH/SOL integration pass with API providers only.
+- [x] Generalized provider throttling to doc-driven + context-parameterized policy across Etherscan/Helius/mempool.space/Blockchair with validated live BTC/ETH/SOL flow.
 
 ---
 

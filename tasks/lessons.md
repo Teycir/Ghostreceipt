@@ -1,5 +1,20 @@
 # Lessons Learned
 
+## 2026-03-24 - Conservative Safety Buffer Should Be Default For API Throttling
+- When balancing user experience vs provider bans, prefer a small default safety buffer on computed throttle intervals so users wait slightly longer instead of triggering API blocking.
+- Apply the safety margin in shared throttle policy (not per-provider ad hoc) so all providers get consistent protective behavior.
+- Keep explicit throttle env overrides available for controlled tuning, but make the default conservative.
+
+## 2026-03-24 - Provider Throttling Must Be Doc-Driven And Context-Parameterized
+- When the user asks to parameterize throttling by API docs, do not keep provider-specific hardcoded delays; move policy to a shared resolver keyed by provider/context/env overrides.
+- Encode documented baseline limits per provider (or explicit upstream config when public docs are absent) and apply context multipliers for reliability vs throughput.
+- Validate both targeted unit tests and real live-chain integration after throttle-policy changes because burst behavior can differ from mocked/unit flows.
+
+## 2026-03-24 - Follow Referenced Sibling Repo Patterns Before Inventing New Throttling
+- When the user points to `smartcontractpatternfinder` for Etherscan/cascade behavior, treat that implementation as the starting blueprint and port its pacing strategy first.
+- For Etherscan v2 integration, combine API-key cascade with explicit inter-request throttling to avoid burst-triggered rate-limit exhaustion during multi-call transaction normalization.
+- Validate the port immediately with real live-chain integration tests (BTC/ETH/SOL) using API keys, not only unit tests.
+
 ## 2026-03-24 - Real-Data Integration Requests Must Exclude Mock Validation
 - When the user requests full integration proof with real transactions, do not use mock-based test evidence for sign-off in that slice.
 - Keep validation focused on live API-backed flows and explicitly state missing API-key prerequisites instead of substituting public RPC or mocked providers.

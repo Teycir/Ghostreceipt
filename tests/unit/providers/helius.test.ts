@@ -1,5 +1,7 @@
 import { HeliusProvider } from '@/lib/providers/solana/helius';
 
+const originalHeliusThrottleMs = process.env['HELIUS_REQUEST_THROTTLE_MS'];
+
 const makeProvider = () =>
   new HeliusProvider({
     keys: ['helius-key-1'],
@@ -11,10 +13,16 @@ const sampleSignature = '1111111111111111111111111111111111111111111111111111111
 
 describe('HeliusProvider', () => {
   beforeEach(() => {
+    process.env['HELIUS_REQUEST_THROTTLE_MS'] = '0';
     HeliusProvider.resetRuntimeMetricsForTests();
   });
 
   afterEach(() => {
+    if (originalHeliusThrottleMs === undefined) {
+      delete process.env['HELIUS_REQUEST_THROTTLE_MS'];
+    } else {
+      process.env['HELIUS_REQUEST_THROTTLE_MS'] = originalHeliusThrottleMs;
+    }
     HeliusProvider.resetRuntimeMetricsForTests();
     jest.restoreAllMocks();
   });

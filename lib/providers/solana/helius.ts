@@ -11,6 +11,11 @@ import {
   ApiKeyCascade,
   type ApiKeyCascadeMetricsSnapshot,
 } from '@/lib/libraries/backend-core/providers/api-key-cascade';
+import {
+  resetProviderThrottleStateForTests,
+  resolveProviderThrottlePolicy,
+  waitForProviderThrottleSlot,
+} from '@/lib/libraries/backend-core/providers/provider-throttle';
 
 interface JsonRpcError {
   code?: number;
@@ -77,6 +82,9 @@ export class HeliusProvider implements SolanaProvider {
   };
 
   private readonly keyCascade: ApiKeyCascade;
+  private readonly throttlePolicy = resolveProviderThrottlePolicy('helius', {
+    hasApiKey: true,
+  });
 
   constructor(apiKeyConfig: ApiKeyConfig) {
     this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
@@ -90,6 +98,7 @@ export class HeliusProvider implements SolanaProvider {
 
   static resetRuntimeMetricsForTests(): void {
     ApiKeyCascade.resetMetricsForTests(HELIUS_METRICS_SCOPE);
+    resetProviderThrottleStateForTests(HELIUS_METRICS_SCOPE);
   }
 
   async fetchTransaction(txHash: string, signal?: AbortSignal): Promise<CanonicalTxData> {
@@ -106,6 +115,7 @@ export class HeliusProvider implements SolanaProvider {
       return await this.keyCascade.execute(
         async (apiKey) => this.fetchWithKey(txHash, apiKey, signal),
         {
+          delayBetweenAttemptsMs: this.throttlePolicy.keyAttemptDelayMs,
           isNonRetryableError: (error) => {
             const normalizedMessage = error.message.toLowerCase();
             return (
@@ -276,6 +286,11 @@ export class HeliusProvider implements SolanaProvider {
     if (!urlValidation.valid) {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
+
+    await waitForProviderThrottleSlot(
+      this.throttlePolicy.scope,
+      this.throttlePolicy.requestThrottleMs
+    );
 
     const response = await fetch(endpointString, {
       method: 'POST',

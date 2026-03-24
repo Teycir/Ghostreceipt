@@ -1,5 +1,7 @@
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 
+const originalThrottleMs = process.env['ETHERSCAN_REQUEST_THROTTLE_MS'];
+
 const makeProvider = () => new EtherscanProvider({
   keys: ['test-key'],
   rotationStrategy: 'round-robin',
@@ -8,10 +10,16 @@ const makeProvider = () => new EtherscanProvider({
 
 describe('EtherscanProvider', () => {
   beforeEach(() => {
+    process.env['ETHERSCAN_REQUEST_THROTTLE_MS'] = '0';
     EtherscanProvider.resetRuntimeMetricsForTests();
   });
 
   afterEach(() => {
+    if (originalThrottleMs === undefined) {
+      delete process.env['ETHERSCAN_REQUEST_THROTTLE_MS'];
+    } else {
+      process.env['ETHERSCAN_REQUEST_THROTTLE_MS'] = originalThrottleMs;
+    }
     EtherscanProvider.resetRuntimeMetricsForTests();
     jest.restoreAllMocks();
   });

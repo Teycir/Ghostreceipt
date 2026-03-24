@@ -3,6 +3,10 @@ import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { BitcoinTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureError } from '@/lib/security/secure-logging';
+import {
+  resolveProviderThrottlePolicy,
+  waitForProviderThrottleSlot,
+} from '@/lib/libraries/backend-core/providers/provider-throttle';
 
 /**
  * Mempool.space API response types
@@ -56,12 +60,13 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     priority: 1,
     requiresApiKey: false,
     rateLimit: {
-      requestsPerSecond: 10,
-      requestsPerDay: 100000,
+      requestsPerSecond: 200 / 60,
+      requestsPerDay: 288000,
     },
   };
 
   private readonly baseUrl = 'https://mempool.space/api';
+  private readonly throttlePolicy = resolveProviderThrottlePolicy('mempool.space');
 
   async fetchTransaction(
     txHash: string,
@@ -78,6 +83,11 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     if (!urlValidation.valid) {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
+
+    await waitForProviderThrottleSlot(
+      this.throttlePolicy.scope,
+      this.throttlePolicy.requestThrottleMs
+    );
 
     const response = await fetch(url, {
       method: 'GET',
@@ -160,6 +170,11 @@ export class MempoolSpaceProvider implements BitcoinProvider {
       throw new Error(`Blocked provider URL: ${tipUrlValidation.error ?? 'invalid URL'}`);
     }
 
+    await waitForProviderThrottleSlot(
+      this.throttlePolicy.scope,
+      this.throttlePolicy.requestThrottleMs
+    );
+
     const response = await fetch(tipUrl, {
       method: 'GET',
       signal: signal ?? null,
@@ -185,6 +200,11 @@ export class MempoolSpaceProvider implements BitcoinProvider {
       if (!urlValidation.valid) {
         throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
       }
+
+      await waitForProviderThrottleSlot(
+        this.throttlePolicy.scope,
+        this.throttlePolicy.requestThrottleMs
+      );
 
       const response = await fetch(healthUrl, {
         method: 'GET',

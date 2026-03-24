@@ -11,6 +11,11 @@ import {
   ApiKeyCascade,
   type ApiKeyCascadeMetricsSnapshot,
 } from '@/lib/libraries/backend-core/providers/api-key-cascade';
+import {
+  resetProviderThrottleStateForTests,
+  resolveProviderThrottlePolicy,
+  waitForProviderThrottleSlot,
+} from '@/lib/libraries/backend-core/providers/provider-throttle';
 
 /**
  * Etherscan proxy API response types
@@ -59,13 +64,16 @@ export class EtherscanProvider implements EthereumProvider {
     priority: 1,
     requiresApiKey: true,
     rateLimit: {
-      requestsPerSecond: 5,
+      requestsPerSecond: 3,
       requestsPerDay: 100000,
     },
   };
 
   private readonly baseUrl = 'https://api.etherscan.io/v2/api';
   private readonly keyCascade: ApiKeyCascade;
+  private readonly throttlePolicy = resolveProviderThrottlePolicy('etherscan', {
+    hasApiKey: true,
+  });
 
   constructor(apiKeyConfig: ApiKeyConfig) {
     this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
@@ -79,6 +87,7 @@ export class EtherscanProvider implements EthereumProvider {
 
   static resetRuntimeMetricsForTests(): void {
     ApiKeyCascade.resetMetricsForTests(ETHERSCAN_METRICS_SCOPE);
+    resetProviderThrottleStateForTests(ETHERSCAN_METRICS_SCOPE);
   }
 
   async fetchTransaction(
@@ -95,6 +104,7 @@ export class EtherscanProvider implements EthereumProvider {
       return await this.keyCascade.execute(
         async (apiKey) => this.fetchWithKey(txHash, apiKey, signal),
         {
+          delayBetweenAttemptsMs: this.throttlePolicy.keyAttemptDelayMs,
           isNonRetryableError: (error) => {
             const normalizedMessage = error.message.toLowerCase();
             return (
@@ -231,6 +241,11 @@ export class EtherscanProvider implements EthereumProvider {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
 
+    await waitForProviderThrottleSlot(
+      this.throttlePolicy.scope,
+      this.throttlePolicy.requestThrottleMs
+    );
+
     const response = await fetch(urlValue, {
       method: 'GET',
       signal: signal ?? null,
@@ -241,7 +256,7 @@ export class EtherscanProvider implements EthereumProvider {
 
     if (!response.ok) {
       if (response.status === 429) {
-        throw new Error('Rate limit exceeded');
+        throw new Error(`Rate limit exceeded (${action})`);
       }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -259,13 +274,22 @@ export class EtherscanProvider implements EthereumProvider {
 
     const payload = data as EtherscanProxyResponse<T>;
     const statusMessage = typeof payload.message === 'string' ? payload.message : 'Unknown error';
+    const statusResult =
+      typeof payload.result === 'string' ? payload.result : '';
     const normalizedStatusMessage = statusMessage.toLowerCase();
+    const normalizedStatusResult = statusResult.toLowerCase();
+    const normalizedStatusSummary = `${normalizedStatusMessage} ${normalizedStatusResult}`;
 
     if (payload.status === '0') {
-      if (normalizedStatusMessage.includes('rate limit')) {
-        throw new Error('Rate limit exceeded');
+      if (
+        normalizedStatusSummary.includes('rate limit') ||
+        normalizedStatusSummary.includes('too many requests')
+      ) {
+        throw new Error(`Rate limit exceeded (${action})`);
       }
-      throw new Error(`Etherscan error: ${statusMessage}`);
+
+      const detail = statusResult ? `${statusMessage}: ${statusResult}` : statusMessage;
+      throw new Error(`Etherscan error: ${detail}`);
     }
 
     if (payload.error && typeof payload.error === 'object') {
@@ -274,7 +298,7 @@ export class EtherscanProvider implements EthereumProvider {
           ? payload.error.message
           : 'Unknown RPC error';
       if (rpcMessage.toLowerCase().includes('rate limit')) {
-        throw new Error('Rate limit exceeded');
+        throw new Error(`Rate limit exceeded (${action})`);
       }
       throw new Error(`Etherscan RPC error: ${rpcMessage}`);
     }

@@ -1,7 +1,18 @@
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 
+const originalMempoolThrottleMs = process.env['MEMPOOL_REQUEST_THROTTLE_MS'];
+
 describe('MempoolSpaceProvider', () => {
+  beforeEach(() => {
+    process.env['MEMPOOL_REQUEST_THROTTLE_MS'] = '0';
+  });
+
   afterEach(() => {
+    if (originalMempoolThrottleMs === undefined) {
+      delete process.env['MEMPOOL_REQUEST_THROTTLE_MS'];
+    } else {
+      process.env['MEMPOOL_REQUEST_THROTTLE_MS'] = originalMempoolThrottleMs;
+    }
     jest.restoreAllMocks();
   });
 
