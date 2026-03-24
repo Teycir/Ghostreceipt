@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Wrangler Secret Sync Must Cover Full Provider Key Pools
+- Cloudflare Pages secret sync must include both Etherscan and Helius cascades (`PRIMARY + _1.._6`) so runtime provider failover works in production.
+- Keep deployment scripts/docs aligned with loader expectations (`ETHERSCAN_API_KEY`, `ETHERSCAN_API_KEY_1..6`, `HELIUS_API_KEY`, `HELIUS_API_KEY_1..6`).
+- Verify with `wrangler pages secret list --project-name=<project>` after upload to confirm keys exist without exposing values.
+
 ## 2026-03-24 - Conservative Safety Buffer Should Be Default For API Throttling
 - When balancing user experience vs provider bans, prefer a small default safety buffer on computed throttle intervals so users wait slightly longer instead of triggering API blocking.
 - Apply the safety margin in shared throttle policy (not per-provider ad hoc) so all providers get consistent protective behavior.

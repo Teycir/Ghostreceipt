@@ -53,7 +53,9 @@ npm run cf:sync
 This will automatically set:
 - `ORACLE_PRIVATE_KEY`
 - `ETHERSCAN_API_KEY`
-- `ETHERSCAN_API_KEY_2` through `ETHERSCAN_API_KEY_6` (if defined)
+- `ETHERSCAN_API_KEY_1` through `ETHERSCAN_API_KEY_6` (if defined)
+- `HELIUS_API_KEY`
+- `HELIUS_API_KEY_1` through `HELIUS_API_KEY_6` (if defined)
 - `BLOCKCHAIR_API_KEY` (if defined)
 
 **Manual CLI commands:**
@@ -71,9 +73,14 @@ echo "your_etherscan_key_here" | npx wrangler pages secret put ETHERSCAN_API_KEY
 
 ```bash
 # Fallback Etherscan keys
-echo "fallback_key_1" | npx wrangler pages secret put ETHERSCAN_API_KEY_2 --project-name=ghostreceipt
-echo "fallback_key_2" | npx wrangler pages secret put ETHERSCAN_API_KEY_3 --project-name=ghostreceipt
-echo "fallback_key_3" | npx wrangler pages secret put ETHERSCAN_API_KEY_4 --project-name=ghostreceipt
+echo "fallback_key_1" | npx wrangler pages secret put ETHERSCAN_API_KEY_1 --project-name=ghostreceipt
+echo "fallback_key_2" | npx wrangler pages secret put ETHERSCAN_API_KEY_2 --project-name=ghostreceipt
+echo "fallback_key_3" | npx wrangler pages secret put ETHERSCAN_API_KEY_3 --project-name=ghostreceipt
+
+# Fallback Helius keys
+echo "fallback_helius_1" | npx wrangler pages secret put HELIUS_API_KEY_1 --project-name=ghostreceipt
+echo "fallback_helius_2" | npx wrangler pages secret put HELIUS_API_KEY_2 --project-name=ghostreceipt
+echo "fallback_helius_3" | npx wrangler pages secret put HELIUS_API_KEY_3 --project-name=ghostreceipt
 
 # BTC fallback provider
 echo "blockchair_key" | npx wrangler pages secret put BLOCKCHAIR_API_KEY --project-name=ghostreceipt

@@ -31,9 +31,11 @@ show_menu() {
     echo "2) Set ORACLE_PRIVATE_KEY"
     echo "3) Set ETHERSCAN_API_KEY"
     echo "4) Set fallback Etherscan keys"
-    echo "5) List all secrets"
-    echo "6) Delete a secret"
-    echo "7) Exit"
+    echo "5) Set HELIUS_API_KEY"
+    echo "6) Set fallback Helius keys"
+    echo "7) List all secrets"
+    echo "8) Delete a secret"
+    echo "9) Exit"
     echo ""
     read -p "Choice: " choice
     echo ""
@@ -73,6 +75,12 @@ set_fallback_keys() {
     echo "🔑 Setting fallback Etherscan keys"
     echo ""
     
+    read -p "Enter ETHERSCAN_API_KEY_1 (or press Enter to skip): " key1
+    if [ -n "$key1" ]; then
+        echo "$key1" | wrangler_pages pages secret put ETHERSCAN_API_KEY_1 --project-name=$PROJECT_NAME
+        echo "✅ ETHERSCAN_API_KEY_1 set"
+    fi
+
     read -p "Enter ETHERSCAN_API_KEY_2 (or press Enter to skip): " key2
     if [ -n "$key2" ]; then
         echo "$key2" | wrangler_pages pages secret put ETHERSCAN_API_KEY_2 --project-name=$PROJECT_NAME
@@ -90,7 +98,71 @@ set_fallback_keys() {
         echo "$key4" | wrangler_pages pages secret put ETHERSCAN_API_KEY_4 --project-name=$PROJECT_NAME
         echo "✅ ETHERSCAN_API_KEY_4 set"
     fi
+
+    read -p "Enter ETHERSCAN_API_KEY_5 (or press Enter to skip): " key5
+    if [ -n "$key5" ]; then
+        echo "$key5" | wrangler_pages pages secret put ETHERSCAN_API_KEY_5 --project-name=$PROJECT_NAME
+        echo "✅ ETHERSCAN_API_KEY_5 set"
+    fi
+
+    read -p "Enter ETHERSCAN_API_KEY_6 (or press Enter to skip): " key6
+    if [ -n "$key6" ]; then
+        echo "$key6" | wrangler_pages pages secret put ETHERSCAN_API_KEY_6 --project-name=$PROJECT_NAME
+        echo "✅ ETHERSCAN_API_KEY_6 set"
+    fi
     
+    echo ""
+}
+
+set_helius_key() {
+    echo "🔑 Setting HELIUS_API_KEY"
+    echo ""
+    read -p "Enter HELIUS_API_KEY: " key
+    echo "$key" | wrangler_pages pages secret put HELIUS_API_KEY --project-name=$PROJECT_NAME
+    echo "✅ HELIUS_API_KEY set"
+    echo ""
+}
+
+set_fallback_helius_keys() {
+    echo "🔑 Setting fallback Helius keys"
+    echo ""
+
+    read -p "Enter HELIUS_API_KEY_1 (or press Enter to skip): " key1
+    if [ -n "$key1" ]; then
+        echo "$key1" | wrangler_pages pages secret put HELIUS_API_KEY_1 --project-name=$PROJECT_NAME
+        echo "✅ HELIUS_API_KEY_1 set"
+    fi
+
+    read -p "Enter HELIUS_API_KEY_2 (or press Enter to skip): " key2
+    if [ -n "$key2" ]; then
+        echo "$key2" | wrangler_pages pages secret put HELIUS_API_KEY_2 --project-name=$PROJECT_NAME
+        echo "✅ HELIUS_API_KEY_2 set"
+    fi
+
+    read -p "Enter HELIUS_API_KEY_3 (or press Enter to skip): " key3
+    if [ -n "$key3" ]; then
+        echo "$key3" | wrangler_pages pages secret put HELIUS_API_KEY_3 --project-name=$PROJECT_NAME
+        echo "✅ HELIUS_API_KEY_3 set"
+    fi
+
+    read -p "Enter HELIUS_API_KEY_4 (or press Enter to skip): " key4
+    if [ -n "$key4" ]; then
+        echo "$key4" | wrangler_pages pages secret put HELIUS_API_KEY_4 --project-name=$PROJECT_NAME
+        echo "✅ HELIUS_API_KEY_4 set"
+    fi
+
+    read -p "Enter HELIUS_API_KEY_5 (or press Enter to skip): " key5
+    if [ -n "$key5" ]; then
+        echo "$key5" | wrangler_pages pages secret put HELIUS_API_KEY_5 --project-name=$PROJECT_NAME
+        echo "✅ HELIUS_API_KEY_5 set"
+    fi
+
+    read -p "Enter HELIUS_API_KEY_6 (or press Enter to skip): " key6
+    if [ -n "$key6" ]; then
+        echo "$key6" | wrangler_pages pages secret put HELIUS_API_KEY_6 --project-name=$PROJECT_NAME
+        echo "✅ HELIUS_API_KEY_6 set"
+    fi
+
     echo ""
 }
 
@@ -116,10 +188,16 @@ set_all_secrets() {
     
     set_oracle_key
     set_etherscan_key
-    
+    set_helius_key
+
     read -p "Add fallback Etherscan keys? (y/n): " add_fallback
     if [ "$add_fallback" = "y" ]; then
         set_fallback_keys
+    fi
+
+    read -p "Add fallback Helius keys? (y/n): " add_helius_fallback
+    if [ "$add_helius_fallback" = "y" ]; then
+        set_fallback_helius_keys
     fi
     
     echo "✅ All secrets configured!"
@@ -144,12 +222,18 @@ while true; do
             set_fallback_keys
             ;;
         5)
-            list_secrets
+            set_helius_key
             ;;
         6)
-            delete_secret
+            set_fallback_helius_keys
             ;;
         7)
+            list_secrets
+            ;;
+        8)
+            delete_secret
+            ;;
+        9)
             echo "👋 Goodbye!"
             exit 0
             ;;

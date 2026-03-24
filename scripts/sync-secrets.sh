@@ -48,7 +48,9 @@ echo ""
 
 SECRETS_SET=0
 declare -a etherscan_keys=()
+declare -a helius_keys=()
 declare -A seen_etherscan=()
+declare -A seen_helius=()
 
 add_etherscan_key() {
     local value="$1"
@@ -62,6 +64,20 @@ add_etherscan_key() {
 
     seen_etherscan["$value"]=1
     etherscan_keys+=("$value")
+}
+
+add_helius_key() {
+    local value="$1"
+    if [ -z "$value" ]; then
+        return
+    fi
+
+    if [ -n "${seen_helius[$value]:-}" ]; then
+        return
+    fi
+
+    seen_helius["$value"]=1
+    helius_keys+=("$value")
 }
 
 # Oracle key (generate one if missing locally)
@@ -105,6 +121,41 @@ else
         if [ "$index" -lt "${#etherscan_keys[@]}" ]; then
             secret_name="ETHERSCAN_API_KEY_${i}"
             put_secret "$secret_name" "${etherscan_keys[$index]}"
+            echo "✓ $secret_name"
+            SECRETS_SET=$((SECRETS_SET + 1))
+        fi
+    done
+fi
+
+# Collect canonical Helius env vars first
+add_helius_key "${HELIUS_API_KEY:-}"
+for i in 1 2 3 4 5 6; do
+    var_name="HELIUS_API_KEY_${i}"
+    add_helius_key "${!var_name:-}"
+done
+
+# Also collect provider-specific aliases (for local key naming conventions)
+while IFS= read -r var_name; do
+    if [[ "$var_name" =~ ^HELIUS_API_KEY_[0-9]+$ ]]; then
+        continue
+    fi
+    add_helius_key "${!var_name:-}"
+done < <(compgen -A variable HELIUS_API_KEY_ | sort)
+
+if [ "${#helius_keys[@]}" -eq 0 ]; then
+    echo "⚠️  No Helius API keys found in .env.local"
+else
+    # Primary key
+    put_secret "HELIUS_API_KEY" "${helius_keys[0]}"
+    echo "✓ HELIUS_API_KEY"
+    SECRETS_SET=$((SECRETS_SET + 1))
+
+    # Fallback keys (populate _1 through _6 from remaining keys)
+    for i in 1 2 3 4 5 6; do
+        index="$i"
+        if [ "$index" -lt "${#helius_keys[@]}" ]; then
+            secret_name="HELIUS_API_KEY_${i}"
+            put_secret "$secret_name" "${helius_keys[$index]}"
             echo "✓ $secret_name"
             SECRETS_SET=$((SECRETS_SET + 1))
         fi
