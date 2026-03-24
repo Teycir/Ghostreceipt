@@ -2,25 +2,21 @@
 
 ## Objective
 
-Fix remaining desktop no-scroll usability issue reported after first compaction pass.
+Fix CI/deploy blockers from fetch-tx route test flakiness and stale coverage threshold path.
 
 ## Plan
 
-- [x] Reduce shell/header height for short desktop viewports.
-- [x] Remove redundant desktop-only history CTA row to reclaim vertical space.
-- [x] Further tighten generator control density and spacing.
-- [x] Strengthen desktop fit e2e gate at a shorter laptop viewport.
-- [x] Re-run typecheck/lint and mobile+desktop e2e.
+- [x] Reproduce failing fetch-tx route tests and isolate root cause.
+- [x] Reset route state per test to avoid rate-limit/replay leakage.
+- [x] Fix stale Jest coverage threshold path for cascade module.
+- [x] Re-run targeted failing tests and full coverage suite.
 
 ## Review
 
 - Status: Completed
 - Notes:
-  - Tightened `HomeShell` spacing/padding and reduced desktop header density for short heights.
-  - Compact form controls were reduced to a denser desktop footprint in `GeneratorForm`.
-  - Desktop history CTA is now hidden on `md+` because corner nav already provides history access.
-  - Desktop regression viewport tightened from `1366x768` to `1280x680` in `desktop-form-fit.spec.ts`.
+  - Updated `tests/unit/api/fetch-tx-route.test.ts` and `tests/unit/api/oracle-fetch-tx.test.ts` to call `__disposeOracleFetchRouteForTests()` in `beforeEach` and `afterEach`.
+  - Updated `jest.config.js` coverage threshold target from `./lib/providers/cascade.ts` to `./lib/libraries/backend-core/providers/cascade.ts`.
   - Validation:
-    - `npm run typecheck` pass
-    - `npm run lint` pass
-    - `npm run test:e2e -- tests/e2e/mobile-happy-path.spec.ts tests/e2e/desktop-form-fit.spec.ts --project=chromium` pass (`2 passed`)
+    - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts --runInBand` pass
+    - `npm run test:coverage` pass

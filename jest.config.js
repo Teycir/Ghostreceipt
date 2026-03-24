@@ -31,7 +31,7 @@ const customJestConfig = {
       lines: 20,
       statements: 20,
     },
-    './lib/providers/cascade.ts': {
+    './lib/libraries/backend-core/providers/cascade.ts': {
       branches: 60,
       functions: 75,
       lines: 80,

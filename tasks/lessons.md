@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Route-Level Limiters Must Be Reset In Unit API Tests
+- API route unit suites that reuse module-scoped rate limiters/replay registries can fail intermittently with `429` unless state is reset between tests.
+- For `fetch-tx` route tests, call `__disposeOracleFetchRouteForTests()` in both `beforeEach` and `afterEach` to ensure deterministic isolation.
+- Keep Jest coverage thresholds aligned with current file paths after refactors; stale threshold paths can fail CI even when tests pass.
+
 ## 2026-03-24 - Desktop Fit Must Be Tested At Short Laptop Heights
 - A pass at `1366x768` is not sufficient; include a shorter desktop viewport gate (for example `1280x680`) to catch real-world browser chrome overhead.
 - If corner navigation already exposes a route, avoid duplicating the same CTA inside the main content on desktop when vertical space is constrained.

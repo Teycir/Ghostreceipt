@@ -10,6 +10,7 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
   const originalHeliusKey1 = process.env['HELIUS_API_KEY_1'];
 
   beforeEach(() => {
+    __disposeOracleFetchRouteForTests();
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
     process.env['ETHERSCAN_API_KEY_1'] = 'test-etherscan-key';
     process.env['HELIUS_API_KEY_1'] = 'test-helius-key';
@@ -34,11 +35,8 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
       process.env['HELIUS_API_KEY_1'] = originalHeliusKey1;
     }
 
-    jest.restoreAllMocks();
-  });
-
-  afterAll(() => {
     __disposeOracleFetchRouteForTests();
+    jest.restoreAllMocks();
   });
 
   describe('Input Validation', () => {
