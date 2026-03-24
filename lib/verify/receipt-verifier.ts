@@ -1,4 +1,4 @@
-import { extractVerifiedClaims } from '@/lib/zk/share';
+import { extractOracleCommitment, extractVerifiedClaims } from '@/lib/zk/share';
 import {
   checkClientNullifierConflict,
   deriveNullifierFromMessageHash,
@@ -148,16 +148,7 @@ export async function verifySharedReceiptProof(
       };
     }
 
-    if (proofData.publicSignals.length < 3) {
-      return {
-        valid: false,
-        claimedAmount: '',
-        minDate: '',
-        error: 'Invalid proof: missing oracle commitment signal',
-      };
-    }
-
-    const oracleCommitmentSignal = proofData.publicSignals[2];
+    const oracleCommitmentSignal = extractOracleCommitment(proofData.publicSignals);
     if (oracleCommitmentSignal !== oracleAuth.messageHash) {
       return {
         valid: false,

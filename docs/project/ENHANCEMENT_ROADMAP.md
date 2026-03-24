@@ -261,6 +261,7 @@ Minimum required fields:
 - 2026-03-24: Closed Phase-3 mobile-first regression gate with dedicated e2e coverage and review-note evidence.
 - 2026-03-24: Closed Phase-4 compressed payload determinism gate with explicit repeatability and import/export idempotency tests.
 - 2026-03-24: Closed Phase-4 advanced privacy shipping gate with enforced benchmark-evidence manifest validation and CI policy tests.
+- 2026-03-24: Began selective-disclosure runtime prep by centralizing legacy public-signal decode helpers and routing verifier oracle-commitment extraction through shared decoding logic.
 - 2026-03-24: Superseded and removed duplicate trackers:
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`

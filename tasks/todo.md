@@ -2,22 +2,26 @@
 
 ## Objective
 
-Center the main generator frame on desktop so the first screen feels balanced and no longer sits too high.
+Continue the enhancement roadmap by implementing Phase-1 selective-disclosure decoder prep in runtime code without breaking current proof verification behavior.
 
 ## Plan
 
-- [x] Update home shell alignment to center the main content area (desktop-first).
-- [x] Keep mobile behavior safe so compact form flow still works.
-- [x] Validate with typecheck/lint.
+- [x] Add a canonical public-signal decoder in `lib/zk/share.ts` that centralizes index mapping (legacy-active contract) and exposes oracle commitment + claim fields from one API.
+- [x] Add unit tests in `tests/unit/zk/share.test.ts` for decoder mapping/error handling and keep existing extraction behavior stable.
+- [x] Update verifier wiring in `lib/verify/receipt-verifier.ts` to use decoder output instead of hard-coded public-signal indexes.
+- [x] Validate with `npm run typecheck` and targeted unit tests.
 
 ## Review
 
 - Status: Completed
 - Notes:
-  - Updated `components/home-shell.tsx`:
-    - switched `UnifiedPageShell` to `centerContent`
-    - set responsive shell classes to keep mobile top-first and desktop centered
-      - `justify-start pt-2 pb-14 sm:justify-center sm:pt-0 sm:pb-24`
+  - Added canonical legacy signal contract helpers in `lib/zk/share.ts`:
+    - `extractOracleCommitment(publicSignals)`
+    - `decodeLegacyReceiptPublicSignals(publicSignals)`
+    - centralized signal index constants used by both commitment and claim extraction.
+  - Updated verifier wiring in `lib/verify/receipt-verifier.ts` to source oracle commitment through shared decoder helper instead of direct index reads.
+  - Expanded `tests/unit/zk/share.test.ts` with commitment + canonical decode coverage.
   - Validation:
     - `npm run typecheck` pass
-    - `npm run lint` pass
+    - `npm run test -- tests/unit/zk/share.test.ts` pass
+    - `npm run test -- tests/unit/zk` pass

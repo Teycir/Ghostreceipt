@@ -1,4 +1,8 @@
-import { extractVerifiedClaims } from '@/lib/zk/share';
+import {
+  decodeLegacyReceiptPublicSignals,
+  extractOracleCommitment,
+  extractVerifiedClaims,
+} from '@/lib/zk/share';
 
 describe('extractVerifiedClaims', () => {
   it('extracts claimed amount and minimum date from public signals', () => {
@@ -35,5 +39,42 @@ describe('extractVerifiedClaims', () => {
         '2',
       ])
     ).toThrow('Invalid proof: malformed minimum date signal');
+  });
+});
+
+describe('extractOracleCommitment', () => {
+  it('extracts oracle commitment from public signals', () => {
+    const commitment = extractOracleCommitment([
+      '123450000',
+      '1700000000',
+      'oracle-commitment',
+      'unused',
+    ]);
+
+    expect(commitment).toBe('oracle-commitment');
+  });
+
+  it('throws when oracle commitment signal is missing', () => {
+    expect(() => extractOracleCommitment(['123450000', '1700000000'])).toThrow(
+      'Invalid proof: missing oracle commitment signal'
+    );
+  });
+});
+
+describe('decodeLegacyReceiptPublicSignals', () => {
+  it('decodes claims and oracle commitment from one canonical helper', () => {
+    const decoded = decodeLegacyReceiptPublicSignals([
+      '123450000',
+      '1700000000',
+      'oracle-commitment',
+      'unused',
+    ]);
+
+    expect(decoded).toEqual({
+      claimedAmount: '123450000',
+      minDateUnix: 1700000000,
+      minDateIsoUtc: '2023-11-14',
+      oracleCommitment: 'oracle-commitment',
+    });
   });
 });
