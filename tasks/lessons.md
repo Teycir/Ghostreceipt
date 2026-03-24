@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-25 - Receipt History CTA Must Be In-Flow On Home Screen
+- If users report the history action overlapping content or following scroll, remove fixed/corner placement for that page and anchor it directly below the primary generator frame.
+- Validate CTA placement on both mobile and desktop in the same pass; avoid breakpoint-specific behavior drift unless explicitly requested.
+- Keep enough bottom spacing above fixed footers so in-flow CTAs remain visible and tappable.
+
 ## 2026-03-24 - Wrangler Secret Sync Must Cover Full Provider Key Pools
 - Cloudflare Pages secret sync must include both Etherscan and Helius cascades (`PRIMARY + _1.._6`) so runtime provider failover works in production.
 - Keep deployment scripts/docs aligned with loader expectations (`ETHERSCAN_API_KEY`, `ETHERSCAN_API_KEY_1..6`, `HELIUS_API_KEY`, `HELIUS_API_KEY_1..6`).

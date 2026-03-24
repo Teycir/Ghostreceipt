@@ -1,5 +1,27 @@
 # Task Plan - 2026-03-24
 
+## Objective (Receipt History CTA Placement + Stable API Scope)
+
+Fix overlap/floating behavior by placing the receipt history CTA directly below the generator frame on both mobile and desktop, and lock Monero out of current scope unless a stable free-tier API path is proven.
+
+## Plan
+
+- [x] Remove floating/fixed history CTA from home screen layout.
+- [x] Place a single in-flow `View Receipt History` button directly below the generator frame for all breakpoints.
+- [x] Increase mobile bottom spacing so CTA stays visible above footer overlap.
+- [ ] Add only stable free-tier provider integrations; skip Monero integration unless API stability criteria are met.
+- [x] Run validation and record outcome.
+
+## Review (Receipt History CTA Placement + Stable API Scope)
+
+- Status: In progress
+- Notes:
+  - Home page now uses one in-flow history CTA below the generator card (mobile + desktop).
+  - Floating corner history link is removed from the home layout to prevent overlap/follow behavior.
+  - Monero remains intentionally excluded for now pending stable free-tier provider confirmation.
+  - Validation:
+    - `npm run typecheck` pass.
+
 ## Objective (Doc-Based Provider Throttling)
 
 Parameterize provider throttling by documented API limits (Etherscan, Helius, mempool, Blockchair) and apply context-aware pacing so live API fetch flows remain reliable without hardcoded one-off delays.

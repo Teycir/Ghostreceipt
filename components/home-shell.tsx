@@ -141,13 +141,8 @@ export function HomeShell(): React.JSX.Element {
         srTitle="GhostReceipt"
         tagline="Prove the payment.  Keep the privacy."
         titleMinFontSize={34}
-        leftNavLink={{
-          href: '/history',
-          label: 'Receipt History',
-          ariaLabel: 'Open local receipt history',
-        }}
         maxWidthClassName="max-w-4xl"
-        mainClassName="justify-start pt-2 pb-14 sm:justify-center sm:pt-0 sm:pb-24"
+        mainClassName="justify-start pt-2 pb-40 sm:justify-center sm:pt-0 sm:pb-24"
         contentClassName="space-y-2.5 sm:space-y-3"
         headerClassName="space-y-1 [&>p]:text-sm [@media(max-height:820px)]:[&>p]:hidden"
         onBackgroundReady={() => setBackgroundReady(true)}
@@ -159,20 +154,20 @@ export function HomeShell(): React.JSX.Element {
         }}
       >
         <div className="space-y-2">
-          <div className="flex items-center justify-center md:hidden">
+          <div className="glass-card rounded-xl p-2.5 shadow-2xl sm:p-3">
+            <GeneratorForm />
+          </div>
+          <div className="flex items-center justify-center pt-1">
             <Button
               type="button"
               variant="secondary"
-              className="w-full py-2 text-xs sm:w-auto sm:text-sm"
+              className="w-full py-2 text-xs sm:max-w-sm sm:text-sm"
               onClick={() => {
                 globalThis.location.href = '/history';
               }}
             >
               View Receipt History
             </Button>
-          </div>
-          <div className="glass-card rounded-xl p-2.5 shadow-2xl sm:p-3">
-            <GeneratorForm />
           </div>
         </div>
       </UnifiedPageShell>
