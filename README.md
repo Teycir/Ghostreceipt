@@ -247,6 +247,7 @@ Open `http://localhost:3000`.
 - Cloudflare Pages: [docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md](./docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
 - Product and execution roadmap: [docs/project/ENHANCEMENT_ROADMAP.md](./docs/project/ENHANCEMENT_ROADMAP.md)
 - Proof system decision: [docs/project/PROOF_SYSTEM_DECISION.md](./docs/project/PROOF_SYSTEM_DECISION.md)
+- Roadmap review-note template: [docs/project/ROADMAP_REVIEW_NOTES_TEMPLATE.md](./docs/project/ROADMAP_REVIEW_NOTES_TEMPLATE.md)
 - Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md)
 - Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./docs/project/REPO_METADATA_CHECKLIST.md)

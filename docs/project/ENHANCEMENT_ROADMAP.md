@@ -51,7 +51,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 - [x] Add dedicated proof-performance regression gate with CI-friendly benchmarks.
 - [x] Publish proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` path) with rationale and migration notes.
-- [ ] Add explicit per-feature latency budgets and require before/after metric deltas in roadmap review notes.
+- [x] Add explicit per-feature latency budgets and require before/after metric deltas in roadmap review notes.
 - [ ] Add regression coverage around payload compatibility and verify path stability.
 
 ### Product Slice (P2)
@@ -86,7 +86,7 @@ Exit criteria:
 ### Phase 2: Reliability and Performance Gates (P1)
 
 - [x] CI-integrated performance budget tests for generator/prover flow.
-- [ ] Proof-system decision + technical docs refresh.
+- [x] Proof-system decision + technical docs refresh.
 - [ ] Maintain `p95 < 60s`, `p50 < 25s` in benchmark environment.
 - [ ] Keep UI responsive during proof generation (worker path and fallbacks validated).
 
@@ -113,6 +113,38 @@ Exit criteria:
 Exit criteria:
 - [ ] Compressed payloads stay deterministic and verifiable.
 - [ ] Advanced privacy modes ship only with benchmark evidence.
+
+---
+
+## Latency Budget Contract (Authoritative)
+
+All roadmap features that touch generator, verifier, oracle routes, or proof runtime must report before/after metrics and deltas using the review-note template.
+
+| Surface | Metric | p50 Budget | p95 Budget | Measurement Path |
+|---------|--------|------------|------------|------------------|
+| Generator end-to-end | `total_ms` | `<= 25,000` | `<= 60,000` | generator timing telemetry + proof budget test |
+| Witness build | `witness_ms` | `<= 250` | `<= 500` | generator timing telemetry / `test:perf:proof` |
+| Proof generation | `prove_ms` | `<= 25,000` | `<= 60,000` | generator timing telemetry / `test:perf:proof` |
+| Share payload packaging | `package_ms` | `<= 500` | `<= 1,000` | generator timing telemetry |
+| Oracle fetch route | `fetch_p95_ms` | `<= 1,000` | `<= 2,000` | stress oracle test metrics |
+| Oracle verify route | `verify_p95_ms` | `<= 500` | `<= 1,000` | stress oracle test metrics |
+
+Notes:
+- Budgets are guardrails; any intentional exception requires explicit rationale and follow-up mitigation in the same review note.
+- No roadmap item is considered complete without a metric delta entry for impacted surfaces.
+
+---
+
+## Roadmap Review Notes (Required)
+
+Use [ROADMAP_REVIEW_NOTES_TEMPLATE.md](./ROADMAP_REVIEW_NOTES_TEMPLATE.md) for any roadmap-linked implementation.
+
+Minimum required fields:
+- Roadmap item id/title.
+- Commands used for measurement.
+- Before/after values for each impacted metric.
+- Delta (`after - before`) and budget pass/fail result.
+- If a budget fails: mitigation and rollout safety plan.
 
 ---
 
@@ -156,6 +188,7 @@ Exit criteria:
 - Threat model: [THREAT_MODEL.md](../runbooks/THREAT_MODEL.md)
 - Circuit self-review: [CIRCUIT_SELF_REVIEW.md](../runbooks/CIRCUIT_SELF_REVIEW.md)
 - Proof system decision: [PROOF_SYSTEM_DECISION.md](./PROOF_SYSTEM_DECISION.md)
+- Roadmap review-note template: [ROADMAP_REVIEW_NOTES_TEMPLATE.md](./ROADMAP_REVIEW_NOTES_TEMPLATE.md)
 
 ---
 

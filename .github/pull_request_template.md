@@ -26,6 +26,18 @@
 
 <!-- Describe the tests you ran to verify your changes -->
 
+## Roadmap Review Notes (Required For Roadmap-Linked Changes)
+
+- [ ] This PR is not roadmap-linked, or I have added before/after metric deltas using `docs/project/ROADMAP_REVIEW_NOTES_TEMPLATE.md`
+
+<!--
+If roadmap-linked, include:
+1) Roadmap item
+2) Measurement commands
+3) Metric delta table (before/after/delta + budget pass/fail)
+4) Exception + mitigation if any budget is exceeded
+-->
+
 ## Related Issues
 
 <!-- Link to related issues using #issue_number -->
