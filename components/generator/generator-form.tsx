@@ -22,6 +22,8 @@ const DEFAULT_VALUES: GeneratorFormValues = {
   chain:         'bitcoin',
   txHash:        '',
   claimedAmount: '',
+  discloseAmount: true,
+  discloseMinDate: true,
   minDate:       '',
   receiptLabel: '',
   receiptCategory: '',
@@ -57,7 +59,7 @@ export function GeneratorForm(): React.JSX.Element {
     setValues((prev) => ({ ...prev, txHash: normalised }));
   }, [values.chain]);
 
-  const handlePaste = useCallback(async (field: keyof GeneratorFormValues): Promise<void> => {
+  const handlePaste = useCallback(async (field: 'txHash'): Promise<void> => {
     try {
       const text = await globalThis.navigator.clipboard.readText();
       const value = field === 'txHash' && values.chain === 'bitcoin'
@@ -168,6 +170,41 @@ export function GeneratorForm(): React.JSX.Element {
           className="h-8 px-2 py-1 text-[12px]"
           labelClassName="text-xs"
         />
+      </div>
+
+      <div className="rounded-lg border border-white/10 bg-black/10 px-2 py-2">
+        <p className="text-xs font-medium text-white/75">Selective disclosure</p>
+        <p className="mt-1 text-[11px] text-white/45">
+          Choose which claim fields are visible in the shared receipt.
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-2 min-[540px]:grid-cols-2">
+          <label className="flex items-center justify-between rounded border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white/80">
+            <span>Disclose minimum amount</span>
+            <input
+              type="checkbox"
+              checked={values.discloseAmount}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setValues((prev) => ({ ...prev, discloseAmount: checked }));
+              }}
+              disabled={isProcessing}
+              className="h-3.5 w-3.5 accent-cyan-400"
+            />
+          </label>
+          <label className="flex items-center justify-between rounded border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white/80">
+            <span>Disclose minimum date</span>
+            <input
+              type="checkbox"
+              checked={values.discloseMinDate}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setValues((prev) => ({ ...prev, discloseMinDate: checked }));
+              }}
+              disabled={isProcessing}
+              className="h-3.5 w-3.5 accent-cyan-400"
+            />
+          </label>
+        </div>
       </div>
 
       {/* ── Optional receipt metadata ── */}

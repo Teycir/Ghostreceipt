@@ -3,6 +3,7 @@ import {
   deriveNullifierFromMessageHash,
   type NullifierStorageLike,
 } from '@/lib/zk/nullifier';
+import { deriveSelectiveClaimDigest } from '@/lib/zk/share';
 import type { ShareableProofPayload } from '@/lib/zk/prover';
 
 class InMemoryStorage implements NullifierStorageLike {
@@ -81,11 +82,17 @@ describe('verifySharedReceiptProof', () => {
   it('verifies selective proofs with hidden claims and returns hidden field markers', async () => {
     const messageHash = 'oracle-selective';
     const nullifier = await deriveNullifierFromMessageHash(messageHash);
+    const claimDigest = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 0,
+      minDateUnix: 1700000000,
+    });
     const payload = buildProofPayload(
-      [messageHash, '0', '0', '0', 'claim-digest-123'],
+      [messageHash, '0', '0', '0', claimDigest],
       messageHash,
       nullifier
     );
+    payload.proofPublicSignals = ['123450000', '1700000000', messageHash];
 
     const result = await verifySharedReceiptProof('mock-proof', {
       createProofGenerator: () => ({
@@ -104,6 +111,29 @@ describe('verifySharedReceiptProof', () => {
       minDateDisclosure: 'hidden',
       signalContract: 'selective-disclosure-v1',
     });
+  });
+
+  it('fails selective payloads when claim digest does not match proven claims', async () => {
+    const messageHash = 'oracle-selective-digest';
+    const nullifier = await deriveNullifierFromMessageHash(messageHash);
+    const payload = buildProofPayload(
+      [messageHash, '0', '0', '0', 'tampered-digest'],
+      messageHash,
+      nullifier
+    );
+    payload.proofPublicSignals = ['123450000', '1700000000', messageHash];
+
+    const result = await verifySharedReceiptProof('mock-proof', {
+      createProofGenerator: () => ({
+        importProof: () => payload,
+        verifyProof: async () => ({ valid: true }),
+      }),
+      signatureVerifier,
+      storage: new InMemoryStorage(),
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe('Invalid proof: claim digest mismatch detected');
   });
 
   it('fails when oracle commitment does not match supported signal slots', async () => {

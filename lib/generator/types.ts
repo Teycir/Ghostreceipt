@@ -22,6 +22,8 @@ export interface GeneratorFormValues {
   chain: Chain;
   txHash: string;
   claimedAmount: string;
+  discloseAmount: boolean;
+  discloseMinDate: boolean;
   minDate: string;
   receiptLabel: string;
   receiptCategory: string;

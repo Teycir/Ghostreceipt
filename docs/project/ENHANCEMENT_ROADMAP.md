@@ -262,6 +262,8 @@ Minimum required fields:
 - 2026-03-24: Closed Phase-4 compressed payload determinism gate with explicit repeatability and import/export idempotency tests.
 - 2026-03-24: Closed Phase-4 advanced privacy shipping gate with enforced benchmark-evidence manifest validation and CI policy tests.
 - 2026-03-24: Began selective-disclosure runtime prep by centralizing legacy public-signal decode helpers and routing verifier oracle-commitment extraction through shared decoding logic.
+- 2026-03-24: Extended verifier/runtime decoding to support both legacy and selective-disclosure public-signal contracts with disclosure-state output and digest-backed nullifier idempotency checks.
+- 2026-03-24: Completed selective packaging bridge for generator/export flow with disclosure toggles (`disclosureMask`, gated claim fields, `claimDigest`) and selective-contract export/import test enforcement while preserving legacy proof verification signals.
 - 2026-03-24: Superseded and removed duplicate trackers:
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`

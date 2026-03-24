@@ -175,10 +175,11 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       announceToScreenReader('Validating transaction data');
       const witnessStart = nowMs();
 
+      const minDateUnix = Math.floor(new Date(values.minDate).getTime() / 1000);
       const { buildWitness, validateWitness } = await import('@ghostreceipt/zk-core/witness');
       const witness = buildWitness(data.data, {
         claimedAmount: values.claimedAmount,
-        minDate: Math.floor(new Date(values.minDate).getTime() / 1000),
+        minDate: minDateUnix,
       });
 
       const validation = validateWitness(witness);
@@ -218,7 +219,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
 
       const packageStart = nowMs();
       const receiptMeta = normalizeReceiptMetadata(values);
-      const shareableProof = prover.exportProof(proofOutput, {
+      const shareableProof = await prover.exportProof(proofOutput, {
         expiresAt:       data.data.expiresAt,
         messageHash:     data.data.messageHash,
         nullifier:       data.data.nullifier,
@@ -226,7 +227,12 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         oracleSignature: data.data.oracleSignature,
         oraclePubKeyId:  data.data.oraclePubKeyId,
         signedAt:        data.data.signedAt,
-      }, receiptMeta);
+      }, receiptMeta, {
+        claimedAmount: values.claimedAmount,
+        discloseAmount: values.discloseAmount,
+        discloseMinDate: values.discloseMinDate,
+        minDateUnix,
+      });
       telemetry.packageMs = nowMs() - packageStart;
       telemetry.totalMs = nowMs() - totalStart;
 

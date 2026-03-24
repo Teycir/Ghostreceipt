@@ -1,10 +1,11 @@
 import {
+  decodeLegacyReceiptPublicSignals,
   decodeReceiptPublicSignals,
+  deriveSelectiveClaimDigest,
   type ReceiptClaimDisclosureState,
   type ReceiptSignalContract,
 } from '@/lib/zk/share';
 import {
-  checkClientNullifierConflictByDigest,
   checkClientNullifierConflict,
   deriveNullifierFromMessageHash,
   type NullifierStorageLike,
@@ -135,7 +136,8 @@ export async function verifySharedReceiptProof(
     const prover = (options.createProofGenerator ?? createProofGenerator)();
 
     const proofData = prover.importProof(proof);
-    const verification = await prover.verifyProof(proofData.publicSignals, proofData.proof);
+    const proofSignalsForVerification = proofData.proofPublicSignals ?? proofData.publicSignals;
+    const verification = await prover.verifyProof(proofSignalsForVerification, proofData.proof);
 
     if (!verification.valid) {
       return {
@@ -160,6 +162,56 @@ export async function verifySharedReceiptProof(
       proofData.publicSignals,
       oracleAuth.messageHash
     );
+    const provenClaims = decodeLegacyReceiptPublicSignals(proofSignalsForVerification);
+
+    if (provenClaims.oracleCommitment !== oracleAuth.messageHash) {
+      return {
+        valid: false,
+        claimedAmount: '',
+        minDate: '',
+        error: 'Oracle commitment mismatch detected',
+      };
+    }
+
+    if (decodedSignals.contract === 'selective-disclosure-v1') {
+      if (
+        decodedSignals.claimedAmountDisclosure === 'disclosed' &&
+        decodedSignals.claimedAmount !== provenClaims.claimedAmount
+      ) {
+        return {
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Invalid proof: disclosed amount does not match proven claim',
+        };
+      }
+
+      if (
+        decodedSignals.minDateDisclosure === 'disclosed' &&
+        decodedSignals.minDateUnix !== provenClaims.minDateUnix
+      ) {
+        return {
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Invalid proof: disclosed minimum date does not match proven claim',
+        };
+      }
+
+      const expectedClaimDigest = await deriveSelectiveClaimDigest({
+        claimedAmount: provenClaims.claimedAmount,
+        disclosureMask: decodedSignals.disclosureMask,
+        minDateUnix: provenClaims.minDateUnix,
+      });
+      if (decodedSignals.claimDigest !== expectedClaimDigest) {
+        return {
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Invalid proof: claim digest mismatch detected',
+        };
+      }
+    }
 
     const signatureVerifier = options.signatureVerifier ?? verifyOracleSignatureViaApi;
     const oracleSignatureVerification = await signatureVerifier(oracleAuth);
@@ -183,27 +235,16 @@ export async function verifySharedReceiptProof(
     }
 
     const storage = options.storage === undefined ? getDefaultStorage() : options.storage;
-    const nullifierCheck =
-      decodedSignals.claimedAmount !== null && decodedSignals.minDateUnix !== null
-        ? checkClientNullifierConflict(
-            {
-              claim: {
-                claimedAmount: decodedSignals.claimedAmount,
-                minDateUnix: decodedSignals.minDateUnix,
-              },
-              nullifier: derivedNullifier,
-            },
-            storage
-          )
-        : checkClientNullifierConflictByDigest(
-            {
-              claim: {
-                claimDigest: decodedSignals.claimDigest ?? '',
-              },
-              nullifier: derivedNullifier,
-            },
-            storage
-          );
+    const nullifierCheck = checkClientNullifierConflict(
+      {
+        claim: {
+          claimedAmount: provenClaims.claimedAmount,
+          minDateUnix: provenClaims.minDateUnix,
+        },
+        nullifier: derivedNullifier,
+      },
+      storage
+    );
     if (!nullifierCheck.valid) {
       return {
         valid: false,

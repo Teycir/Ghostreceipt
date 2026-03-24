@@ -9,6 +9,7 @@ import {
   fetchVerificationKeyCached,
   getDefaultZkArtifactPaths,
 } from '@/lib/zk/artifacts';
+import { buildSelectiveDisclosurePublicSignals } from '@/lib/zk/share';
 
 /**
  * Proof generation result
@@ -40,6 +41,7 @@ export interface ReceiptMetadata {
 }
 
 export interface ShareableProofPayload extends ProofResult {
+  proofPublicSignals?: string[];
   oracleAuth?: OracleAuthData;
   receiptMeta?: ReceiptMetadata;
 }
@@ -49,6 +51,7 @@ interface CompactProofPayload {
   o?: CompactOracleAuth;
   p: CompactProof;
   s: string[];
+  v?: string[];
 }
 
 interface CompactProof {
@@ -70,6 +73,13 @@ interface CompactOracleAuth {
 interface CompactReceiptMeta {
   c?: string;
   l?: string;
+}
+
+export interface SelectiveDisclosurePackagingOptions {
+  claimedAmount: string;
+  discloseAmount: boolean;
+  discloseMinDate: boolean;
+  minDateUnix: number;
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -161,6 +171,7 @@ function toCompactPayload(
       c: payload.proof.pi_c,
     },
     s: payload.publicSignals,
+    ...(payload.proofPublicSignals ? { v: payload.proofPublicSignals } : {}),
     ...(payload.oracleAuth
       ? {
           o: {
@@ -195,6 +206,10 @@ function fromCompactPayload(raw: unknown): ShareableProofPayload {
   if (!isObjectRecord(compactProof) || !isStringArray(publicSignals)) {
     throw new Error('Invalid proof format');
   }
+  const proofPublicSignalsRaw = raw['v'];
+  if (proofPublicSignalsRaw !== undefined && !isStringArray(proofPublicSignalsRaw)) {
+    throw new Error('Invalid proof format');
+  }
 
   const piA = compactProof['a'];
   const piB = compactProof['b'];
@@ -220,6 +235,7 @@ function fromCompactPayload(raw: unknown): ShareableProofPayload {
       curve: 'bn128',
     },
     publicSignals,
+    ...(proofPublicSignalsRaw !== undefined ? { proofPublicSignals: proofPublicSignalsRaw } : {}),
     ...(compactOracleAuth !== undefined ? { oracleAuth: assertValidOracleAuth(compactOracleAuth) } : {}),
     ...(compactMeta !== undefined ? { receiptMeta: assertValidReceiptMeta(compactMeta) } : {}),
   };
@@ -412,13 +428,27 @@ export class ProofGenerator {
   /**
    * Export proof to shareable format
    */
-  exportProof(
+  async exportProof(
     result: ProofResult,
     oracleAuth?: OracleAuthData,
-    receiptMeta?: ReceiptMetadata
-  ): string {
+    receiptMeta?: ReceiptMetadata,
+    selectiveDisclosure?: SelectiveDisclosurePackagingOptions
+  ): Promise<string> {
+    const selectivePublicSignals = selectiveDisclosure
+      ? await buildSelectiveDisclosurePublicSignals({
+          oracleCommitment: oracleAuth?.messageHash ?? '',
+          claimedAmount: selectiveDisclosure.claimedAmount,
+          disclosureMask:
+            (selectiveDisclosure.discloseAmount ? 1 : 0) +
+            (selectiveDisclosure.discloseMinDate ? 2 : 0),
+          minDateUnix: selectiveDisclosure.minDateUnix,
+        })
+      : null;
+
     const payload: ShareableProofPayload = {
       ...result,
+      publicSignals: selectivePublicSignals ?? result.publicSignals,
+      ...(selectivePublicSignals ? { proofPublicSignals: result.publicSignals } : {}),
       ...(oracleAuth ? { oracleAuth } : {}),
       ...(receiptMeta ? { receiptMeta } : {}),
     };

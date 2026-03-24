@@ -1,5 +1,6 @@
 import { ProofGenerator, type ProofResult } from '@/lib/zk/prover';
-import { encodeSharePayload } from '@/lib/libraries/zk';
+import { decodeSharePayload, encodeSharePayload } from '@/lib/libraries/zk';
+import { deriveSelectiveClaimDigest } from '@/lib/zk/share';
 
 describe('ProofGenerator share payload encoding', () => {
   const generator = new ProofGenerator('/zk/receipt.wasm', '/zk/receipt_final.zkey', '/zk/verification_key.json');
@@ -19,8 +20,8 @@ describe('ProofGenerator share payload encoding', () => {
     publicSignals: ['1000', '1700000000', '1', '2', '3', '4', '5', '6', '7', '8'],
   };
 
-  it('exports a URL-safe encoded payload and round-trips correctly', () => {
-    const exported = generator.exportProof(sampleProof);
+  it('exports a URL-safe encoded payload and round-trips correctly', async () => {
+    const exported = await generator.exportProof(sampleProof);
 
     expect(exported).toMatch(/^[A-Za-z0-9\-_]+$/);
 
@@ -28,14 +29,14 @@ describe('ProofGenerator share payload encoding', () => {
     expect(imported).toEqual(sampleProof);
   });
 
-  it('uses a compact canonical encoded payload compared to legacy shape', () => {
-    const compactExported = generator.exportProof(sampleProof);
+  it('uses a compact canonical encoded payload compared to legacy shape', async () => {
+    const compactExported = await generator.exportProof(sampleProof);
     const legacyExported = encodeSharePayload(JSON.stringify(sampleProof));
 
     expect(compactExported.length).toBeLessThan(legacyExported.length);
   });
 
-  it('exports deterministic payloads for identical inputs', () => {
+  it('exports deterministic payloads for identical inputs', async () => {
     const oracleAuth = {
       expiresAt: 1700000300,
       messageHash: '123456789',
@@ -50,13 +51,13 @@ describe('ProofGenerator share payload encoding', () => {
       category: 'Operations',
     };
 
-    const first = generator.exportProof(sampleProof, oracleAuth, receiptMeta);
-    const second = generator.exportProof(
+    const first = await generator.exportProof(sampleProof, oracleAuth, receiptMeta);
+    const second = await generator.exportProof(
       JSON.parse(JSON.stringify(sampleProof)) as ProofResult,
       { ...oracleAuth },
       { ...receiptMeta }
     );
-    const roundTrip = generator.exportProof(generator.importProof(first));
+    const roundTrip = await generator.exportProof(generator.importProof(first));
 
     expect(second).toBe(first);
     expect(roundTrip).toBe(first);
@@ -70,8 +71,8 @@ describe('ProofGenerator share payload encoding', () => {
     );
   });
 
-  it('round-trips oracle authentication metadata in share payloads', () => {
-    const exported = generator.exportProof(sampleProof, {
+  it('round-trips oracle authentication metadata in share payloads', async () => {
+    const exported = await generator.exportProof(sampleProof, {
       expiresAt: 1700000300,
       messageHash: '123456789',
       nullifier: 'd'.repeat(64),
@@ -94,8 +95,8 @@ describe('ProofGenerator share payload encoding', () => {
     });
   });
 
-  it('round-trips optional receipt metadata in share payloads', () => {
-    const exported = generator.exportProof(
+  it('round-trips optional receipt metadata in share payloads', async () => {
+    const exported = await generator.exportProof(
       sampleProof,
       {
         expiresAt: 1700000300,
@@ -197,5 +198,52 @@ describe('ProofGenerator share payload encoding', () => {
     );
 
     expect(() => generator.importProof(legacyPayload)).toThrow('Invalid proof format');
+  });
+
+  it('exports selective share signals in canonical order and preserves proof verification signals', async () => {
+    const oracleAuth = {
+      expiresAt: 1700000300,
+      messageHash: '123456789',
+      nullifier: 'd'.repeat(64),
+      nonce: 'c'.repeat(32),
+      oracleSignature: 'a'.repeat(128),
+      oraclePubKeyId: 'b'.repeat(16),
+      signedAt: 1700000000,
+    };
+
+    const exported = await generator.exportProof(
+      sampleProof,
+      oracleAuth,
+      undefined,
+      {
+        claimedAmount: '1000',
+        discloseAmount: false,
+        discloseMinDate: true,
+        minDateUnix: 1700000000,
+      }
+    );
+
+    const decodedRaw = JSON.parse(decodeSharePayload(exported)) as {
+      p: unknown;
+      s: string[];
+      v: string[];
+    };
+    const imported = generator.importProof(exported);
+    const expectedClaimDigest = await deriveSelectiveClaimDigest({
+      claimedAmount: '1000',
+      disclosureMask: 2,
+      minDateUnix: 1700000000,
+    });
+
+    expect(decodedRaw.s).toEqual([
+      oracleAuth.messageHash,
+      '2',
+      '0',
+      '1700000000',
+      expectedClaimDigest,
+    ]);
+    expect(decodedRaw.v).toEqual(sampleProof.publicSignals);
+    expect(imported.publicSignals).toEqual(decodedRaw.s);
+    expect(imported.proofPublicSignals).toEqual(sampleProof.publicSignals);
   });
 });

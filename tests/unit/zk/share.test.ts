@@ -1,7 +1,9 @@
 import {
+  buildSelectiveDisclosurePublicSignals,
   decodeLegacyReceiptPublicSignals,
   decodeReceiptPublicSignals,
   decodeSelectiveDisclosureReceiptPublicSignals,
+  deriveSelectiveClaimDigest,
   extractOracleCommitment,
   extractVerifiedClaims,
 } from '@/lib/zk/share';
@@ -172,5 +174,48 @@ describe('decodeReceiptPublicSignals', () => {
         'oracle-c'
       )
     ).toThrow('Oracle commitment mismatch detected');
+  });
+});
+
+describe('deriveSelectiveClaimDigest', () => {
+  it('is deterministic for identical claim tuples and mask', async () => {
+    const first = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 3,
+      minDateUnix: 1700000000,
+    });
+    const second = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 3,
+      minDateUnix: 1700000000,
+    });
+
+    expect(first).toBe(second);
+    expect(first).toMatch(/^[a-f0-9]{64}$/);
+  });
+});
+
+describe('buildSelectiveDisclosurePublicSignals', () => {
+  it('builds canonical selective signal order with gated fields', async () => {
+    const signals = await buildSelectiveDisclosurePublicSignals({
+      oracleCommitment: 'oracle-commitment',
+      claimedAmount: '123450000',
+      disclosureMask: 2,
+      minDateUnix: 1700000000,
+    });
+
+    const expectedDigest = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 2,
+      minDateUnix: 1700000000,
+    });
+
+    expect(signals).toEqual([
+      'oracle-commitment',
+      '2',
+      '0',
+      '1700000000',
+      expectedDigest,
+    ]);
   });
 });

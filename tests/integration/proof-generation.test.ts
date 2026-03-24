@@ -31,7 +31,7 @@ describe('End-to-End Proof Generation', () => {
       expect(validation.errors).toHaveLength(0);
     });
 
-    it('should export and import proof format', () => {
+    it('should export and import proof format', async () => {
       const prover = new ProofGenerator(
         '/zk/receipt_js/receipt.wasm',
         '/zk/receipt_final.zkey',
@@ -49,7 +49,7 @@ describe('End-to-End Proof Generation', () => {
         publicSignals: ['100', '200', '300'],
       };
 
-      const exported = prover.exportProof(mockProof);
+      const exported = await prover.exportProof(mockProof);
       expect(typeof exported).toBe('string');
 
       const imported = prover.importProof(exported);

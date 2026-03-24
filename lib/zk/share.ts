@@ -7,6 +7,16 @@ export interface VerifiedReceiptClaims {
 export type ReceiptClaimDisclosureState = 'disclosed' | 'hidden';
 export type ReceiptSignalContract = 'legacy-v1' | 'selective-disclosure-v1';
 
+export interface SelectiveDisclosureClaimDigestInput {
+  claimedAmount: string;
+  disclosureMask: number;
+  minDateUnix: number;
+}
+
+export interface SelectiveDisclosurePublicSignalInput extends SelectiveDisclosureClaimDigestInput {
+  oracleCommitment: string;
+}
+
 interface DecodedReceiptPublicSignalBase {
   claimDigest: string | null;
   claimedAmount: string | null;
@@ -108,6 +118,15 @@ function readSignal(publicSignals: string[], index: number): string {
   }
 
   return value;
+}
+
+function toHex(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let hex = '';
+  for (const byte of bytes) {
+    hex += byte.toString(16).padStart(2, '0');
+  }
+  return hex;
 }
 
 export function decodeLegacyReceiptPublicSignals(
@@ -229,6 +248,59 @@ export function decodeReceiptPublicSignals(
   }
 
   throw new Error('Oracle commitment mismatch detected');
+}
+
+function validateSelectiveDisclosureInput(
+  input: SelectiveDisclosureClaimDigestInput
+): void {
+  if (!input.claimedAmount.trim()) {
+    throw new Error('Invalid proof: missing claimed amount');
+  }
+  if (!Number.isSafeInteger(input.minDateUnix) || input.minDateUnix <= 0) {
+    throw new Error('Invalid proof: malformed minimum date signal');
+  }
+  parseDisclosureMaskSignal(String(input.disclosureMask));
+}
+
+/**
+ * Deterministic digest used in selective payload packaging while legacy circuit remains active.
+ * This digest binds disclosed/hidden rendering fields to proven legacy claim values + mask.
+ */
+export async function deriveSelectiveClaimDigest(
+  input: SelectiveDisclosureClaimDigestInput
+): Promise<string> {
+  validateSelectiveDisclosureInput(input);
+
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    throw new Error('Web Crypto API unavailable');
+  }
+
+  const payload = `claimedAmount=${input.claimedAmount}&minDateUnix=${input.minDateUnix}&disclosureMask=${input.disclosureMask}`;
+  const digest = await subtle.digest('SHA-256', new TextEncoder().encode(payload));
+  return toHex(digest);
+}
+
+export async function buildSelectiveDisclosurePublicSignals(
+  input: SelectiveDisclosurePublicSignalInput
+): Promise<string[]> {
+  validateSelectiveDisclosureInput(input);
+
+  if (!input.oracleCommitment.trim()) {
+    throw new Error('Invalid proof: missing oracle commitment signal');
+  }
+
+  const claimDigest = await deriveSelectiveClaimDigest(input);
+  const amountDisclosed = isAmountDisclosed(input.disclosureMask);
+  const minDateDisclosed = isMinDateDisclosed(input.disclosureMask);
+
+  return [
+    input.oracleCommitment,
+    String(input.disclosureMask),
+    amountDisclosed ? input.claimedAmount : '0',
+    minDateDisclosed ? String(input.minDateUnix) : '0',
+    claimDigest,
+  ];
 }
 
 /**
