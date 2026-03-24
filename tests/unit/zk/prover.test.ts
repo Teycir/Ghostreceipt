@@ -35,6 +35,33 @@ describe('ProofGenerator share payload encoding', () => {
     expect(compactExported.length).toBeLessThan(legacyExported.length);
   });
 
+  it('exports deterministic payloads for identical inputs', () => {
+    const oracleAuth = {
+      expiresAt: 1700000300,
+      messageHash: '123456789',
+      nullifier: 'd'.repeat(64),
+      nonce: 'c'.repeat(32),
+      oracleSignature: 'a'.repeat(128),
+      oraclePubKeyId: 'b'.repeat(16),
+      signedAt: 1700000000,
+    };
+    const receiptMeta = {
+      label: 'Invoice #428',
+      category: 'Operations',
+    };
+
+    const first = generator.exportProof(sampleProof, oracleAuth, receiptMeta);
+    const second = generator.exportProof(
+      JSON.parse(JSON.stringify(sampleProof)) as ProofResult,
+      { ...oracleAuth },
+      { ...receiptMeta }
+    );
+    const roundTrip = generator.exportProof(generator.importProof(first));
+
+    expect(second).toBe(first);
+    expect(roundTrip).toBe(first);
+  });
+
   it('rejects plain JSON payloads and requires encoded share format', () => {
     const plainJsonPayload = JSON.stringify(sampleProof);
 
