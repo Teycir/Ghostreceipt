@@ -10,7 +10,7 @@ import {
 } from '@/app/api/oracle/verify-signature/route';
 import { SuccessResponseSchema } from '@/lib/validation/schemas';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
-import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
+import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 
 const describeStress = process.env['STRESS_TEST'] === '1' ? describe : describe.skip;
 
@@ -112,12 +112,8 @@ describeStress('Oracle stress test (100 users/hour equivalent + concurrency)', (
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
     delete process.env['ORACLE_PUBLIC_KEY'];
     process.env['TRUST_PROXY_HEADERS'] = 'true';
-
-    // Force deterministic ETH path for stress runs.
-    delete process.env['ETHERSCAN_API_KEY'];
-    delete process.env['ETHERSCAN_API_KEY_1'];
-    delete process.env['ETHERSCAN_API_KEY_2'];
-    delete process.env['ETHERSCAN_API_KEY_3'];
+    process.env['ETHERSCAN_API_KEY_1'] =
+      originalEnv.etherscanApiKey1 ?? originalEnv.etherscanApiKey ?? 'stress-etherscan-key';
 
     __disposeOracleFetchRouteForTests();
     __disposeOracleVerifyRouteForTests();
@@ -134,7 +130,7 @@ describeStress('Oracle stress test (100 users/hour equivalent + concurrency)', (
       };
     });
 
-    jest.spyOn(EthereumPublicRpcProvider.prototype, 'fetchTransaction').mockImplementation(async (txHash) => {
+    jest.spyOn(EtherscanProvider.prototype, 'fetchTransaction').mockImplementation(async (txHash) => {
       return {
         chain: 'ethereum',
         txHash,

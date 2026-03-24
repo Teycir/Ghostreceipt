@@ -33,6 +33,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Published proof-system decision artifact with migration triggers and phased path notes.
 - [x] Added regression tests for canonical share-payload parsing and verifier route stability.
 - [x] Added compact canonical proof payload format with hard cutover (legacy format removed).
+- [x] Enforced API-only oracle provider policy (public RPC paths removed from active cascade; live integration now uses Exa-sourced BTC/ETH/SOL fixtures with API-key gating for ETH/SOL).
 
 ---
 

@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Real-Data Integration Requests Must Exclude Mock Validation
+- When the user requests full integration proof with real transactions, do not use mock-based test evidence for sign-off in that slice.
+- Keep validation focused on live API-backed flows and explicitly state missing API-key prerequisites instead of substituting public RPC or mocked providers.
+- Treat "no public RPC" as an architecture constraint that must be enforced in provider cascade selection, not only in test commands.
+
 ## 2026-03-24 - Shell Alignment Overrides Can Cancel Intended Centering
 - If a screen should be centered, check for per-page `mainClassName` overrides like `justify-start` that silently defeat shell-level centering.
 - Use responsive alignment intentionally: top-first on mobile, centered on desktop, instead of one global alignment for all breakpoints.

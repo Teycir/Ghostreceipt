@@ -9,7 +9,6 @@ import {
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
-import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
@@ -389,22 +388,18 @@ export function createProviderCascadeForChain(
     return new ProviderCascade(providers, cascadeConfig);
   }
 
-  const providers: Provider[] = [];
   const etherscanKeys = options.etherscanKeys ?? loadEtherscanKeysFromEnv();
-
-  // API-first strategy for multi-user reliability under RPC instability.
-  if (etherscanKeys.length > 0) {
-    providers.push(
-      new EtherscanProvider({
-        keys: etherscanKeys,
-        rotationStrategy: 'random',
-        shuffleOnStartup: true,
-      })
-    );
+  if (etherscanKeys.length === 0) {
+    throw new Error('No Etherscan API keys configured for Ethereum requests');
   }
 
-  // RPC is intentionally the final fallback attempt.
-  providers.push(new EthereumPublicRpcProvider());
+  const providers: Provider[] = [
+    new EtherscanProvider({
+      keys: etherscanKeys,
+      rotationStrategy: 'random',
+      shuffleOnStartup: true,
+    }),
+  ];
 
   return new ProviderCascade(providers, cascadeConfig);
 }

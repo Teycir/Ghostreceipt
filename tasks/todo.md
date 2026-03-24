@@ -2,42 +2,36 @@
 
 ## Objective
 
-Implement roadmap items 1 and 2 by wiring generator disclosure toggles into share packaging (`disclosureMask`, gated claim fields, `claimDigest`) and enforcing selective-contract share payload shape/order in export/import tests.
+Add full live integration coverage that exercises real BTC/ETH/Solana transactions discovered from Exa, proving oracle fetch/sign/verify behavior and maintaining zk prove/verify evidence for currently supported circuit chains.
 
 ## Plan
 
-- [x] Add selective share-signal builders/digest helpers in `lib/zk/share.ts` for generator packaging.
-- [x] Extend `lib/zk/prover.ts` payload schema to support selective display signals and preserved proof-verification signals.
-- [x] Add disclosure toggles to generator form/types and pass disclosure options from `use-proof-generator` into export packaging.
-- [x] Update verifier to validate selective payload consistency against proven legacy claims using preserved verification signals.
-- [x] Update/expand unit tests for prover payload export/import order and verifier selective-path behavior.
-- [x] Validate with typecheck and impacted unit suites.
+- [x] Add Exa-derived real-transaction fixtures for BTC/ETH/Solana in `tests/integration/live-oracle-flows.test.ts`.
+- [x] Refactor live flow test harness to run by chain and support chain-specific assertions.
+- [x] Enforce API-only policy in live tests (no public RPC fallback; require Etherscan + Helius keys for live mode).
+- [x] Keep BTC/ETH on full witness + groth16 prove/verify live path.
+- [x] Enforce API-only provider cascade behavior for Ethereum/Solana and remove public-RPC runtime paths.
+- [x] Run targeted validation commands and capture outcomes.
+- [x] Record completion details in roadmap and task review notes.
 
 ## Review
 
 - Status: Completed
 - Notes:
-  - Added selective packaging helpers in `lib/zk/share.ts`:
-    - `deriveSelectiveClaimDigest(...)`
-    - `buildSelectiveDisclosurePublicSignals(...)`
-  - Extended compact share payload format in `lib/zk/prover.ts`:
-    - `s` now supports selective display signals for generator exports
-    - `v` now preserves legacy proof-verification signals when selective packaging is used
-    - `exportProof(...)` is now async and accepts selective disclosure packaging options.
-  - Added generator disclosure toggles and wiring:
-    - `discloseAmount` / `discloseMinDate` added to `GeneratorFormValues`
-    - UI controls added to `components/generator/generator-form.tsx`
-    - `use-proof-generator` now forwards disclosure settings to selective packaging export.
-  - Updated verifier consistency logic:
-    - proof verification uses `proofPublicSignals` when present
-    - selective `s` payload claims are checked against proven legacy claim tuple
-    - selective `claimDigest` is recomputed and enforced.
-  - Updated tests to enforce selective payload order/fields and selective verification behavior:
-    - `tests/unit/zk/share.test.ts`
-    - `tests/unit/zk/prover.test.ts`
-    - `tests/unit/verify/receipt-verifier.test.ts`
-    - `tests/integration/proof-generation.test.ts`
+  - Live integration suite now uses Exa-sourced real transaction fixtures for BTC/ETH/Solana and tries candidates per chain.
+  - `tests/integration/live-oracle-flows.test.ts` now:
+    - requires API-key configuration in live mode (`ETHERSCAN_API_KEY*`, `HELIUS_API_KEY*`)
+    - rejects public-RPC fallback in live mode with explicit setup errors
+    - keeps BTC/ETH on full witness + groth16 prove/verify
+    - runs Solana full oracle fetch/signature verification flow.
+  - API-only provider policy is enforced in runtime cascade:
+    - Ethereum: Etherscan keys are mandatory; no `ethereum-public-rpc` fallback.
+    - Solana: Helius keys are mandatory; no public-RPC fallback.
+  - Removed public-RPC implementation/tests introduced in this branch:
+    - deleted `lib/providers/ethereum/public-rpc.ts`
+    - deleted `tests/unit/providers/public-rpc-reverted.test.ts`
+    - deleted `lib/providers/solana/public-rpc.ts`.
   - Validation:
     - `npm run typecheck` pass
-    - `npm run test -- tests/unit/zk/share.test.ts tests/unit/zk/prover.test.ts tests/unit/verify/receipt-verifier.test.ts tests/integration/proof-generation.test.ts` pass
-    - `npm run test -- tests/unit/zk` pass
+    - `npm run test -- tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/integration/live-oracle-flows.test.ts tests/integration/stress-oracle-volume.test.ts` pass (`live`/`stress` suites skipped without env flags)
+    - `LIVE_INTEGRATION=1 npm run test -- tests/integration/live-oracle-flows.test.ts` fails fast with explicit API-key requirement message in this environment (expected).
