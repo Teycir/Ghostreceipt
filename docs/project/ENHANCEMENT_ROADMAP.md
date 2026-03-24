@@ -65,8 +65,8 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 ### Shareability and ZK Design (P2-P3)
 
 - [x] Add compact canonical proof payload format with hard cutover (legacy format removed).
-- [ ] Draft selective disclosure public-input contract and phased implementation plan.
-- [ ] Draft bounded amount disclosure/range-proof design and rollout plan.
+- [x] Draft selective disclosure public-input contract and phased implementation plan.
+- [x] Draft bounded amount disclosure/range-proof design and rollout plan.
 
 ## Execution Waves (Actionable)
 
@@ -101,8 +101,8 @@ npm run test:e2e -- --grep "history|pdf|verify"
 `Goal`: improve payload ergonomics and privacy controls while preserving deterministic verification.
 
 - [x] `R-P3-01` Compact canonical proof payload format with hard cutover.
-- [ ] `R-P3-02` Selective disclosure public-input contract and phased plan.
-- [ ] `R-P3-03` Bounded amount disclosure/range-proof design and rollout plan.
+- [x] `R-P3-02` Selective disclosure public-input contract and phased plan.
+- [x] `R-P3-03` Bounded amount disclosure/range-proof design and rollout plan.
 
 Scope constraints:
 - Deterministic encoding and decoding for one canonical payload schema.
@@ -160,8 +160,8 @@ Exit criteria:
 ### Phase 4: Advanced Share and Privacy Controls (P2-P3)
 
 - [x] Canonical compact share payload and QR scannability optimization (hard cutover).
-- [ ] Selective disclosure design and implementation staging.
-- [ ] Range-proof mode design and implementation staging.
+- [x] Selective disclosure design and implementation staging.
+- [x] Range-proof mode design and implementation staging.
 
 Exit criteria:
 - [ ] Compressed payloads stay deterministic and verifiable.
@@ -241,6 +241,8 @@ Minimum required fields:
 - Threat model: [THREAT_MODEL.md](../runbooks/THREAT_MODEL.md)
 - Circuit self-review: [CIRCUIT_SELF_REVIEW.md](../runbooks/CIRCUIT_SELF_REVIEW.md)
 - Proof system decision: [PROOF_SYSTEM_DECISION.md](./PROOF_SYSTEM_DECISION.md)
+- Selective disclosure contract: [SELECTIVE_DISCLOSURE_PUBLIC_INPUT_CONTRACT.md](./SELECTIVE_DISCLOSURE_PUBLIC_INPUT_CONTRACT.md)
+- Bounded amount/range-proof plan: [BOUNDED_AMOUNT_RANGE_PROOF_PLAN.md](./BOUNDED_AMOUNT_RANGE_PROOF_PLAN.md)
 - Roadmap review-note template: [ROADMAP_REVIEW_NOTES_TEMPLATE.md](./ROADMAP_REVIEW_NOTES_TEMPLATE.md)
 
 ---
@@ -249,6 +251,8 @@ Minimum required fields:
 
 - 2026-03-24: Consolidated planning into this single roadmap document.
 - 2026-03-24: Added actionable execution waves (`Now`/`Next`/`Later`) with acceptance criteria and verification command sets for remaining P2/P3 items.
+- 2026-03-24: Completed `R-P3-02` by publishing the selective-disclosure public-input contract and phased hard-cutover plan.
+- 2026-03-24: Completed `R-P3-03` by publishing bounded amount/range-proof design with rollout safety gating and proving-time budget projections.
 - 2026-03-24: Superseded and removed duplicate trackers:
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`

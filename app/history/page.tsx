@@ -1,9 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AnimatedTagline } from '@/components/animated-tagline';
-import { EyeCandy } from '@/components/eye-candy';
-import { Footer } from '@/components/footer';
+import { UnifiedPageShell } from '@/components/unified-page-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -20,7 +18,6 @@ import {
   type ReceiptHistoryEntry,
 } from '@/lib/history/receipt-history';
 import type { Chain } from '@/lib/generator/types';
-import TextPressure from '@/components/text-pressure';
 
 interface HistoryFilters {
   query: string;
@@ -199,22 +196,24 @@ export default function HistoryPage(): React.JSX.Element {
   }, []);
 
   return (
-    <>
-      <EyeCandy />
-      <main className="flex min-h-screen flex-col items-center justify-start p-4 pb-28 pt-8">
-        <div className="w-full max-w-4xl space-y-6 fade-up">
-          <div className="text-center space-y-3">
-            <h1 className="sr-only">GhostReceipt History</h1>
-            <div aria-hidden="true">
-              <TextPressure text="GhostReceipt" textColor="#ffffff" minFontSize={50} className="glow-heading justify-center" />
-            </div>
-            <AnimatedTagline text="Local Receipt History" />
-            <p className="text-sm text-white/55">
-              Stored entirely on this device. No external sync.
-            </p>
-          </div>
-
-          <section className="glass-card rounded-xl p-5 space-y-4">
+    <UnifiedPageShell
+      centerContent={false}
+      srTitle="GhostReceipt History"
+      tagline="Local Receipt History"
+      description="Stored entirely on this device. No external sync."
+      maxWidthClassName="max-w-4xl"
+      leftNavLink={{
+        href: '/',
+        label: 'Generator',
+        ariaLabel: 'Back to receipt generator',
+      }}
+      rightNavLink={{
+        href: '/verify',
+        label: 'Verify',
+        ariaLabel: 'Open receipt verification page',
+      }}
+    >
+      <section className="glass-card rounded-xl p-5 space-y-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <Input
                 label="Search"
@@ -267,9 +266,6 @@ export default function HistoryPage(): React.JSX.Element {
               </Button>
               <Button type="button" variant="secondary" onClick={() => { void loadEntries(); }}>
                 Refresh
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => { globalThis.location.href = '/'; }}>
-                Back to Generator
               </Button>
             </div>
 
@@ -387,10 +383,7 @@ export default function HistoryPage(): React.JSX.Element {
                 </div>
               </article>
             ))}
-          </section>
-        </div>
-      </main>
-      <Footer />
-    </>
+      </section>
+    </UnifiedPageShell>
   );
 }
