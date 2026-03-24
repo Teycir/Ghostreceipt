@@ -23,6 +23,8 @@ export interface GeneratorFormValues {
   txHash: string;
   claimedAmount: string;
   minDate: string;
+  receiptLabel: string;
+  receiptCategory: string;
 }
 
 /** Client-side field validation errors */
@@ -43,6 +45,8 @@ export interface ProofResult {
   chain: Chain;
   claimedAmount: string;
   minDate: string;
+  receiptLabel?: string;
+  receiptCategory?: string;
   timings?: GeneratorTimingTelemetry;
 }
 

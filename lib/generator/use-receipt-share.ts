@@ -9,6 +9,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSecureClipboard } from '@/lib/shared/use-secure-clipboard';
+import { toHumanAmount } from '@/lib/format/units';
+import { exportReceiptPdf } from '@/lib/generator/pdf-export';
 import {
   buildSharePayload,
   openSocialShare,
@@ -20,6 +22,10 @@ import type { Chain } from '@/lib/generator/types';
 interface UseReceiptShareOptions {
   proof: string;
   chain: Chain;
+  claimedAmount: string;
+  minDate: string;
+  receiptLabel?: string;
+  receiptCategory?: string;
 }
 
 export interface UseReceiptShareReturn {
@@ -38,6 +44,7 @@ export interface UseReceiptShareReturn {
   shareNatively: () => Promise<void>;
   downloadQR: () => void;
   openReceipt: () => void;
+  exportPdf: () => void;
 }
 
 /** Builds the verify URL from the current origin */
@@ -57,7 +64,14 @@ async function generateQRDataUrl(url: string): Promise<string> {
   });
 }
 
-export function useReceiptShare({ proof, chain }: Readonly<UseReceiptShareOptions>): UseReceiptShareReturn {
+export function useReceiptShare({
+  proof,
+  chain,
+  claimedAmount,
+  minDate,
+  receiptLabel,
+  receiptCategory,
+}: Readonly<UseReceiptShareOptions>): UseReceiptShareReturn {
   const [verifyUrl, setVerifyUrl] = useState('');
   const [qrCode, setQrCode]       = useState('');
   const [qrError, setQrError]     = useState('');
@@ -114,6 +128,31 @@ export function useReceiptShare({ proof, chain }: Readonly<UseReceiptShareOption
     globalThis.location.href = verifyUrl;
   }, [verifyUrl]);
 
+  const exportPdf = useCallback((): void => {
+    if (!verifyUrl) {
+      setShareStatus('Verification link is still preparing. Try again in a moment.');
+      return;
+    }
+
+    try {
+      exportReceiptPdf({
+        chain,
+        claimedAmount,
+        claimedAmountHuman: toHumanAmount(claimedAmount, chain),
+        minDate,
+        ...(receiptLabel ? { receiptLabel } : {}),
+        ...(receiptCategory ? { receiptCategory } : {}),
+        proof,
+        qrCodeDataUrl: qrCode,
+        verifyUrl,
+      });
+      setShareStatus('Print dialog opened. Choose "Save as PDF" to export.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'PDF export failed';
+      setShareStatus(message);
+    }
+  }, [chain, claimedAmount, minDate, proof, qrCode, receiptCategory, receiptLabel, verifyUrl]);
+
   return {
     verifyUrl,
     qrCode,
@@ -125,5 +164,6 @@ export function useReceiptShare({ proof, chain }: Readonly<UseReceiptShareOption
     shareNatively,
     downloadQR,
     openReceipt,
+    exportPdf,
   };
 }

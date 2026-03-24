@@ -19,6 +19,8 @@ interface ReceiptSuccessProps {
   chain:          Chain;
   claimedAmount:  string;
   minDate:        string;
+  receiptLabel?:  string;
+  receiptCategory?: string;
   timings?:       GeneratorTimingTelemetry;
 }
 
@@ -43,6 +45,8 @@ export function ReceiptSuccess({
   chain,
   claimedAmount,
   minDate,
+  receiptLabel,
+  receiptCategory,
   timings,
 }: Readonly<ReceiptSuccessProps>): React.JSX.Element {
   const {
@@ -56,7 +60,15 @@ export function ReceiptSuccess({
     shareNatively,
     downloadQR,
     openReceipt,
-  } = useReceiptShare({ proof, chain });
+    exportPdf,
+  } = useReceiptShare({
+    proof,
+    chain,
+    claimedAmount,
+    minDate,
+    ...(receiptLabel ? { receiptLabel } : {}),
+    ...(receiptCategory ? { receiptCategory } : {}),
+  });
 
   // Stagger-reveal the card on mount
   const [revealed, setRevealed] = useState(false);
@@ -69,6 +81,8 @@ export function ReceiptSuccess({
     { label: 'Chain',    value: formatChainLabel(chain),                                 delay: '0.15s' },
     { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain)})`, delay: '0.25s' },
     { label: 'Min Date', value: minDate,                                                  delay: '0.35s' },
+    ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.45s' }] : []),
+    ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.55s' }] : []),
   ] as const;
 
   return (
@@ -143,6 +157,9 @@ export function ReceiptSuccess({
 
         <Button type="button" onClick={() => { void copyLink(); }} variant="primary" className="w-full">
           {copied ? '✓ Copied! (Auto-clears in 60s)' : '⎘ Copy Verify URL'}
+        </Button>
+        <Button type="button" onClick={exportPdf} variant="secondary" className="w-full">
+          ↓ Export as PDF
         </Button>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

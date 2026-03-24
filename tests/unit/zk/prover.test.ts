@@ -60,6 +60,32 @@ describe('ProofGenerator share payload encoding', () => {
     });
   });
 
+  it('round-trips optional receipt metadata in share payloads', () => {
+    const exported = generator.exportProof(
+      sampleProof,
+      {
+        expiresAt: 1700000300,
+        messageHash: '123456789',
+        nullifier: 'd'.repeat(64),
+        nonce: 'c'.repeat(32),
+        oracleSignature: 'a'.repeat(128),
+        oraclePubKeyId: 'b'.repeat(16),
+        signedAt: 1700000000,
+      },
+      {
+        label: 'Invoice #428',
+        category: 'Operations',
+      }
+    );
+
+    const imported = generator.importProof(exported);
+
+    expect(imported.receiptMeta).toEqual({
+      label: 'Invoice #428',
+      category: 'Operations',
+    });
+  });
+
   it('rejects malformed payloads', () => {
     expect(() => generator.importProof('not-a-valid-proof')).toThrow(
       'Failed to import proof'
@@ -93,6 +119,20 @@ describe('ProofGenerator share payload encoding', () => {
 
     expect(() => generator.importProof(maliciousPayload)).toThrow(
       'Invalid proof format: potentially malicious structure'
+    );
+  });
+
+  it('rejects malformed receipt metadata in imported payloads', () => {
+    const malformedMetaPayload = encodeSharePayload(JSON.stringify({
+      ...sampleProof,
+      receiptMeta: {
+        label: '',
+        category: 'Operations',
+      },
+    }));
+
+    expect(() => generator.importProof(malformedMetaPayload)).toThrow(
+      'Invalid proof format'
     );
   });
 });

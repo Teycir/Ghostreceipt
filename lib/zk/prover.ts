@@ -34,8 +34,14 @@ export interface OracleAuthData {
   signedAt: number;
 }
 
+export interface ReceiptMetadata {
+  category?: string;
+  label?: string;
+}
+
 export interface ShareableProofPayload extends ProofResult {
   oracleAuth?: OracleAuthData;
+  receiptMeta?: ReceiptMetadata;
 }
 
 /**
@@ -225,10 +231,15 @@ export class ProofGenerator {
   /**
    * Export proof to shareable format
    */
-  exportProof(result: ProofResult, oracleAuth?: OracleAuthData): string {
+  exportProof(
+    result: ProofResult,
+    oracleAuth?: OracleAuthData,
+    receiptMeta?: ReceiptMetadata
+  ): string {
     const payload: ShareableProofPayload = {
       ...result,
       ...(oracleAuth ? { oracleAuth } : {}),
+      ...(receiptMeta ? { receiptMeta } : {}),
     };
     return encodeSharePayload(JSON.stringify(payload));
   }
@@ -275,6 +286,34 @@ export class ProofGenerator {
           typeof parsed.oracleAuth.signedAt === 'number';
         if (!hasRequiredFields) {
           throw new Error('Invalid proof format');
+        }
+      }
+
+      if (parsed.receiptMeta !== undefined) {
+        const meta = parsed.receiptMeta;
+        const validObject = typeof meta === 'object' && meta !== null && !Array.isArray(meta);
+        if (!validObject) {
+          throw new Error('Invalid proof format');
+        }
+
+        if (meta.label !== undefined) {
+          const validLabel =
+            typeof meta.label === 'string' &&
+            meta.label.trim().length > 0 &&
+            meta.label.length <= 80;
+          if (!validLabel) {
+            throw new Error('Invalid proof format');
+          }
+        }
+
+        if (meta.category !== undefined) {
+          const validCategory =
+            typeof meta.category === 'string' &&
+            meta.category.trim().length > 0 &&
+            meta.category.length <= 40;
+          if (!validCategory) {
+            throw new Error('Invalid proof format');
+          }
         }
       }
 

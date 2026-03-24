@@ -23,6 +23,8 @@ const DEFAULT_VALUES: GeneratorFormValues = {
   txHash:        '',
   claimedAmount: '',
   minDate:       '',
+  receiptLabel: '',
+  receiptCategory: '',
 };
 
 export function GeneratorForm(): React.JSX.Element {
@@ -150,6 +152,29 @@ export function GeneratorForm(): React.JSX.Element {
         error={errors.minDate}
       />
 
+      {/* ── Optional receipt metadata ── */}
+      <Input
+        id={`${formId}-label`}
+        label="Receipt Label (optional)"
+        type="text"
+        placeholder="Invoice #428, Team Lunch, Q1 Deposit..."
+        value={values.receiptLabel}
+        onChange={(v) => setValues((prev) => ({ ...prev, receiptLabel: v }))}
+        disabled={isProcessing}
+        error={errors.receiptLabel}
+      />
+
+      <Input
+        id={`${formId}-category`}
+        label="Category (optional)"
+        type="text"
+        placeholder="Operations, Travel, Payroll..."
+        value={values.receiptCategory}
+        onChange={(v) => setValues((prev) => ({ ...prev, receiptCategory: v }))}
+        disabled={isProcessing}
+        error={errors.receiptCategory}
+      />
+
       {/* ── Animated stepper while processing ── */}
       {isProcessing && (
         <>
@@ -177,6 +202,8 @@ export function GeneratorForm(): React.JSX.Element {
           chain={proofResult.chain}
           claimedAmount={proofResult.claimedAmount}
           minDate={proofResult.minDate}
+          {...(proofResult.receiptLabel ? { receiptLabel: proofResult.receiptLabel } : {})}
+          {...(proofResult.receiptCategory ? { receiptCategory: proofResult.receiptCategory } : {})}
           {...(proofResult.timings ? { timings: proofResult.timings } : {})}
         />
       )}

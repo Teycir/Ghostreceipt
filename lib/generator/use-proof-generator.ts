@@ -21,10 +21,13 @@ import type {
 } from '@/lib/generator/types';
 import type { OraclePayload } from '@/lib/validation/schemas';
 import { scheduleZkArtifactPreload } from '@/lib/zk/artifacts';
+import type { ReceiptMetadata } from '@/lib/zk/prover';
 
 // ── Field-level validation ───────────────────────────────────────────────────
 function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
   const errors: GeneratorFormErrors = {};
+  const label = values.receiptLabel.trim();
+  const category = values.receiptCategory.trim();
 
   if (!values.txHash.trim()) {
     errors.txHash = 'Transaction hash is required';
@@ -44,7 +47,29 @@ function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
     errors.minDate = 'Minimum date is required';
   }
 
+  if (label.length > 80) {
+    errors.receiptLabel = 'Label must be 80 characters or less';
+  }
+
+  if (category.length > 40) {
+    errors.receiptCategory = 'Category must be 40 characters or less';
+  }
+
   return errors;
+}
+
+function normalizeReceiptMetadata(values: GeneratorFormValues): ReceiptMetadata | undefined {
+  const label = values.receiptLabel.trim();
+  const category = values.receiptCategory.trim();
+
+  if (!label && !category) {
+    return undefined;
+  }
+
+  return {
+    ...(label ? { label } : {}),
+    ...(category ? { category } : {}),
+  };
 }
 
 // ── Rate-limit message helper ────────────────────────────────────────────────
@@ -191,6 +216,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       setProcessingHint('');
 
       const packageStart = nowMs();
+      const receiptMeta = normalizeReceiptMetadata(values);
       const shareableProof = prover.exportProof(proofOutput, {
         expiresAt:       data.data.expiresAt,
         messageHash:     data.data.messageHash,
@@ -199,7 +225,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         oracleSignature: data.data.oracleSignature,
         oraclePubKeyId:  data.data.oraclePubKeyId,
         signedAt:        data.data.signedAt,
-      });
+      }, receiptMeta);
       telemetry.packageMs = nowMs() - packageStart;
       telemetry.totalMs = nowMs() - totalStart;
 
@@ -208,6 +234,8 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         chain:          values.chain,
         claimedAmount:  values.claimedAmount,
         minDate:        values.minDate,
+        ...(receiptMeta?.label ? { receiptLabel: receiptMeta.label } : {}),
+        ...(receiptMeta?.category ? { receiptCategory: receiptMeta.category } : {}),
         timings:        telemetry,
       });
       if (typeof console !== 'undefined') {

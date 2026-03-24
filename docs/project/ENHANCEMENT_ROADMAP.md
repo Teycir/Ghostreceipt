@@ -57,8 +57,8 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 ### Product Slice (P2)
 
-- [ ] Add PDF export with QR + human-readable proof summary.
-- [ ] Add receipt labels/categories in generator + verifier.
+- [x] Add PDF export with QR + human-readable proof summary.
+- [x] Add receipt labels/categories in generator + verifier.
 - [ ] Add local receipt history (`/history`, IndexedDB, JSON export).
 - [ ] Add batch verification workflow for compliance/accounting use.
 
@@ -67,6 +67,82 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [ ] Add proof payload compression/versioning with a single canonical parser and explicit cutover.
 - [ ] Draft selective disclosure public-input contract and phased implementation plan.
 - [ ] Draft bounded amount disclosure/range-proof design and rollout plan.
+
+## Execution Waves (Actionable)
+
+### Wave A: Core Product Workflow (Now)
+
+`Goal`: ship practical compliance workflow features without changing trust assumptions.
+
+- [x] `R-P2-01` PDF export with QR + human-readable proof summary.
+- [x] `R-P2-02` Receipt labels/categories in generator + verifier.
+- [ ] `R-P2-03` Local receipt history (`/history`, IndexedDB, JSON export).
+
+Scope constraints:
+- No new paid services or required hosted dependencies.
+- Backward compatibility for existing share payloads and verifier links.
+- Mobile-first layout and interaction parity.
+
+Acceptance criteria:
+- User can generate a receipt, export a PDF, and verify from QR end-to-end.
+- Labels and categories are persisted locally and rendered in both generator and verifier.
+- History list supports filter + export and remains fully local-first.
+
+Verification commands:
+```bash
+npm run typecheck
+npm run test -- tests/unit
+npm run test -- tests/integration
+npm run test:e2e -- --grep "history|pdf|verify"
+```
+
+### Wave B: Verification Operations (Next)
+
+`Goal`: support accounting and compliance teams with multi-item verification.
+
+- [ ] `R-P2-04` Batch verification workflow for accounting/compliance.
+
+Scope constraints:
+- Reuse existing verify route contract; no alternate trust mode.
+- Keep failure reporting deterministic and exportable.
+
+Acceptance criteria:
+- Batch import supports mixed valid/invalid payloads with per-item status.
+- Output includes machine-readable summary for audit pipelines.
+- Batch UX remains responsive on mid-range mobile devices.
+
+Verification commands:
+```bash
+npm run typecheck
+npm run test -- tests/integration/api/oracle
+npm run test -- tests/e2e
+```
+
+### Wave C: Share and Privacy Upgrades (Later)
+
+`Goal`: improve payload ergonomics and privacy controls while preserving deterministic verification.
+
+- [ ] `R-P3-01` Proof payload compression/versioning with canonical-parser cutover.
+- [ ] `R-P3-02` Selective disclosure public-input contract and phased plan.
+- [ ] `R-P3-03` Bounded amount disclosure/range-proof design and rollout plan.
+
+Scope constraints:
+- Deterministic encoding and decoding across all supported payload versions.
+- No silent fallback across payload versions; explicit parser/version behavior only.
+- Privacy upgrades gated behind benchmark and interoperability evidence.
+
+Acceptance criteria:
+- Compression reduces typical QR payload size with no verification regressions.
+- Selective disclosure plan includes compatibility matrix and migration trigger points.
+- Range-proof plan includes proving-time budget projections and fallback strategy.
+
+Verification commands:
+```bash
+npm run typecheck
+npm run test -- tests/unit/lib/zk
+npm run test -- tests/integration
+npm run test:perf:proof
+```
 
 ---
 
@@ -196,7 +272,8 @@ Minimum required fields:
 ## Consolidation Record
 
 - 2026-03-24: Consolidated planning into this single roadmap document.
+- 2026-03-24: Added actionable execution waves (`Now`/`Next`/`Later`) with acceptance criteria and verification command sets for remaining P2/P3 items.
 - 2026-03-24: Superseded and removed duplicate trackers:
-  - `tasks/todo.md`
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`
+- 2026-03-24: Reintroduced `tasks/todo.md` as lightweight session execution tracking; roadmap remains canonical for planning and prioritization.

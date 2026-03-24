@@ -16,6 +16,8 @@ interface VerificationResult {
   valid: boolean;
   claimedAmount: string;
   minDate: string;
+  receiptCategory?: string;
+  receiptLabel?: string;
   error?: string | undefined;
 }
 
@@ -124,6 +126,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error: 'Missing verification parameters',
         });
         setLoading(false);
@@ -146,6 +150,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error: verification.error,
         });
         return;
@@ -157,6 +163,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error: 'Missing oracle authentication data in shared receipt',
         });
         return;
@@ -167,6 +175,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error: 'Invalid proof: missing oracle commitment signal',
         });
         return;
@@ -178,6 +188,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error: 'Oracle commitment mismatch detected',
         });
         return;
@@ -189,6 +201,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error:
             oracleSignatureVerification.error ??
             'Oracle signature verification failed',
@@ -205,6 +219,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error: 'Oracle nullifier mismatch detected',
         });
         return;
@@ -235,6 +251,8 @@ function VerifyContent(): React.JSX.Element {
           valid: false,
           claimedAmount: '',
           minDate: '',
+          receiptCategory: '',
+          receiptLabel: '',
           error:
             nullifierVerification.error ??
             'Nullifier verification failed',
@@ -246,6 +264,12 @@ function VerifyContent(): React.JSX.Element {
         valid: true,
         claimedAmount: claims.claimedAmount,
         minDate: claims.minDateIsoUtc,
+        ...(proofData.receiptMeta?.category
+          ? { receiptCategory: proofData.receiptMeta.category }
+          : {}),
+        ...(proofData.receiptMeta?.label
+          ? { receiptLabel: proofData.receiptMeta.label }
+          : {}),
         error: verification.error,
       });
     } catch (error) {
@@ -253,6 +277,8 @@ function VerifyContent(): React.JSX.Element {
         valid: false,
         claimedAmount: '',
         minDate: '',
+        receiptCategory: '',
+        receiptLabel: '',
         error: error instanceof Error ? error.message : 'Verification failed',
       });
     } finally {
@@ -342,6 +368,24 @@ function VerifyContent(): React.JSX.Element {
                     </div>
                     <div className="text-sm font-semibold text-white">{result.minDate}</div>
                   </div>
+
+                  {result.receiptLabel && (
+                    <div className="p-3 bg-white/5 rounded-lg border border-white/8">
+                      <div className="text-xs text-white/40 mb-1">
+                        Label
+                      </div>
+                      <div className="text-sm font-semibold text-white break-words">{result.receiptLabel}</div>
+                    </div>
+                  )}
+
+                  {result.receiptCategory && (
+                    <div className="p-3 bg-white/5 rounded-lg border border-white/8">
+                      <div className="text-xs text-white/40 mb-1">
+                        Category
+                      </div>
+                      <div className="text-sm font-semibold text-white break-words">{result.receiptCategory}</div>
+                    </div>
+                  )}
 
                   <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                     <p className="text-xs text-blue-300/80">
