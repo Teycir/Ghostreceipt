@@ -30,6 +30,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added proof speed improvements: artifact preload, worker proving path, and timing telemetry.
 - [x] Kept roadmap constrained to zero-cost deliverables (removed paid/on-chain-required tracks).
 - [x] Added dedicated proof-performance regression gate with CI budget enforcement.
+- [x] Published proof-system decision artifact with migration triggers and phased path notes.
 
 ---
 
@@ -49,7 +50,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 ### Next Up (P1)
 
 - [x] Add dedicated proof-performance regression gate with CI-friendly benchmarks.
-- [ ] Publish proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` path) with rationale and migration notes.
+- [x] Publish proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` path) with rationale and migration notes.
 - [ ] Add explicit per-feature latency budgets and require before/after metric deltas in roadmap review notes.
 - [ ] Add regression coverage around payload compatibility and verify path stability.
 
@@ -154,6 +155,7 @@ Exit criteria:
 - Security runbook: [SECURITY.md](../runbooks/SECURITY.md)
 - Threat model: [THREAT_MODEL.md](../runbooks/THREAT_MODEL.md)
 - Circuit self-review: [CIRCUIT_SELF_REVIEW.md](../runbooks/CIRCUIT_SELF_REVIEW.md)
+- Proof system decision: [PROOF_SYSTEM_DECISION.md](./PROOF_SYSTEM_DECISION.md)
 
 ---
 

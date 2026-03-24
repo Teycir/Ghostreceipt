@@ -5,6 +5,7 @@ This directory is the central home for project documentation.
 ## Start Here
 
 - Product and execution roadmap: [docs/project/ENHANCEMENT_ROADMAP.md](./project/ENHANCEMENT_ROADMAP.md)
+- Proof system decision: [docs/project/PROOF_SYSTEM_DECISION.md](./project/PROOF_SYSTEM_DECISION.md)
 - Implementation status: [docs/project/IMPLEMENTATION_PROGRESS.md](./project/IMPLEMENTATION_PROGRESS.md)
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./project/RELEASE_READINESS_CHECKLIST.md)
 - Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./project/REPO_METADATA_CHECKLIST.md)
