@@ -165,7 +165,7 @@ Exit criteria:
 
 Exit criteria:
 - [x] Compressed payloads stay deterministic and verifiable.
-- [ ] Advanced privacy modes ship only with benchmark evidence.
+- [x] Advanced privacy modes ship only with benchmark evidence.
 
 ---
 
@@ -246,6 +246,7 @@ Minimum required fields:
 - Phase 2 gate review note: [ROADMAP_REVIEW_NOTES_PHASE2_GATES_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE2_GATES_2026-03-24.md)
 - Phase 3 mobile gate review note: [ROADMAP_REVIEW_NOTES_PHASE3_MOBILE_GATES_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE3_MOBILE_GATES_2026-03-24.md)
 - Phase 4 compressed payload determinism review note: [ROADMAP_REVIEW_NOTES_PHASE4_COMPRESSED_DETERMINISM_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE4_COMPRESSED_DETERMINISM_2026-03-24.md)
+- Phase 4 advanced privacy benchmark gate review note: [ROADMAP_REVIEW_NOTES_PHASE4_ADVANCED_PRIVACY_BENCHMARK_GATE_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE4_ADVANCED_PRIVACY_BENCHMARK_GATE_2026-03-24.md)
 - Roadmap review-note template: [ROADMAP_REVIEW_NOTES_TEMPLATE.md](./ROADMAP_REVIEW_NOTES_TEMPLATE.md)
 
 ---
@@ -259,6 +260,7 @@ Minimum required fields:
 - 2026-03-24: Closed remaining Phase-2 reliability/performance gates with p50+p95 proof budgets, worker-fallback validation, and stress-suite evidence.
 - 2026-03-24: Closed Phase-3 mobile-first regression gate with dedicated e2e coverage and review-note evidence.
 - 2026-03-24: Closed Phase-4 compressed payload determinism gate with explicit repeatability and import/export idempotency tests.
+- 2026-03-24: Closed Phase-4 advanced privacy shipping gate with enforced benchmark-evidence manifest validation and CI policy tests.
 - 2026-03-24: Superseded and removed duplicate trackers:
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`

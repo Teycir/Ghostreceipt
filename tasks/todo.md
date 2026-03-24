@@ -2,23 +2,25 @@
 
 ## Objective
 
-Fix desktop generator layout so the full form fits common laptop viewports without forced vertical scrolling.
+Close the final roadmap gate by enforcing benchmark evidence before any advanced privacy mode can be marked as shipping.
 
 ## Plan
 
-- [x] Reduce desktop shell/header vertical footprint and widen the form container.
-- [x] Apply denser desktop field layout for required inputs.
-- [x] Add desktop e2e regression that checks no forced vertical overflow.
-- [x] Validate with typecheck/lint and desktop+mobile e2e.
+- [x] Add an advanced-privacy mode manifest with explicit shipping/evidence fields.
+- [x] Implement benchmark-evidence policy validator in shared library code.
+- [x] Add policy gate unit tests (validator behavior + manifest compliance).
+- [x] Add script/docs wiring and mark roadmap exit criterion complete.
 
 ## Review
 
 - Status: Completed
 - Notes:
-  - Reduced home-shell vertical footprint via compact `UnifiedPageShell` configuration and tighter card spacing.
-  - Densified required form layout in `GeneratorForm` with desktop two-column grouping.
-  - Added `tests/e2e/desktop-form-fit.spec.ts` to assert no forced vertical page overflow at `1366x768`.
+  - Added manifest policy source: `config/privacy/advanced-modes.json`.
+  - Added validator: `lib/policy/advanced-privacy-benchmark-gate.ts`.
+  - Added tests: `tests/unit/policy/advanced-privacy-benchmark-gate.test.ts`.
+  - Added script: `npm run test:gate:privacy`.
   - Validation:
     - `npm run typecheck` pass
     - `npm run lint` pass
-    - `npm run test:e2e -- tests/e2e/mobile-happy-path.spec.ts tests/e2e/desktop-form-fit.spec.ts --project=chromium` pass (`2 passed`)
+    - `npm run test:gate:privacy` pass (`5 passed`)
+  - Updated roadmap final Phase-4 checkbox and added review note `ROADMAP_REVIEW_NOTES_PHASE4_ADVANCED_PRIVACY_BENCHMARK_GATE_2026-03-24.md`.
