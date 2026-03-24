@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Desktop Fit Must Be Tested At Short Laptop Heights
+- A pass at `1366x768` is not sufficient; include a shorter desktop viewport gate (for example `1280x680`) to catch real-world browser chrome overhead.
+- If corner navigation already exposes a route, avoid duplicating the same CTA inside the main content on desktop when vertical space is constrained.
+- Height-aware compaction (header spacing + footer padding + control density together) is more reliable than only shrinking inputs.
+
 ## 2026-03-24 - Mobile Fixes Must Be Verified Against Desktop Height Too
 - If a form-density fix is requested for mobile, also check desktop/laptop viewport fit before closing.
 - Centered `min-h-screen` shells can still force vertical scroll on laptop heights even when controls are compact; adjust shell/header spacing and container width together.

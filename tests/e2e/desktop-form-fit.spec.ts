@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.use({
-  viewport: { width: 1366, height: 768 },
+  viewport: { width: 1280, height: 680 },
 });
 
 async function waitForHomeReady(page: import('@playwright/test').Page): Promise<void> {
@@ -14,7 +14,7 @@ async function waitForHomeReady(page: import('@playwright/test').Page): Promise<
 }
 
 test.describe('Desktop form fit', () => {
-  test('keeps generator page visible without forced vertical scrolling at laptop viewport', async ({ page }) => {
+  test('keeps generator page visible without forced vertical scrolling at short laptop viewport', async ({ page }) => {
     await page.goto('/');
     await waitForHomeReady(page);
 

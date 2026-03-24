@@ -80,10 +80,10 @@ export function GeneratorForm(): React.JSX.Element {
   return (
     <form
       onSubmit={(e) => { void handleSubmit(e); }}
-      className="space-y-2.5 sm:space-y-3"
+      className="space-y-2"
       id={`${formId}-form`}
     >
-      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {/* ── Chain ── */}
         <Select
           label="Chain"
@@ -92,7 +92,7 @@ export function GeneratorForm(): React.JSX.Element {
           disabled={isProcessing}
           error={errors.chain}
           labelClassName="text-xs"
-          className="h-9 rounded-lg px-2.5 py-1.5 text-[13px]"
+          className="h-8 rounded-lg px-2 py-1 text-[12px]"
         >
           <option value="bitcoin">Bitcoin</option>
           <option value="ethereum">Ethereum</option>
@@ -100,7 +100,7 @@ export function GeneratorForm(): React.JSX.Element {
 
         {/* ── Transaction hash ── */}
         <div>
-          <div className="mb-1.5 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <label htmlFor={`${formId}-txhash`} className="text-xs font-medium text-white/70">
               Transaction Hash
             </label>
@@ -108,7 +108,7 @@ export function GeneratorForm(): React.JSX.Element {
               type="button"
               onClick={() => { void handlePaste('txHash'); }}
               disabled={isProcessing}
-              className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60 transition-colors hover:bg-white/10 hover:text-white/85 disabled:opacity-40"
+              className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-white/60 transition-colors hover:bg-white/10 hover:text-white/85 disabled:opacity-40"
               aria-label="Paste transaction hash from clipboard"
             >
               📋 Paste
@@ -122,22 +122,22 @@ export function GeneratorForm(): React.JSX.Element {
             onChange={handleTxHashChange}
             disabled={isProcessing}
             error={errors.txHash}
-            className="h-9 px-2.5 py-1.5 text-[13px]"
+            className="h-8 px-2 py-1 text-[12px]"
           />
         </div>
       </div>
 
       {/* ── Claimed amount with live unit hint ── */}
-      <div className="grid grid-cols-1 gap-2.5 min-[540px]:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 min-[540px]:grid-cols-2">
         <div>
-          <div className="mb-1.5 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <label htmlFor={`${formId}-amount`} className="text-xs font-medium text-white/70">
             Claimed Amount{' '}
               <span className="font-normal text-white/35">({atomicUnitLabel(values.chain)})</span>
             </label>
             {humanAmount && (
               <span
-                className="tabular-nums text-[11px] font-mono text-cyan-300/85 transition-all duration-300"
+                className="tabular-nums text-[10px] font-mono text-cyan-300/85 transition-all duration-300"
                 aria-live="polite"
               >
                 {humanAmount}
@@ -152,7 +152,7 @@ export function GeneratorForm(): React.JSX.Element {
             onChange={(v) => setValues((prev) => ({ ...prev, claimedAmount: v.replaceAll(/\D/g, '') }))}
             disabled={isProcessing}
             error={errors.claimedAmount}
-            className="h-9 px-2.5 py-1.5 text-[13px]"
+            className="h-8 px-2 py-1 text-[12px]"
           />
         </div>
 
@@ -165,13 +165,13 @@ export function GeneratorForm(): React.JSX.Element {
           onChange={(v) => setValues((prev) => ({ ...prev, minDate: v }))}
           disabled={isProcessing}
           error={errors.minDate}
-          className="h-9 px-2.5 py-1.5 text-[13px]"
+          className="h-8 px-2 py-1 text-[12px]"
           labelClassName="text-xs"
         />
       </div>
 
       {/* ── Optional receipt metadata ── */}
-      <div className="rounded-lg border border-white/10 bg-black/10 px-2.5 py-2">
+      <div className="rounded-lg border border-white/10 bg-black/10 px-2 py-1.5">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-medium text-white/75">
             Optional receipt details
@@ -180,7 +180,7 @@ export function GeneratorForm(): React.JSX.Element {
             type="button"
             disabled={isProcessing}
             onClick={() => setOptionalExpanded((prev) => !prev)}
-            className="rounded border border-white/12 bg-white/5 px-2 py-0.5 text-[11px] text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+            className="rounded border border-white/12 bg-white/5 px-1.5 py-0.5 text-[10px] text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
             aria-expanded={optionalExpanded}
             aria-controls={`${formId}-optional-fields`}
           >
@@ -190,7 +190,7 @@ export function GeneratorForm(): React.JSX.Element {
         </div>
 
         {optionalExpanded && (
-          <div id={`${formId}-optional-fields`} className="mt-2.5 grid grid-cols-2 gap-2.5">
+          <div id={`${formId}-optional-fields`} className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
             <Input
               id={`${formId}-label`}
               label="Receipt Label"
@@ -200,7 +200,7 @@ export function GeneratorForm(): React.JSX.Element {
               onChange={(v) => setValues((prev) => ({ ...prev, receiptLabel: v }))}
               disabled={isProcessing}
               error={errors.receiptLabel}
-              className="h-9 px-2.5 py-1.5 text-[13px]"
+              className="h-8 px-2 py-1 text-[12px]"
               labelClassName="text-xs"
             />
 
@@ -213,7 +213,7 @@ export function GeneratorForm(): React.JSX.Element {
               onChange={(v) => setValues((prev) => ({ ...prev, receiptCategory: v }))}
               disabled={isProcessing}
               error={errors.receiptCategory}
-              className="h-9 px-2.5 py-1.5 text-[13px]"
+              className="h-8 px-2 py-1 text-[12px]"
               labelClassName="text-xs"
             />
           </div>
@@ -255,7 +255,7 @@ export function GeneratorForm(): React.JSX.Element {
 
       {/* ── Submit ── */}
       {(state === 'idle' || state === 'error') && (
-        <Button type="submit" variant="primary" className="w-full py-2 text-[13px]">
+        <Button type="submit" variant="primary" className="w-full py-1.5 text-[12px]">
           Generate Receipt
         </Button>
       )}
