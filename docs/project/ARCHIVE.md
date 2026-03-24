@@ -1,12 +1,11 @@
 # Project Docs Archive Notes
 
-This folder now contains planning and status documents that were previously in the repo root.
+Planning is now consolidated into one canonical document:
 
-## Moved Files
+- `docs/project/ENHANCEMENT_ROADMAP.md`
 
-- `Plan.md` -> `docs/project/PLAN.md`
-- `ROADMAP.md` -> `docs/project/ROADMAP.md`
-- `IMPLEMENTATION_PROGRESS.md` -> `docs/project/IMPLEMENTATION_PROGRESS.md`
+Historical tracker files were removed during roadmap consolidation on 2026-03-24:
 
-The move keeps the repository root cleaner while preserving the same content.
-
+- `tasks/todo.md`
+- `docs/project/PLAN.md`
+- `docs/project/ROADMAP.md`

@@ -4,8 +4,7 @@ This directory is the central home for project documentation.
 
 ## Start Here
 
-- Project plan: [docs/project/PLAN.md](./project/PLAN.md)
-- Execution roadmap: [docs/project/ROADMAP.md](./project/ROADMAP.md)
+- Product and execution roadmap: [docs/project/ENHANCEMENT_ROADMAP.md](./project/ENHANCEMENT_ROADMAP.md)
 - Implementation status: [docs/project/IMPLEMENTATION_PROGRESS.md](./project/IMPLEMENTATION_PROGRESS.md)
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./project/RELEASE_READINESS_CHECKLIST.md)
 - Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./project/REPO_METADATA_CHECKLIST.md)

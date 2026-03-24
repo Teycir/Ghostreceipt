@@ -3,7 +3,7 @@
 ## 2026-03-24 - Roadmap Must Respect Zero-Budget Constraints
 - When the user states there is no budget, remove roadmap items that can require spending (for example on-chain gas/deployment, paid-tier provider expansion, or additional hosted-operator infrastructure).
 - Keep active milestones local-first and off-chain, and rewrite sequence/acceptance criteria so they do not implicitly depend on paid services.
-- Apply the same constraint consistently across all roadmap documents (`tasks/todo.md`, `docs/project/ROADMAP.md`, and `docs/project/ENHANCEMENT_ROADMAP.md`) to avoid plan drift.
+- Apply the same constraint consistently in the single roadmap document (`docs/project/ENHANCEMENT_ROADMAP.md`) to avoid plan drift.
 
 ## 2026-03-24 - Nullifier Conflict Checks Should Avoid Paid State Dependencies
 - If free-tier constraints block managed KV/Redis options, prefer proof-linked/client-side nullifier validation paths over server-side registries.
@@ -24,7 +24,7 @@
 - Ensure existing integrations are migrated to the shared abstraction in the same change so behavior stays consistent and reusable by default.
 
 ## 2026-03-23 - Provider Rollout Must Respect User-Stated Technical Constraints
-- When the user provides provider keys for one integration (for example Helius) and defers others (for example Alchemy/Monero), execute only the approved provider track and explicitly park the rest in `tasks/todo.md`.
+- When the user provides provider keys for one integration (for example Helius) and defers others (for example Alchemy/Monero), execute only the approved provider track and explicitly park the rest in `docs/project/ENHANCEMENT_ROADMAP.md`.
 - Treat secrets provided in-chat as sensitive; never commit them to tracked files and prefer local/deployment secret stores.
 
 ## 2026-03-23 - Infrastructure Constraints Must Drive Provider Design
@@ -33,7 +33,7 @@
 
 ## 2026-03-23 - Roadmap References Must Match User-Declared Source
 - When the user says the active roadmap is `docs/project/ENHANCEMENT_ROADMAP.md`, treat it as the primary execution plan for implementation sequencing.
-- Avoid defaulting to `docs/project/ROADMAP.md` as the driver unless the user explicitly switches back.
+- Do not split planning across separate `PLAN`/`ROADMAP`/`TODO` trackers once consolidation is requested.
 
 ## 2026-03-23 - Unexpected Files Should Respect Explicit User Scope
 - If an unexpected file appears during active work, pause and ask before touching it.

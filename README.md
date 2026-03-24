@@ -245,8 +245,7 @@ Open `http://localhost:3000`.
 - Deployment guide: [docs/DEPLOYMENT_READY.md](./docs/DEPLOYMENT_READY.md)
 - Quick deploy: [docs/runbooks/QUICK_DEPLOY.md](./docs/runbooks/QUICK_DEPLOY.md)
 - Cloudflare Pages: [docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md](./docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
-- Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
-- Execution roadmap: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
+- Product and execution roadmap: [docs/project/ENHANCEMENT_ROADMAP.md](./docs/project/ENHANCEMENT_ROADMAP.md)
 - Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
 - Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md)
 - Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./docs/project/REPO_METADATA_CHECKLIST.md)
@@ -327,8 +326,7 @@ GhostReceipt is part of a privacy-first toolkit. Check out these related project
 ---
 
 ## References
-- Product plan: [docs/project/PLAN.md](./docs/project/PLAN.md)
-- Execution checklist: [docs/project/ROADMAP.md](./docs/project/ROADMAP.md)
+- Product and execution roadmap: [docs/project/ENHANCEMENT_ROADMAP.md](./docs/project/ENHANCEMENT_ROADMAP.md)
 - Reference source: [xmrproof](https://github.com/Teycir/xmrproof)
 - Reference source: [Timeseal](https://github.com/Teycir/Timeseal)
 - Reference source: [Sanctum](https://github.com/Teycir/Sanctum)
