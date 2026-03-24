@@ -21,7 +21,7 @@ export function CornerNavLink({
     <a
       href={href}
       aria-label={ariaLabel}
-      className={`absolute top-4 z-20 inline-flex items-center justify-center rounded-xl border border-white/20 bg-black/45 px-3 py-2 text-xs font-medium uppercase tracking-[0.08em] text-white/80 backdrop-blur-sm transition-all hover:border-cyan-300/60 hover:text-white ${
+      className={`fixed top-4 z-30 inline-flex items-center justify-center rounded-xl border border-cyan-300/40 bg-slate-950/70 px-4 py-2.5 text-sm font-semibold tracking-[0.03em] text-white/95 shadow-[0_8px_24px_rgba(5,10,24,0.5)] backdrop-blur-md transition-all hover:border-cyan-200/80 hover:bg-slate-900/80 hover:text-white ${
         side === 'left' ? 'left-4' : 'right-4'
       }`}
     >

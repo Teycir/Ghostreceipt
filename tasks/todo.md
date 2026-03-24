@@ -2,20 +2,19 @@
 
 ## Objective
 
-Apply shared shell/chrome to home route so all app pages use homogeneous styling.
+Fix history access visibility so users can clearly find/open receipt history from the home UI.
 
 ## Plan
 
-- [x] Extend reusable `UnifiedPageShell` to support home loader lifecycle needs.
-- [x] Refactor `HomeShell` to render through `UnifiedPageShell` without changing startup overlay behavior.
+- [x] Add a clearly visible history CTA button in the home page flow.
+- [x] Make corner navigation links visually prominent so history/generator/verify actions are obvious.
 - [x] Run verification commands and capture summary.
 
 ## Review
 
 - Status: Complete
 - Notes:
-  - `components/unified-page-shell.tsx` now supports:
-    - optional `onBackgroundReady` callback passthrough to `EyeCandy`
-    - `mainShellState` (`loading|ready`) and custom `mainShellStyle`
-  - `components/home-shell.tsx` now uses `UnifiedPageShell` for primary page chrome while preserving the startup overlay and transition timing.
+  - Redirected from roadmap-gate follow-up per user feedback: history action was not visible enough in UI.
+  - Added explicit `View Receipt History` button in `components/home-shell.tsx`.
+  - Updated `CornerNavLink` styling in `lib/libraries/ui/components/corner-nav-link.tsx` for stronger visibility.
   - Verification: `npm run typecheck` and `npm run lint` both passed.

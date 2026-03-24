@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Visibility Beats Subtlety For Primary Navigation Actions
+- If the user says they cannot see a key action (for example receipt history access), treat it as a UX bug even if the action technically exists.
+- Add an explicit, high-visibility CTA in the primary flow, not only a subtle corner utility link.
+- For cross-page corner navigation, prefer stronger contrast/size defaults so actions remain obvious on animated backgrounds.
+
 ## 2026-03-24 - Avoid Frankenstein Payload Logic (No Dual Legacy Branches)
 - For payload/schema upgrades, keep exactly one runtime decoder path after cutover.
 - Do not keep old-format compatibility code in production runtime (tests may assert rejection only).
