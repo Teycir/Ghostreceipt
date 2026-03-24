@@ -59,6 +59,20 @@ function VerifyContent(): React.JSX.Element {
     }
   };
 
+  const disclosureTone = (
+    status: ReceiptVerificationResult['claimedAmountDisclosure']
+  ): string => {
+    return status === 'hidden'
+      ? 'bg-amber-500/15 border-amber-400/30 text-amber-200'
+      : 'bg-emerald-500/15 border-emerald-400/30 text-emerald-200';
+  };
+
+  const disclosureLabel = (
+    status: ReceiptVerificationResult['claimedAmountDisclosure']
+  ): string => {
+    return status === 'hidden' ? 'Hidden' : 'Disclosed';
+  };
+
   if (loading) {
     return (
       <VerifyPageChrome>
@@ -107,8 +121,15 @@ function VerifyContent(): React.JSX.Element {
             {result.valid && (
               <div className="space-y-3 mt-6">
                 <div className="p-3 bg-white/5 rounded-lg border border-white/8">
-                  <div className="text-xs text-white/40 mb-1">
+                  <div className="text-xs text-white/40 mb-1 flex items-center justify-between gap-2">
                     Minimum Amount (atomic units)
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${disclosureTone(
+                        result.claimedAmountDisclosure
+                      )}`}
+                    >
+                      {disclosureLabel(result.claimedAmountDisclosure)}
+                    </span>
                   </div>
                   <div className="text-sm font-semibold font-mono text-white">
                     {result.claimedAmount}
@@ -116,8 +137,15 @@ function VerifyContent(): React.JSX.Element {
                 </div>
 
                 <div className="p-3 bg-white/5 rounded-lg border border-white/8">
-                  <div className="text-xs text-white/40 mb-1">
+                  <div className="text-xs text-white/40 mb-1 flex items-center justify-between gap-2">
                     Minimum Date
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${disclosureTone(
+                        result.minDateDisclosure
+                      )}`}
+                    >
+                      {disclosureLabel(result.minDateDisclosure)}
+                    </span>
                   </div>
                   <div className="text-sm font-semibold text-white">{result.minDate}</div>
                 </div>

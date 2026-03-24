@@ -2,26 +2,19 @@
 
 ## Objective
 
-Continue the enhancement roadmap by implementing Phase-1 selective-disclosure decoder prep in runtime code without breaking current proof verification behavior.
+Continue the enhancement roadmap by implementing contract-aware public-signal decoding for verification (legacy + selective-disclosure shapes) and wiring verifier output to disclosure states.
 
 ## Plan
 
-- [x] Add a canonical public-signal decoder in `lib/zk/share.ts` that centralizes index mapping (legacy-active contract) and exposes oracle commitment + claim fields from one API.
-- [x] Add unit tests in `tests/unit/zk/share.test.ts` for decoder mapping/error handling and keep existing extraction behavior stable.
-- [x] Update verifier wiring in `lib/verify/receipt-verifier.ts` to use decoder output instead of hard-coded public-signal indexes.
-- [x] Validate with `npm run typecheck` and targeted unit tests.
+- [ ] Extend `lib/zk/share.ts` with a canonical contract-aware decoder that can resolve legacy and selective-disclosure public-signal layouts using oracle commitment anchoring.
+- [ ] Update `lib/verify/receipt-verifier.ts` to consume the canonical decoder once and return disclosure-state metadata in verification results.
+- [ ] Update `app/verify/page.tsx` to render disclosed vs hidden claim fields clearly.
+- [ ] Add/expand unit tests in `tests/unit/zk/share.test.ts` and `tests/unit/zk/nullifier.test.ts` for decoder and hidden-claim nullifier compatibility path.
+- [ ] Add targeted verifier unit coverage for contract-aware decode behavior.
+- [ ] Validate with `npm run typecheck` plus impacted unit test suites.
 
 ## Review
 
-- Status: Completed
+- Status: In progress
 - Notes:
-  - Added canonical legacy signal contract helpers in `lib/zk/share.ts`:
-    - `extractOracleCommitment(publicSignals)`
-    - `decodeLegacyReceiptPublicSignals(publicSignals)`
-    - centralized signal index constants used by both commitment and claim extraction.
-  - Updated verifier wiring in `lib/verify/receipt-verifier.ts` to source oracle commitment through shared decoder helper instead of direct index reads.
-  - Expanded `tests/unit/zk/share.test.ts` with commitment + canonical decode coverage.
-  - Validation:
-    - `npm run typecheck` pass
-    - `npm run test -- tests/unit/zk/share.test.ts` pass
-    - `npm run test -- tests/unit/zk` pass
+  - Pending implementation.

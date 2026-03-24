@@ -1,5 +1,10 @@
-import { extractOracleCommitment, extractVerifiedClaims } from '@/lib/zk/share';
 import {
+  decodeReceiptPublicSignals,
+  type ReceiptClaimDisclosureState,
+  type ReceiptSignalContract,
+} from '@/lib/zk/share';
+import {
+  checkClientNullifierConflictByDigest,
   checkClientNullifierConflict,
   deriveNullifierFromMessageHash,
   type NullifierStorageLike,
@@ -14,7 +19,10 @@ export interface OracleSignatureVerificationResult {
 export interface ReceiptVerificationResult {
   valid: boolean;
   claimedAmount: string;
+  claimedAmountDisclosure?: ReceiptClaimDisclosureState;
   minDate: string;
+  minDateDisclosure?: ReceiptClaimDisclosureState;
+  signalContract?: ReceiptSignalContract;
   receiptCategory?: string;
   receiptLabel?: string;
   error?: string;
@@ -148,15 +156,10 @@ export async function verifySharedReceiptProof(
       };
     }
 
-    const oracleCommitmentSignal = extractOracleCommitment(proofData.publicSignals);
-    if (oracleCommitmentSignal !== oracleAuth.messageHash) {
-      return {
-        valid: false,
-        claimedAmount: '',
-        minDate: '',
-        error: 'Oracle commitment mismatch detected',
-      };
-    }
+    const decodedSignals = decodeReceiptPublicSignals(
+      proofData.publicSignals,
+      oracleAuth.messageHash
+    );
 
     const signatureVerifier = options.signatureVerifier ?? verifyOracleSignatureViaApi;
     const oracleSignatureVerification = await signatureVerifier(oracleAuth);
@@ -169,7 +172,6 @@ export async function verifySharedReceiptProof(
       };
     }
 
-    const claims = extractVerifiedClaims(proofData.publicSignals);
     const derivedNullifier = await deriveNullifierFromMessageHash(oracleAuth.messageHash);
     if (oracleAuth.nullifier.toLowerCase() !== derivedNullifier.toLowerCase()) {
       return {
@@ -181,16 +183,27 @@ export async function verifySharedReceiptProof(
     }
 
     const storage = options.storage === undefined ? getDefaultStorage() : options.storage;
-    const nullifierCheck = checkClientNullifierConflict(
-      {
-        claim: {
-          claimedAmount: claims.claimedAmount,
-          minDateUnix: claims.minDateUnix,
-        },
-        nullifier: derivedNullifier,
-      },
-      storage
-    );
+    const nullifierCheck =
+      decodedSignals.claimedAmount !== null && decodedSignals.minDateUnix !== null
+        ? checkClientNullifierConflict(
+            {
+              claim: {
+                claimedAmount: decodedSignals.claimedAmount,
+                minDateUnix: decodedSignals.minDateUnix,
+              },
+              nullifier: derivedNullifier,
+            },
+            storage
+          )
+        : checkClientNullifierConflictByDigest(
+            {
+              claim: {
+                claimDigest: decodedSignals.claimDigest ?? '',
+              },
+              nullifier: derivedNullifier,
+            },
+            storage
+          );
     if (!nullifierCheck.valid) {
       return {
         valid: false,
@@ -202,8 +215,11 @@ export async function verifySharedReceiptProof(
 
     return {
       valid: true,
-      claimedAmount: claims.claimedAmount,
-      minDate: claims.minDateIsoUtc,
+      claimedAmount: decodedSignals.claimedAmount ?? 'Hidden',
+      claimedAmountDisclosure: decodedSignals.claimedAmountDisclosure,
+      minDate: decodedSignals.minDateIsoUtc ?? 'Hidden',
+      minDateDisclosure: decodedSignals.minDateDisclosure,
+      signalContract: decodedSignals.contract,
       ...(proofData.receiptMeta?.category
         ? { receiptCategory: proofData.receiptMeta.category }
         : {}),

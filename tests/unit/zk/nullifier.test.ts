@@ -1,5 +1,6 @@
 import {
   checkClientNullifierConflict,
+  checkClientNullifierConflictByDigest,
   deriveNullifierFromMessageHash,
   type NullifierStorageLike,
 } from '@/lib/zk/nullifier';
@@ -98,5 +99,54 @@ describe('zk nullifier helpers', () => {
       valid: true,
       mode: 'first_seen',
     });
+  });
+
+  it('supports digest-based idempotency checks for hidden selective claims', () => {
+    const storage = new InMemoryStorage();
+    const claim = {
+      claimDigest: 'digest-abc-123',
+    };
+    const nullifier = 'd'.repeat(64);
+
+    const first = checkClientNullifierConflictByDigest({ claim, nullifier }, storage);
+    const second = checkClientNullifierConflictByDigest({ claim, nullifier }, storage);
+
+    expect(first).toEqual({
+      valid: true,
+      mode: 'first_seen',
+    });
+    expect(second).toEqual({
+      valid: true,
+      mode: 'idempotent',
+    });
+  });
+
+  it('rejects digest mismatch for the same nullifier', () => {
+    const storage = new InMemoryStorage();
+    const nullifier = 'e'.repeat(64);
+
+    const first = checkClientNullifierConflictByDigest(
+      {
+        claim: {
+          claimDigest: 'digest-a',
+        },
+        nullifier,
+      },
+      storage
+    );
+    const conflict = checkClientNullifierConflictByDigest(
+      {
+        claim: {
+          claimDigest: 'digest-b',
+        },
+        nullifier,
+      },
+      storage
+    );
+
+    expect(first.valid).toBe(true);
+    expect(conflict.valid).toBe(false);
+    expect(conflict.mode).toBe('conflict');
+    expect(conflict.message).toContain('Nullifier conflict detected');
   });
 });
