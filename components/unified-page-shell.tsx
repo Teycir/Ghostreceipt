@@ -17,7 +17,11 @@ interface UnifiedPageShellProps {
   children: React.ReactNode;
   description?: string;
   leftNavLink?: NavLinkConfig;
+  mainShellClassName?: string;
+  mainShellState?: 'loading' | 'ready';
+  mainShellStyle?: React.CSSProperties;
   maxWidthClassName?: string;
+  onBackgroundReady?: () => void;
   rightNavLink?: NavLinkConfig;
   srTitle: string;
   tagline: string;
@@ -28,15 +32,27 @@ export function UnifiedPageShell({
   children,
   description,
   leftNavLink,
+  mainShellClassName,
+  mainShellState = 'ready',
+  mainShellStyle,
   maxWidthClassName = 'max-w-2xl',
+  onBackgroundReady,
   rightNavLink,
   srTitle,
   tagline,
 }: Readonly<UnifiedPageShellProps>): React.JSX.Element {
+  const shellStateClass =
+    mainShellState === 'loading' ? 'main-shell--loading' : 'main-shell--ready';
+
   return (
     <>
-      <EyeCandy />
-      <div className="main-shell main-shell--ready relative">
+      <EyeCandy {...(onBackgroundReady ? { onReady: onBackgroundReady } : {})} />
+      <div
+        className={`main-shell relative ${shellStateClass}${
+          mainShellClassName ? ` ${mainShellClassName}` : ''
+        }`}
+        style={mainShellStyle}
+      >
         {leftNavLink ? (
           <CornerNavLink
             href={leftNavLink.href}

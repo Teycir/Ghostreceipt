@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneratorForm } from '@/components/generator/generator-form';
-import { Footer } from '@/components/footer';
-import { EyeCandy } from '@/components/eye-candy';
-import { AnimatedTagline } from '@/components/animated-tagline';
-import { CornerNavLink } from '@/lib/libraries/ui';
+import { UnifiedPageShell } from '@/components/unified-page-shell';
 import TextPressure from '@/components/text-pressure';
 
 const MIN_LOADING_MS = 1700;
@@ -80,8 +77,6 @@ export function HomeShell(): React.JSX.Element {
 
   return (
     <>
-      <EyeCandy onReady={() => setBackgroundReady(true)} />
-
       <div
         className={`startup-overlay ${loading ? 'startup-overlay--visible' : 'startup-overlay--hidden'}`}
         style={{
@@ -140,42 +135,26 @@ export function HomeShell(): React.JSX.Element {
         </div>
       </div>
 
-      <div
-        className={`main-shell relative ${loading ? 'main-shell--loading' : 'main-shell--ready'}`}
-        style={{
+      <UnifiedPageShell
+        srTitle="GhostReceipt"
+        tagline="Prove the payment.  Keep the privacy."
+        leftNavLink={{
+          href: '/history',
+          label: 'Receipt History',
+          ariaLabel: 'Open local receipt history',
+        }}
+        onBackgroundReady={() => setBackgroundReady(true)}
+        mainShellState={loading ? 'loading' : 'ready'}
+        mainShellStyle={{
           opacity: loading ? 0 : 1,
           pointerEvents: loading ? 'none' : 'auto',
           transition: 'opacity 620ms ease 120ms',
         }}
       >
-        <CornerNavLink
-          href="/history"
-          label="Receipt History"
-          ariaLabel="Open local receipt history"
-          side="left"
-        />
-        <main className="flex min-h-screen flex-col items-center justify-center p-4 pb-20">
-          <div className="w-full max-w-2xl space-y-8 fade-up">
-            <div className="text-center space-y-3">
-              <h1 className="sr-only">GhostReceipt</h1>
-              <div aria-hidden="true">
-                <TextPressure
-                  text="GhostReceipt"
-                  textColor="#ffffff"
-                  minFontSize={52}
-                  className="glow-heading justify-center"
-                />
-              </div>
-              <AnimatedTagline text="Prove the payment.  Keep the privacy." />
-            </div>
-
-            <div className="glass-card rounded-xl p-8 shadow-2xl">
-              <GeneratorForm />
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
+        <div className="glass-card rounded-xl p-8 shadow-2xl">
+          <GeneratorForm />
+        </div>
+      </UnifiedPageShell>
     </>
   );
 }

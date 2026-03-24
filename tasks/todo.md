@@ -2,22 +2,20 @@
 
 ## Objective
 
-Start roadmap item `R-P3-03` (bounded amount disclosure/range-proof design) and make page UI style homogeneous across app routes.
+Apply shared shell/chrome to home route so all app pages use homogeneous styling.
 
 ## Plan
 
-- [x] Draft bounded amount disclosure/range-proof design with proving-time budget projections and rollout safety gating (`R-P3-03`).
-- [x] Add roadmap review note for `R-P3-03` and update roadmap tracking state.
-- [x] Introduce shared page shell/chrome so `/verify` and `/history` use consistent header/nav/footer styling.
+- [x] Extend reusable `UnifiedPageShell` to support home loader lifecycle needs.
+- [x] Refactor `HomeShell` to render through `UnifiedPageShell` without changing startup overlay behavior.
 - [x] Run verification commands and capture summary.
 
 ## Review
 
 - Status: Complete
 - Notes:
-  - Added `docs/project/BOUNDED_AMOUNT_RANGE_PROOF_PLAN.md` for `R-P3-03`.
-  - Added `docs/project/ROADMAP_REVIEW_NOTES_R-P3-03_2026-03-24.md`.
-  - Updated roadmap completion states and references in `docs/project/ENHANCEMENT_ROADMAP.md`.
-  - Added reusable `components/unified-page-shell.tsx`.
-  - Refactored `/verify` and `/history` pages to use shared page chrome and consistent corner navigation.
+  - `components/unified-page-shell.tsx` now supports:
+    - optional `onBackgroundReady` callback passthrough to `EyeCandy`
+    - `mainShellState` (`loading|ready`) and custom `mainShellStyle`
+  - `components/home-shell.tsx` now uses `UnifiedPageShell` for primary page chrome while preserving the startup overlay and transition timing.
   - Verification: `npm run typecheck` and `npm run lint` both passed.
