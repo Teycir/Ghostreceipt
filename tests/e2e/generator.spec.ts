@@ -122,9 +122,19 @@ test.describe('GhostReceipt E2E Flow', () => {
     await expect(page.locator('a:has-text("Made by Teycir")')).toBeVisible();
     await expect(page.locator('a:has-text("Source Code")')).toBeVisible();
     await expect(page.locator('a:has-text("How to Use")')).toBeVisible();
+    await expect(page.locator('a:has-text("History")')).toBeVisible();
     await expect(page.locator('a:has-text("FAQ")')).toBeVisible();
     await expect(page.locator('a:has-text("Security")')).toBeVisible();
     await expect(page.locator('a:has-text("License")')).toBeVisible();
+  });
+
+  test('should navigate to local history page', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    await navigateViaFooterLink(page, 'History');
+    await expect(page).toHaveURL('/history');
+    await expect(page.locator('text=Local Receipt History')).toBeVisible();
   });
 
   test('should navigate to static docs pages', async ({ page }) => {

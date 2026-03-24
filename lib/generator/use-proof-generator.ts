@@ -22,6 +22,7 @@ import type {
 import type { OraclePayload } from '@/lib/validation/schemas';
 import { scheduleZkArtifactPreload } from '@/lib/zk/artifacts';
 import type { ReceiptMetadata } from '@/lib/zk/prover';
+import { addReceiptHistoryEntry } from '@/lib/history/receipt-history';
 
 // ── Field-level validation ───────────────────────────────────────────────────
 function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
@@ -241,6 +242,17 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       if (typeof console !== 'undefined') {
         console.info('[ghostreceipt][proof_timing_ms]', telemetry);
       }
+
+      void addReceiptHistoryEntry({
+        proof: shareableProof,
+        chain: values.chain,
+        claimedAmount: values.claimedAmount,
+        minDate: values.minDate,
+        ...(receiptMeta?.label ? { receiptLabel: receiptMeta.label } : {}),
+        ...(receiptMeta?.category ? { receiptCategory: receiptMeta.category } : {}),
+      }).catch(() => {
+        // History persistence is best-effort and must not block receipt generation.
+      });
 
       setState('success');
       announceToScreenReader('Receipt generated successfully');

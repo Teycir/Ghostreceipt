@@ -42,7 +42,7 @@ const FETCH_TX_RATE_LIMIT = {
   ),
   globalMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_MINUTE',
-    90
+    60
   ),
   clientBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_SECOND',
@@ -50,7 +50,7 @@ const FETCH_TX_RATE_LIMIT = {
   ),
   globalBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_SECOND',
-    20
+    12
   ),
   windowMs: 60000,
   burstWindowMs: 1000,

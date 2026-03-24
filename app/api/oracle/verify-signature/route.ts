@@ -35,15 +35,15 @@ const VERIFY_SIGNATURE_RATE_LIMIT = {
   ),
   globalMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_MINUTE',
-    120
+    60
   ),
   clientBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_SECOND',
-    3
+    12
   ),
   globalBurstMaxRequests: parsePositiveIntEnv(
     'ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_SECOND',
-    30
+    20
   ),
   windowMs: 60000,
   burstWindowMs: 1000,
@@ -57,7 +57,7 @@ const verifyReplayRegistry = getSharedOracleAuthReplayRegistry({
   ),
   maxEntries: parsePositiveIntEnv(
     'ORACLE_VERIFY_REPLAY_MAX_ENTRIES',
-    5_000
+    2_000
   ),
   maxFutureSkewSeconds: parsePositiveIntEnv(
     'ORACLE_VERIFY_REPLAY_MAX_FUTURE_SKEW_SECONDS',

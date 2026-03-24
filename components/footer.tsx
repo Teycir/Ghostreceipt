@@ -1,6 +1,7 @@
 'use client';
 
 const links = [
+  { label: 'History', href: '/history' },
   { label: 'How to Use', href: '/docs/how-to-use.html' },
   { label: 'FAQ',        href: '/docs/faq.html' },
   { label: 'Security',   href: '/docs/security.html' },

@@ -161,6 +161,14 @@ export function ReceiptSuccess({
         <Button type="button" onClick={exportPdf} variant="secondary" className="w-full">
           ↓ Export as PDF
         </Button>
+        <Button
+          type="button"
+          onClick={() => { globalThis.location.href = '/history'; }}
+          variant="secondary"
+          className="w-full"
+        >
+          View Local History
+        </Button>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {SOCIAL_BUTTONS.map(({ label, network }) => (

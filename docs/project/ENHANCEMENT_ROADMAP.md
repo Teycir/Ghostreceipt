@@ -59,8 +59,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 - [x] Add PDF export with QR + human-readable proof summary.
 - [x] Add receipt labels/categories in generator + verifier.
-- [ ] Add local receipt history (`/history`, IndexedDB, JSON export).
-- [ ] Add batch verification workflow for compliance/accounting use.
+- [x] Add local receipt history (`/history`, IndexedDB, JSON export).
 
 ### Shareability and ZK Design (P2-P3)
 
@@ -72,11 +71,11 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 ### Wave A: Core Product Workflow (Now)
 
-`Goal`: ship practical compliance workflow features without changing trust assumptions.
+`Goal`: ship practical local-first workflow features without changing trust assumptions.
 
 - [x] `R-P2-01` PDF export with QR + human-readable proof summary.
 - [x] `R-P2-02` Receipt labels/categories in generator + verifier.
-- [ ] `R-P2-03` Local receipt history (`/history`, IndexedDB, JSON export).
+- [x] `R-P2-03` Local receipt history (`/history`, IndexedDB, JSON export).
 
 Scope constraints:
 - No new paid services or required hosted dependencies.
@@ -96,29 +95,7 @@ npm run test -- tests/integration
 npm run test:e2e -- --grep "history|pdf|verify"
 ```
 
-### Wave B: Verification Operations (Next)
-
-`Goal`: support accounting and compliance teams with multi-item verification.
-
-- [ ] `R-P2-04` Batch verification workflow for accounting/compliance.
-
-Scope constraints:
-- Reuse existing verify route contract; no alternate trust mode.
-- Keep failure reporting deterministic and exportable.
-
-Acceptance criteria:
-- Batch import supports mixed valid/invalid payloads with per-item status.
-- Output includes machine-readable summary for audit pipelines.
-- Batch UX remains responsive on mid-range mobile devices.
-
-Verification commands:
-```bash
-npm run typecheck
-npm run test -- tests/integration/api/oracle
-npm run test -- tests/e2e
-```
-
-### Wave C: Share and Privacy Upgrades (Later)
+### Wave B: Share and Privacy Upgrades (Later)
 
 `Goal`: improve payload ergonomics and privacy controls while preserving deterministic verification.
 
@@ -173,12 +150,10 @@ Exit criteria:
 
 ### Phase 3: UX and Workflow Expansion (P2)
 
-- [ ] PDF export and receipt metadata UX.
-- [ ] Local-first history and filtering workflows.
-- [ ] Verification ergonomics for accounting/compliance scenarios.
+- [x] PDF export and receipt metadata UX.
+- [x] Local-first history and filtering workflows.
 
 Exit criteria:
-- [ ] Accounting/compliance workflow validated by E2E tests.
 - [ ] Features avoid regressions on mobile-first happy path.
 
 ### Phase 4: Advanced Share and Privacy Controls (P2-P3)

@@ -1,5 +1,19 @@
 # Lessons Learned
 
+## 2026-03-24 - De-Scoped Features Must Be Purged From Canonical Docs
+- When the user asks to remove a feature for capacity reasons, remove its roadmap/docs tracks entirely (not only mark deferred) if requested.
+- After doc cleanup, run a zero-match search against `docs/project` for the removed feature terms before closing.
+
+## 2026-03-24 - Free-Tier Capacity Must Gate High-Volume Verify Features
+- Batch verification that performs per-item server verification can amplify API call volume; treat this as a hard capacity check before shipping.
+- If capacity is constrained, de-scope/remove the feature immediately instead of leaving a partial rollout.
+- Prefer future batch designs that avoid linear API amplification (for example local-only prechecks or explicit throttled server-side jobs).
+
+## 2026-03-24 - History Storage Must Prefer Deterministic Pruning Over Fallback Stores
+- For receipt history, avoid alternate persistence fallbacks (for example in-memory/localStorage) when user policy requires strict IndexedDB behavior.
+- When storage pressure is high, prune oldest history records first instead of switching storage backends.
+- Surface storage pressure to users explicitly (for example 90% full warning with automatic pruning notice) so retention behavior is transparent.
+
 ## 2026-03-24 - Roadmap Must Respect Zero-Budget Constraints
 - When the user states there is no budget, remove roadmap items that can require spending (for example on-chain gas/deployment, paid-tier provider expansion, or additional hosted-operator infrastructure).
 - Keep active milestones local-first and off-chain, and rewrite sequence/acceptance criteria so they do not implicitly depend on paid services.

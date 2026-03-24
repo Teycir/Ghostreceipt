@@ -2,19 +2,25 @@
 
 ## Objective
 
-Implement roadmap item `R-P2-02`: receipt labels/categories in generator and verifier.
+Remove high-volume verification tracks from docs and harden runtime defaults for free-tier capacity safety.
 
 ## Plan
 
-- [x] Add optional label/category fields to generator form state and UI.
-- [x] Persist label/category through proof export as optional share payload metadata.
-- [x] Render metadata in success and verify views when present.
-- [x] Add payload validation for metadata during proof import.
-- [x] Add/extend unit tests for metadata round-trip and malformed metadata rejection.
-- [x] Run targeted verification (`typecheck` + relevant unit tests).
-- [x] Document completion notes in review section below.
+- [x] Remove batch/compliance verification tracks from roadmap docs.
+- [x] Audit runtime features for free-tier capacity risks.
+- [x] Harden oracle route defaults (rate limits + in-memory registry ceilings) where safe.
+- [x] Run targeted verification tests and typecheck after hardening.
 
 ## Review
 
 - Status: Complete
-- Notes: Added optional `receiptLabel` and `receiptCategory` inputs in generator flow, persisted as optional `receiptMeta` in share payload, and rendered in verifier success view. Added strict import-time validation for metadata shape/length and updated prover tests for round-trip + malformed metadata cases. Verification passed with `npm run typecheck` and `npm test -- tests/unit/zk/prover.test.ts tests/unit/generator/pdf-export.test.ts --runInBand`.
+- Notes:
+  - Removed all `R-P2-04`/batch/compliance planning tracks from `docs/project/ENHANCEMENT_ROADMAP.md`.
+  - Hardened free-tier runtime defaults:
+    - `fetch-tx`: global minute `90 -> 60`, global burst `20 -> 12`.
+    - `verify-signature`: global minute `120 -> 60`, global burst `30 -> 20`, replay max entries `5000 -> 2000` (client minute remains `12` for stability).
+    - `check-nullifier`: client minute `15 -> 8`, global minute `150 -> 80`, client burst `4 -> 2`, global burst `40 -> 10`, registry max entries `10000 -> 3000`.
+  - Verification commands run:
+    - `npm run typecheck`
+    - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts --runInBand`
+    - `rg -n "batch verification|R-P2-04|compliance|accounting" docs/project -S`
