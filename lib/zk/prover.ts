@@ -245,7 +245,7 @@ export class ProofGenerator {
     }
 
     try {
-      const decoded = rawInput.startsWith('{') ? rawInput : decodeSharePayload(rawInput);
+      const decoded = decodeSharePayload(rawInput);
       
       // Additional size check after decoding
       if (decoded.length > 1024 * 100) {

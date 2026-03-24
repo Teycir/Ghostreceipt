@@ -19,8 +19,8 @@ interface StoredNullifierClaim {
   minDateUnix: number;
 }
 
-const NULLIFIER_STORAGE_KEY = 'gr:verified-nullifiers:v1';
-const NULLIFIER_PREFIX = 'gr:nullifier:message-hash:v1:';
+const NULLIFIER_STORAGE_KEY = 'gr:verified-nullifiers';
+const NULLIFIER_PREFIX = 'gr:nullifier:message-hash:';
 
 function toHex(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);

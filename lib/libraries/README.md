@@ -40,9 +40,9 @@ This folder packages app code into reusable library slices for future zk applica
     - `@ghostreceipt/zk-core`
     - `@ghostreceipt/zk-core/*`
 
-## Backward Compatibility
+## Import Stability
 
-- Existing app import path `components/ui/select.tsx` is kept as a compatibility wrapper:
+- Existing app import path `components/ui/select.tsx` is kept as a stable re-export:
   - `Select` now re-exports `PremiumSelect` from `lib/libraries/ui`.
 - Existing provider/zk import paths are kept as wrappers:
   - `lib/providers/cascade.ts` and `lib/providers/types.ts` re-export backend-core modules.

@@ -245,7 +245,7 @@ export async function disposeSharedNullifierRegistryForTests(): Promise<void> {
  */
 export function deriveNullifier(messageHash: string): string {
   return createHash('sha256')
-    .update(`gr:nullifier:message-hash:v1:${messageHash}`, 'utf8')
+    .update(`gr:nullifier:message-hash:${messageHash}`, 'utf8')
     .digest('hex');
 }
 

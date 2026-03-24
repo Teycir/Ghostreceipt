@@ -31,6 +31,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Kept roadmap constrained to zero-cost deliverables (removed paid/on-chain-required tracks).
 - [x] Added dedicated proof-performance regression gate with CI budget enforcement.
 - [x] Published proof-system decision artifact with migration triggers and phased path notes.
+- [x] Added regression tests for canonical share-payload parsing and verifier route stability.
 
 ---
 
@@ -52,7 +53,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Add dedicated proof-performance regression gate with CI-friendly benchmarks.
 - [x] Publish proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` path) with rationale and migration notes.
 - [x] Add explicit per-feature latency budgets and require before/after metric deltas in roadmap review notes.
-- [ ] Add regression coverage around payload compatibility and verify path stability.
+- [x] Add regression coverage around canonical payload parsing and verify path stability.
 
 ### Product Slice (P2)
 
@@ -63,7 +64,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 ### Shareability and ZK Design (P2-P3)
 
-- [ ] Add proof payload compression/versioning with backward-compatible parsing.
+- [ ] Add proof payload compression/versioning with a single canonical parser and explicit cutover.
 - [ ] Draft selective disclosure public-input contract and phased implementation plan.
 - [ ] Draft bounded amount disclosure/range-proof design and rollout plan.
 
@@ -175,7 +176,7 @@ Minimum required fields:
   Mitigation: benchmark and gate every circuit-affecting change.
 
 - Risk: payload feature growth harms QR/share usability.  
-  Mitigation: versioned payloads + compatibility tests + compression tests.
+  Mitigation: versioned payloads + canonical-parser stability tests + compression tests.
 
 - Risk: roadmap drift across files.  
   Mitigation: this file is now the single canonical planning/tracking source.

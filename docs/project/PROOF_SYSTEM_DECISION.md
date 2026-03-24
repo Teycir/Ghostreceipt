@@ -63,9 +63,9 @@ Re-open this decision only if one or more are true:
 
 1. Build a non-production spike branch with a parallel PLONK/Fflonk proof path.
 2. Measure prove/verify latency, proof size, and memory against current CI budgets.
-3. Define backward-compatible payload/versioning strategy before any cutover.
+3. Define versioned payload cutover strategy that keeps one canonical parser at runtime.
 4. Add dual-verifier support behind a feature flag for transition testing.
-5. Cut over only after performance, security, and compatibility gates pass.
+5. Cut over only after performance, security, and parser-stability gates pass.
 
 ## Linked Evidence
 

@@ -347,6 +347,40 @@ describe('POST /api/oracle/verify-signature', () => {
     expect(response.status).toBe(400);
   });
 
+  it('returns 400 when auth envelope contains unknown fields', async () => {
+    const signer = new OracleSigner('1'.repeat(64));
+    const payload = buildSignedAuthPayload(signer);
+    const request = new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...payload,
+        extraField: 'unexpected',
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when expiresAt is not greater than signedAt', async () => {
+    const signer = new OracleSigner('1'.repeat(64));
+    const nowUnix = Math.floor(Date.now() / 1000);
+    const payload = buildSignedAuthPayload(signer, {
+      signedAt: nowUnix,
+      expiresAt: nowUnix,
+    });
+
+    const request = new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+  });
+
   it('returns 400 for non-numeric messageHash commitment', async () => {
     const signer = new OracleSigner('1'.repeat(64));
     const payload = buildSignedAuthPayload(signer, {
@@ -360,6 +394,28 @@ describe('POST /api/oracle/verify-signature', () => {
     const response = await POST(request);
 
     expect(response.status).toBe(400);
+  });
+
+  it('returns 500 config error when no oracle key is configured', async () => {
+    const signer = new OracleSigner('1'.repeat(64));
+    const payload = buildSignedAuthPayload(signer);
+    delete process.env['ORACLE_PRIVATE_KEY'];
+    delete process.env['ORACLE_PUBLIC_KEY'];
+
+    const request = new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    const response = await POST(request);
+    const body = (await response.json()) as {
+      error?: {
+        code?: string;
+      };
+    };
+
+    expect(response.status).toBe(500);
+    expect(body.error?.code).toBe('INTERNAL_ERROR');
   });
 
   it('verifies signatures using ORACLE_PUBLIC_KEY without private key', async () => {

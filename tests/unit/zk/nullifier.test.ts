@@ -81,7 +81,7 @@ describe('zk nullifier helpers', () => {
 
   it('treats malformed stored payload as empty registry', () => {
     const storage = new InMemoryStorage();
-    storage.setItem('gr:verified-nullifiers:v1', '{bad json');
+    storage.setItem('gr:verified-nullifiers', '{bad json');
 
     const result = checkClientNullifierConflict(
       {
