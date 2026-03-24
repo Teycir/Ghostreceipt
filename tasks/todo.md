@@ -2,21 +2,24 @@
 
 ## Objective
 
-Fix CI/deploy blockers from fetch-tx route test flakiness and stale coverage threshold path.
+Reduce Three.js background brightness peaks so desktop/mid-screen moments stay darker and less distracting.
 
 ## Plan
 
-- [x] Reproduce failing fetch-tx route tests and isolate root cause.
-- [x] Reset route state per test to avoid rate-limit/replay leakage.
-- [x] Fix stale Jest coverage threshold path for cascade module.
-- [x] Re-run targeted failing tests and full coverage suite.
+- [x] Locate shader intensity/brightness hotspots in background renderer.
+- [x] Reduce highlight/specular intensity and apply a mild global brightness multiplier.
+- [x] Darken highlight palette accent to reduce flash-like peaks.
+- [x] Validate with typecheck/lint.
 
 ## Review
 
 - Status: Completed
 - Notes:
-  - Updated `tests/unit/api/fetch-tx-route.test.ts` and `tests/unit/api/oracle-fetch-tx.test.ts` to call `__disposeOracleFetchRouteForTests()` in `beforeEach` and `afterEach`.
-  - Updated `jest.config.js` coverage threshold target from `./lib/providers/cascade.ts` to `./lib/libraries/backend-core/providers/cascade.ts`.
+  - Updated `components/eye-candy.tsx` shader uniforms and params:
+    - added `u_brightness`
+    - added `u_highlightStrength`
+    - reduced highlight color from `#cce9ff` to `#a6d2ff`
+  - Final output now applies brightness scaling after vignette mask.
   - Validation:
-    - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts --runInBand` pass
-    - `npm run test:coverage` pass
+    - `npm run typecheck` pass
+    - `npm run lint` pass

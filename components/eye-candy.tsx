@@ -22,6 +22,8 @@ const fragmentShader = `
   uniform float u_grain;
   uniform float u_smoothing;
   uniform int u_octaves;
+  uniform float u_brightness;
+  uniform float u_highlightStrength;
 
   uniform vec3 u_color1;
   uniform vec3 u_color2;
@@ -151,7 +153,13 @@ const fragmentShader = `
     else normal = vec2(0.0, 1.0);
 
     vec3 baseColor = getPalette(val * 1.5 - t * 0.1);
-    vec3 color = applyGlassLighting(baseColor, normal, normalize(vec2(1.0, 1.0)), 8.0, 0.6);
+    vec3 color = applyGlassLighting(
+      baseColor,
+      normal,
+      normalize(vec2(1.0, 1.0)),
+      8.0,
+      u_highlightStrength
+    );
 
     vec2 seed = gl_FragCoord.xy + fract(u_time) * 1000.0;
     vec3 p3 = fract(vec3(seed.xyx) * 0.1031);
@@ -163,6 +171,7 @@ const fragmentShader = `
     float dist = length(centeredUv);
     float mask = smoothstep(1.35, 0.15, dist);
     color *= mask;
+    color *= u_brightness;
 
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
   }
@@ -213,11 +222,13 @@ export function EyeCandy({ onReady }: EyeCandyProps = {}): null {
         twist: 0.0,
         grain: 0.018,
         smoothing: 0.6,
+        brightness: isMobile ? 0.8 : 0.84,
+        highlightStrength: isMobile ? 0.36 : 0.42,
         color1: '#339cff',
         color2: '#384fff',
         color3: '#261985',
         color4: '#3623c7',
-        color5: '#cce9ff',
+        color5: '#a6d2ff',
       };
 
       const renderer = new THREE.WebGLRenderer({
@@ -244,6 +255,8 @@ export function EyeCandy({ onReady }: EyeCandyProps = {}): null {
         u_grain: { value: params.grain },
         u_smoothing: { value: params.smoothing },
         u_octaves: { value: params.octaves },
+        u_brightness: { value: params.brightness },
+        u_highlightStrength: { value: params.highlightStrength },
         u_color1: { value: new THREE.Color(params.color1) },
         u_color2: { value: new THREE.Color(params.color2) },
         u_color3: { value: new THREE.Color(params.color3) },

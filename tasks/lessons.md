@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Shader Visual Comfort Needs Peak-Brightness Guards
+- If users report occasional over-bright flashes in animated backgrounds, reduce specular highlight strength first before changing motion.
+- Add explicit shader uniforms for brightness/highlight tuning so visual comfort can be adjusted without rewriting the shader.
+- Keep the same palette family but darken the brightest accent color to avoid momentary glare.
+
 ## 2026-03-24 - Route-Level Limiters Must Be Reset In Unit API Tests
 - API route unit suites that reuse module-scoped rate limiters/replay registries can fail intermittently with `429` unless state is reset between tests.
 - For `fetch-tx` route tests, call `__disposeOracleFetchRouteForTests()` in both `beforeEach` and `afterEach` to ensure deterministic isolation.
