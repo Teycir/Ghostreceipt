@@ -4,9 +4,9 @@
  * Components, hooks, and utilities all import from here.
  */
 
-import type { Chain } from '@/lib/validation/schemas';
+import type { Chain, EthereumAsset } from '@/lib/validation/schemas';
 
-export type { Chain };
+export type { Chain, EthereumAsset };
 
 /** Ordered steps of the proof generation state machine */
 export type GeneratorState =
@@ -20,6 +20,7 @@ export type GeneratorState =
 /** User-facing form field values */
 export interface GeneratorFormValues {
   chain: Chain;
+  ethereumAsset: EthereumAsset;
   txHash: string;
   claimedAmount: string;
   discloseAmount: boolean;
@@ -45,6 +46,7 @@ export interface GeneratorTimingTelemetry {
 export interface ProofResult {
   proof: string;
   chain: Chain;
+  ethereumAsset: EthereumAsset;
   claimedAmount: string;
   minDate: string;
   receiptLabel?: string;

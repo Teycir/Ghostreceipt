@@ -3,6 +3,7 @@ import { buildReceiptPdfHtml } from '@/lib/generator/pdf-export';
 describe('buildReceiptPdfHtml', () => {
   const baseData = {
     chain: 'bitcoin' as const,
+    ethereumAsset: 'native' as const,
     claimedAmount: '100000000',
     claimedAmountHuman: '1 BTC',
     minDate: '2026-03-24',

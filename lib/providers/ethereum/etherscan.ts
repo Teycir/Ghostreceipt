@@ -5,6 +5,7 @@ import type {
 } from '@ghostreceipt/backend-core/providers/types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
+import type { EthereumAsset } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureWarn, secureError } from '@/lib/security/secure-logging';
 import {
@@ -43,15 +44,24 @@ interface EtherscanProxyTransaction {
 interface EtherscanProxyReceipt {
   blockNumber?: string | null;
   status?: string;
+  logs?: EtherscanProxyReceiptLog[];
 }
 
 interface EtherscanProxyBlock {
   timestamp?: string;
 }
 
+interface EtherscanProxyReceiptLog {
+  address?: string;
+  data?: string;
+  topics?: string[];
+}
+
 const ETHEREUM_CHAIN_ID = '1';
 const HEX_QUANTITY_REGEX = /^0x[0-9a-f]+$/i;
 const ETHERSCAN_METRICS_SCOPE = 'provider:etherscan';
+const USDC_CONTRACT_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const ERC20_TRANSFER_TOPIC0 = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
 /**
  * Etherscan provider with API key cascade
@@ -71,14 +81,16 @@ export class EtherscanProvider implements EthereumProvider {
 
   private readonly baseUrl = 'https://api.etherscan.io/v2/api';
   private readonly keyCascade: ApiKeyCascade;
+  private readonly ethereumAsset: EthereumAsset;
   private readonly throttlePolicy = resolveProviderThrottlePolicy('etherscan', {
     hasApiKey: true,
   });
 
-  constructor(apiKeyConfig: ApiKeyConfig) {
+  constructor(apiKeyConfig: ApiKeyConfig, ethereumAsset: EthereumAsset = 'native') {
     this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
       metricsScope: ETHERSCAN_METRICS_SCOPE,
     });
+    this.ethereumAsset = ethereumAsset;
   }
 
   static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {
@@ -208,11 +220,60 @@ export class EtherscanProvider implements EthereumProvider {
 
     return this.normalize({
       txHash: tx.hash,
-      valueHex: tx.value,
+      valueAtomic: this.resolveValueAtomic(txHash, tx.value, receipt.logs),
       blockNumberHex: tx.blockNumber,
       timestampHex: block.timestamp,
       currentBlockNumber,
     });
+  }
+
+  private resolveValueAtomic(
+    txHash: string,
+    nativeValueHex: string,
+    logs: EtherscanProxyReceiptLog[] | undefined
+  ): string {
+    if (this.ethereumAsset === 'native') {
+      return this.hexToBigInt(nativeValueHex, 'transaction value').toString();
+    }
+
+    const usdcValue = this.extractUsdcValueAtomic(logs);
+    if (usdcValue <= BigInt(0)) {
+      throw new Error(`USDC transfer not found in transaction: ${txHash}`);
+    }
+
+    return usdcValue.toString();
+  }
+
+  private extractUsdcValueAtomic(logs: EtherscanProxyReceiptLog[] | undefined): bigint {
+    if (!Array.isArray(logs) || logs.length === 0) {
+      return BigInt(0);
+    }
+
+    const expectedTopic = ERC20_TRANSFER_TOPIC0;
+
+    return logs.reduce((total, log) => {
+      const logAddress = (log.address ?? '').toLowerCase();
+      const firstTopic = (log.topics?.[0] ?? '').toLowerCase();
+      const valueData = log.data ?? '';
+
+      if (logAddress !== USDC_CONTRACT_ADDRESS) {
+        return total;
+      }
+
+      if (firstTopic !== expectedTopic) {
+        return total;
+      }
+
+      if (!HEX_QUANTITY_REGEX.test(valueData)) {
+        return total;
+      }
+
+      try {
+        return total + BigInt(valueData);
+      } catch {
+        return total;
+      }
+    }, BigInt(0));
   }
 
   /**
@@ -335,20 +396,19 @@ export class EtherscanProvider implements EthereumProvider {
    */
   private normalize(data: {
     txHash: string;
-    valueHex: string;
+    valueAtomic: string;
     blockNumberHex: string;
     timestampHex: string;
     currentBlockNumber: number;
   }): CanonicalTxData {
     const blockNumber = this.hexToNumber(data.blockNumberHex, 'transaction block number');
     const timestampUnix = this.hexToNumber(data.timestampHex, 'block timestamp');
-    const valueAtomic = this.hexToBigInt(data.valueHex, 'transaction value').toString();
     const confirmations = Math.max(data.currentBlockNumber - blockNumber + 1, 1);
 
     return {
       chain: 'ethereum',
       txHash: data.txHash,
-      valueAtomic,
+      valueAtomic: data.valueAtomic,
       timestampUnix,
       confirmations,
       blockNumber,

@@ -8,6 +8,12 @@ const makeProvider = () => new EtherscanProvider({
   shuffleOnStartup: false,
 });
 
+const makeUsdcProvider = () => new EtherscanProvider({
+  keys: ['test-key'],
+  rotationStrategy: 'round-robin',
+  shuffleOnStartup: false,
+}, 'usdc');
+
 describe('EtherscanProvider', () => {
   beforeEach(() => {
     process.env['ETHERSCAN_REQUEST_THROTTLE_MS'] = '0';
@@ -94,6 +100,77 @@ describe('EtherscanProvider', () => {
     expect(firstCallUrl as string).toContain('chainid=1');
     expect(firstCallUrl as string).toContain('module=proxy');
     expect(firstCallUrl as string).toContain('action=eth_getTransactionByHash');
+  });
+
+  it('extracts USDC ERC-20 transfer amount from receipt logs when configured', async () => {
+    const provider = makeUsdcProvider();
+    const txHash = `0x${'e'.repeat(64)}`;
+
+    jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            hash: txHash,
+            value: '0x0',
+            blockNumber: '0x10',
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            blockNumber: '0x10',
+            status: '0x1',
+            logs: [
+              {
+                address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                topics: [
+                  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+                ],
+                data: '0x00000000000000000000000000000000000000000000000000000000000f4240',
+              },
+            ],
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x14',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            timestamp: '0x5f5e100',
+          },
+        }),
+      } as Response);
+
+    const result = await provider.fetchTransaction(txHash);
+
+    expect(result.chain).toBe('ethereum');
+    expect(result.valueAtomic).toBe('1000000');
+    expect(result.txHash).toBe(txHash);
   });
 
   it('marks reverted transactions as non-retryable reverted errors', async () => {

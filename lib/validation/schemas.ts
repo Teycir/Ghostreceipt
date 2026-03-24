@@ -6,6 +6,9 @@ import { z } from 'zod';
 export const ChainSchema = z.enum(['bitcoin', 'ethereum', 'solana']);
 export type Chain = z.infer<typeof ChainSchema>;
 
+export const EthereumAssetSchema = z.enum(['native', 'usdc']);
+export type EthereumAsset = z.infer<typeof EthereumAssetSchema>;
+
 /**
  * Bitcoin transaction hash validation
  * 64 hex characters
@@ -40,6 +43,7 @@ export const SolanaTxHashSchema = z
 export const OracleFetchTxRequestSchema = z.object({
   chain: ChainSchema,
   txHash: z.string().min(1, 'Transaction hash is required'),
+  ethereumAsset: EthereumAssetSchema.optional(),
   idempotencyKey: z
     .string()
     .trim()
@@ -48,6 +52,14 @@ export const OracleFetchTxRequestSchema = z.object({
     .regex(/^[A-Za-z0-9._:-]+$/, 'Idempotency key contains invalid characters')
     .optional(),
 }).superRefine((data, ctx) => {
+  if (data.chain !== 'ethereum' && data.ethereumAsset && data.ethereumAsset !== 'native') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['ethereumAsset'],
+      message: 'Ethereum asset selector is only supported for Ethereum requests',
+    });
+  }
+
   if (data.chain === 'bitcoin') {
     const parsed = BitcoinTxHashSchema.safeParse(data.txHash);
     if (!parsed.success) {

@@ -16,10 +16,11 @@ import { ReceiptSuccess } from './receipt-success';
 import { ProofStepper }   from './proof-stepper';
 import { useProofGenerator } from '@/lib/generator/use-proof-generator';
 import { formatAtomicAmount, atomicUnitLabel, amountPlaceholder } from '@/lib/format/units';
-import type { GeneratorFormValues, Chain } from '@/lib/generator/types';
+import type { GeneratorFormValues, Chain, EthereumAsset } from '@/lib/generator/types';
 
 const DEFAULT_VALUES: GeneratorFormValues = {
   chain:         'bitcoin',
+  ethereumAsset: 'native',
   txHash:        '',
   claimedAmount: '',
   discloseAmount: true,
@@ -46,11 +47,20 @@ export function GeneratorForm(): React.JSX.Element {
   const isProcessing = state === 'fetching' || state === 'validating' || state === 'generating';
 
   // Derived
-  const humanAmount = formatAtomicAmount(values.claimedAmount, values.chain);
+  const humanAmount = formatAtomicAmount(values.claimedAmount, values.chain, values.ethereumAsset);
 
   // Chain change also clears the tx hash — formats are mutually exclusive
   const handleChainChange = useCallback((chain: Chain) => {
-    setValues((prev) => ({ ...prev, chain, txHash: '' }));
+    setValues((prev) => ({
+      ...prev,
+      chain,
+      txHash: '',
+      ethereumAsset: chain === 'ethereum' ? prev.ethereumAsset : 'native',
+    }));
+  }, []);
+
+  const handleEthereumAssetChange = useCallback((asset: EthereumAsset) => {
+    setValues((prev) => ({ ...prev, ethereumAsset: asset, claimedAmount: '' }));
   }, []);
 
   const handleTxHashChange = useCallback((raw: string) => {
@@ -87,18 +97,33 @@ export function GeneratorForm(): React.JSX.Element {
     >
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {/* ── Chain ── */}
-        <Select
-          label="Chain"
-          value={values.chain}
-          onChange={(e) => handleChainChange(e.target.value as Chain)}
-          disabled={isProcessing}
-          error={errors.chain}
-          labelClassName="text-xs"
-          className="h-8 rounded-lg px-2 py-1 text-[12px]"
-        >
-          <option value="bitcoin">Bitcoin</option>
-          <option value="ethereum">Ethereum</option>
-        </Select>
+        <div className="space-y-2">
+          <Select
+            label="Chain"
+            value={values.chain}
+            onChange={(e) => handleChainChange(e.target.value as Chain)}
+            disabled={isProcessing}
+            error={errors.chain}
+            labelClassName="text-xs"
+            className="h-8 rounded-lg px-2 py-1 text-[12px]"
+          >
+            <option value="bitcoin">Bitcoin</option>
+            <option value="ethereum">Ethereum</option>
+          </Select>
+          {values.chain === 'ethereum' && (
+            <Select
+              label="Ethereum Asset"
+              value={values.ethereumAsset}
+              onChange={(event) => handleEthereumAssetChange(event.target.value as EthereumAsset)}
+              disabled={isProcessing}
+              labelClassName="text-xs"
+              className="h-8 rounded-lg px-2 py-1 text-[12px]"
+            >
+              <option value="native">ETH (native)</option>
+              <option value="usdc">USDC (ERC-20)</option>
+            </Select>
+          )}
+        </div>
 
         {/* ── Transaction hash ── */}
         <div>
@@ -135,7 +160,7 @@ export function GeneratorForm(): React.JSX.Element {
           <div className="mb-1 flex items-center justify-between">
             <label htmlFor={`${formId}-amount`} className="text-xs font-medium text-white/70">
             Claimed Amount{' '}
-              <span className="font-normal text-white/35">({atomicUnitLabel(values.chain)})</span>
+              <span className="font-normal text-white/35">({atomicUnitLabel(values.chain, values.ethereumAsset)})</span>
             </label>
             {humanAmount && (
               <span
@@ -149,7 +174,7 @@ export function GeneratorForm(): React.JSX.Element {
           <Input
             id={`${formId}-amount`}
             type="text"
-            placeholder={amountPlaceholder(values.chain)}
+            placeholder={amountPlaceholder(values.chain, values.ethereumAsset)}
             value={values.claimedAmount}
             onChange={(v) => setValues((prev) => ({ ...prev, claimedAmount: v.replaceAll(/\D/g, '') }))}
             disabled={isProcessing}
@@ -282,6 +307,7 @@ export function GeneratorForm(): React.JSX.Element {
         <ReceiptSuccess
           proof={proofResult.proof}
           chain={proofResult.chain}
+          ethereumAsset={proofResult.ethereumAsset}
           claimedAmount={proofResult.claimedAmount}
           minDate={proofResult.minDate}
           {...(proofResult.receiptLabel ? { receiptLabel: proofResult.receiptLabel } : {})}

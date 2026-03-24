@@ -3,6 +3,7 @@ import {
   type CanonicalTxData,
   CanonicalTxDataSchema,
   type Chain,
+  type EthereumAsset,
   type ErrorResponse,
   type OraclePayload,
 } from '@/lib/validation/schemas';
@@ -27,6 +28,7 @@ export interface OracleFetchOptions {
   blockchairApiKey?: string;
   canonicalCacheTtlMs?: number;
   cascadeConfig?: CascadeConfig;
+  ethereumAsset?: EthereumAsset;
   etherscanKeys?: string[];
   heliusKeys?: string[];
   nonceHex?: string;
@@ -98,9 +100,14 @@ function resolveCanonicalCacheTtlMs(options: OracleFetchOptions): number {
   );
 }
 
-function buildCanonicalTxCacheKey(chain: Chain, txHash: string): string {
+function buildCanonicalTxCacheKey(
+  chain: Chain,
+  txHash: string,
+  ethereumAsset: EthereumAsset
+): string {
   const normalizedHash = chain === 'solana' ? txHash : txHash.toLowerCase();
-  return `${chain}:${normalizedHash}`;
+  const assetKey = chain === 'ethereum' ? `:${ethereumAsset}` : '';
+  return `${chain}:${normalizedHash}${assetKey}`;
 }
 
 function readCanonicalTxCache(
@@ -146,11 +153,17 @@ async function fetchCanonicalTxData(
   txHash: string,
   options: Pick<
     OracleFetchOptions,
-    'blockchairApiKey' | 'canonicalCacheTtlMs' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
+    | 'blockchairApiKey'
+    | 'canonicalCacheTtlMs'
+    | 'cascadeConfig'
+    | 'ethereumAsset'
+    | 'etherscanKeys'
+    | 'heliusKeys'
   >
 ): Promise<CanonicalTxFetchResult> {
   const cacheTtlMs = resolveCanonicalCacheTtlMs(options);
-  const cacheKey = buildCanonicalTxCacheKey(chain, txHash);
+  const ethereumAsset = options.ethereumAsset ?? 'native';
+  const cacheKey = buildCanonicalTxCacheKey(chain, txHash, ethereumAsset);
 
   if (cacheTtlMs > 0) {
     const cachedResult = readCanonicalTxCache(cacheKey, Date.now());
@@ -354,7 +367,7 @@ export function createProviderCascadeForChain(
   chain: Chain,
   options: Pick<
     OracleFetchOptions,
-    'blockchairApiKey' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
+    'blockchairApiKey' | 'cascadeConfig' | 'ethereumAsset' | 'etherscanKeys' | 'heliusKeys'
   > = {}
 ): ProviderCascade {
   const cascadeConfig = options.cascadeConfig ?? DEFAULT_CASCADE_CONFIG;
@@ -398,7 +411,7 @@ export function createProviderCascadeForChain(
       keys: etherscanKeys,
       rotationStrategy: 'random',
       shuffleOnStartup: true,
-    }),
+    }, options.ethereumAsset ?? 'native'),
   ];
 
   return new ProviderCascade(providers, cascadeConfig);
@@ -411,7 +424,12 @@ export async function fetchAndSignOracleTransaction(
 ): Promise<SignedOracleFetchResult> {
   const cascadeOptions: Pick<
     OracleFetchOptions,
-    'blockchairApiKey' | 'canonicalCacheTtlMs' | 'cascadeConfig' | 'etherscanKeys' | 'heliusKeys'
+    | 'blockchairApiKey'
+    | 'canonicalCacheTtlMs'
+    | 'cascadeConfig'
+    | 'ethereumAsset'
+    | 'etherscanKeys'
+    | 'heliusKeys'
   > = {};
   if (options.blockchairApiKey !== undefined) {
     cascadeOptions.blockchairApiKey = options.blockchairApiKey;
@@ -421,6 +439,9 @@ export async function fetchAndSignOracleTransaction(
   }
   if (options.cascadeConfig !== undefined) {
     cascadeOptions.cascadeConfig = options.cascadeConfig;
+  }
+  if (options.ethereumAsset !== undefined) {
+    cascadeOptions.ethereumAsset = options.ethereumAsset;
   }
   if (options.etherscanKeys !== undefined) {
     cascadeOptions.etherscanKeys = options.etherscanKeys;

@@ -1,9 +1,10 @@
 'use client';
 
-import type { Chain } from '@/lib/generator/types';
+import type { Chain, EthereumAsset } from '@/lib/generator/types';
 
 export interface ReceiptPdfExportData {
   chain: Chain;
+  ethereumAsset: EthereumAsset;
   claimedAmount: string;
   claimedAmountHuman: string;
   minDate: string;
@@ -23,10 +24,10 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
-function formatChainLabel(chain: Chain): string {
+function formatChainLabel(chain: Chain, ethereumAsset: EthereumAsset): string {
   const labels: Record<Chain, string> = {
     bitcoin: 'Bitcoin',
-    ethereum: 'Ethereum',
+    ethereum: ethereumAsset === 'usdc' ? 'Ethereum (USDC)' : 'Ethereum',
     solana: 'Solana',
   };
   return labels[chain] ?? chain;
@@ -206,7 +207,7 @@ export function buildReceiptPdfHtml(data: ReceiptPdfExportData, generatedAt: Dat
         <ul class="summary-list">
           <li class="summary-item">
             <span class="label">Chain</span>
-            <span class="value">${escapeHtml(formatChainLabel(data.chain))}</span>
+            <span class="value">${escapeHtml(formatChainLabel(data.chain, data.ethereumAsset))}</span>
           </li>
           <li class="summary-item">
             <span class="label">Claimed Amount</span>

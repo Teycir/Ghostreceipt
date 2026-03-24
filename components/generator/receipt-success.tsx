@@ -11,12 +11,13 @@ import { useState, useEffect } from 'react';
 import { Button }       from '@/components/ui/button';
 import { useReceiptShare } from '@/lib/generator/use-receipt-share';
 import { toHumanAmount } from '@/lib/format/units';
-import type { Chain, GeneratorTimingTelemetry }   from '@/lib/generator/types';
+import type { Chain, EthereumAsset, GeneratorTimingTelemetry }   from '@/lib/generator/types';
 import type { SocialNetwork } from '@/lib/share/social';
 
 interface ReceiptSuccessProps {
   proof:          string;
   chain:          Chain;
+  ethereumAsset:  EthereumAsset;
   claimedAmount:  string;
   minDate:        string;
   receiptLabel?:  string;
@@ -24,10 +25,10 @@ interface ReceiptSuccessProps {
   timings?:       GeneratorTimingTelemetry;
 }
 
-function formatChainLabel(chain: Chain): string {
+function formatChainLabel(chain: Chain, ethereumAsset: EthereumAsset): string {
   const LABELS: Record<Chain, string> = {
     bitcoin:  '₿ Bitcoin',
-    ethereum: 'Ξ Ethereum',
+    ethereum: ethereumAsset === 'usdc' ? 'Ξ Ethereum (USDC)' : 'Ξ Ethereum',
     solana:   '◎ Solana',
   };
   return LABELS[chain] ?? chain;
@@ -43,6 +44,7 @@ const SOCIAL_BUTTONS: { label: string; network: SocialNetwork }[] = [
 export function ReceiptSuccess({
   proof,
   chain,
+  ethereumAsset,
   claimedAmount,
   minDate,
   receiptLabel,
@@ -64,6 +66,7 @@ export function ReceiptSuccess({
   } = useReceiptShare({
     proof,
     chain,
+    ethereumAsset,
     claimedAmount,
     minDate,
     ...(receiptLabel ? { receiptLabel } : {}),
@@ -78,8 +81,8 @@ export function ReceiptSuccess({
   }, []);
 
   const receiptFields = [
-    { label: 'Chain',    value: formatChainLabel(chain),                                 delay: '0.15s' },
-    { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain)})`, delay: '0.25s' },
+    { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.15s' },
+    { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.25s' },
     { label: 'Min Date', value: minDate,                                                  delay: '0.35s' },
     ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.45s' }] : []),
     ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.55s' }] : []),

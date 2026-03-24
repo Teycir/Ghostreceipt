@@ -17,7 +17,7 @@ import {
   serializeReceiptHistoryExport,
   type ReceiptHistoryEntry,
 } from '@/lib/history/receipt-history';
-import type { Chain } from '@/lib/generator/types';
+import type { Chain, EthereumAsset } from '@/lib/generator/types';
 
 interface HistoryFilters {
   query: string;
@@ -64,12 +64,12 @@ function buildVerifyUrl(proof: string): string {
   return `${globalThis.location.origin}/verify?${params.toString()}`;
 }
 
-function chainPillLabel(chain: Chain): string {
+function chainPillLabel(chain: Chain, ethereumAsset?: EthereumAsset): string {
   if (chain === 'bitcoin') {
     return 'Bitcoin';
   }
   if (chain === 'ethereum') {
-    return 'Ethereum';
+    return ethereumAsset === 'usdc' ? 'Ethereum (USDC)' : 'Ethereum';
   }
   return 'Solana';
 }
@@ -316,7 +316,7 @@ export default function HistoryPage(): React.JSX.Element {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-2">
                     <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-200">
-                      {chainPillLabel(entry.chain)}
+                      {chainPillLabel(entry.chain, entry.ethereumAsset)}
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${
@@ -332,7 +332,7 @@ export default function HistoryPage(): React.JSX.Element {
                     </span>
                   </div>
                   <span className="text-xs font-mono text-white/70">
-                    {entry.claimedAmount} ({toHumanAmount(entry.claimedAmount, entry.chain)})
+                    {entry.claimedAmount} ({toHumanAmount(entry.claimedAmount, entry.chain, entry.ethereumAsset ?? 'native')})
                   </span>
                 </div>
 

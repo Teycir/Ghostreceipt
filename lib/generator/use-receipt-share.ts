@@ -17,11 +17,12 @@ import {
   nativeShare,
 } from '@/lib/share/social';
 import type { SocialNetwork } from '@/lib/share/social';
-import type { Chain } from '@/lib/generator/types';
+import type { Chain, EthereumAsset } from '@/lib/generator/types';
 
 interface UseReceiptShareOptions {
   proof: string;
   chain: Chain;
+  ethereumAsset: EthereumAsset;
   claimedAmount: string;
   minDate: string;
   receiptLabel?: string;
@@ -67,6 +68,7 @@ async function generateQRDataUrl(url: string): Promise<string> {
 export function useReceiptShare({
   proof,
   chain,
+  ethereumAsset,
   claimedAmount,
   minDate,
   receiptLabel,
@@ -137,8 +139,9 @@ export function useReceiptShare({
     try {
       exportReceiptPdf({
         chain,
+        ethereumAsset,
         claimedAmount,
-        claimedAmountHuman: toHumanAmount(claimedAmount, chain),
+        claimedAmountHuman: toHumanAmount(claimedAmount, chain, ethereumAsset),
         minDate,
         ...(receiptLabel ? { receiptLabel } : {}),
         ...(receiptCategory ? { receiptCategory } : {}),
@@ -151,7 +154,7 @@ export function useReceiptShare({
       const message = error instanceof Error ? error.message : 'PDF export failed';
       setShareStatus(message);
     }
-  }, [chain, claimedAmount, minDate, proof, qrCode, receiptCategory, receiptLabel, verifyUrl]);
+  }, [chain, claimedAmount, ethereumAsset, minDate, proof, qrCode, receiptCategory, receiptLabel, verifyUrl]);
 
   return {
     verifyUrl,

@@ -1,5 +1,32 @@
 # Task Plan - 2026-03-24
 
+## Objective (Ethereum USDC Dropdown + Stable API-Only Scope)
+
+Add a stablecoin option in the generator dropdown flow using Etherscan only (USDC on Ethereum ERC-20), keep Monero excluded due current stability constraints, and preserve existing BTC/ETH/SOL behavior.
+
+## Plan
+
+- [x] Add API request/schema support for Ethereum asset mode (`native` or `usdc`).
+- [x] Extend Etherscan provider to extract USDC transfer value from ERC-20 logs when `usdc` mode is selected.
+- [x] Prevent canonical cache collisions by keying Ethereum cache entries by `txHash + ethereumAsset`.
+- [x] Add generator dropdown option for Ethereum asset selection and wire request payload.
+- [x] Update amount/unit formatting across generator, success card, PDF export, and history views for USDC display.
+- [x] Add/adjust unit API/provider tests for new USDC mode and schema constraints.
+- [x] Run typecheck and targeted tests.
+
+## Review (Ethereum USDC Dropdown + Stable API-Only Scope)
+
+- Status: Completed
+- Notes:
+  - Added `ethereumAsset` request support (`native` / `usdc`) via `OracleFetchTxRequestSchema`.
+  - Etherscan now supports USDC mode by summing USDC `Transfer` log values from `eth_getTransactionReceipt` logs.
+  - Home generator includes an `Ethereum Asset` dropdown with `ETH (native)` and `USDC (ERC-20)`.
+  - Amount unit labels/placeholders/human formatting now reflect USDC base units when selected.
+  - Monero intentionally not integrated in this scope.
+  - Validation:
+    - `npm run typecheck` pass.
+    - `npm run test -- tests/unit/providers/etherscan.test.ts tests/unit/api/oracle-fetch-tx.test.ts tests/unit/generator/pdf-export.test.ts tests/unit/history/receipt-history.test.ts` pass.
+
 ## Objective (Receipt History CTA Placement + Stable API Scope)
 
 Fix overlap/floating behavior by placing the receipt history CTA directly below the generator frame on both mobile and desktop, and lock Monero out of current scope unless a stable free-tier API path is proven.

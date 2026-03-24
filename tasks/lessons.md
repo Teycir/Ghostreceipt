@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-25 - Stablecoin Expansion Should Reuse Existing Stable Provider Track
+- When users request stablecoin coverage with free-tier constraints, prefer extending existing stable providers (for example Etherscan ERC-20 on Ethereum) instead of adding new infra-heavy chains.
+- Keep chain semantics stable by adding asset-mode selection (for example `native` vs `usdc`) rather than forcing a new chain identifier.
+- If Monero/provider stability is uncertain, explicitly defer Monero integration and ship only the proven stable API path.
+
 ## 2026-03-25 - Receipt History CTA Must Be In-Flow On Home Screen
 - If users report the history action overlapping content or following scroll, remove fixed/corner placement for that page and anchor it directly below the primary generator frame.
 - Validate CTA placement on both mobile and desktop in the same pass; avoid breakpoint-specific behavior drift unless explicitly requested.

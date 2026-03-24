@@ -92,7 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const { clientId, data } = envelope;
-    const { chain, txHash, idempotencyKey } = data;
+    const { chain, txHash, ethereumAsset, idempotencyKey } = data;
 
     const replayReservation = reserveFetchTxReplayKey({
       anonymousSessionIdFromCookie:
@@ -118,7 +118,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const signedResult = await fetchAndSignOracleTransaction(
       chain,
       txHash,
-      blockchairApiKey ? { blockchairApiKey } : {}
+      {
+        ...(blockchairApiKey ? { blockchairApiKey } : {}),
+        ...(chain === 'ethereum' && ethereumAsset
+          ? { ethereumAsset }
+          : {}),
+      }
     );
 
     return withSession(NextResponse.json({

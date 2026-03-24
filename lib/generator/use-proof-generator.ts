@@ -155,7 +155,11 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       const response = await fetch('/api/oracle/fetch-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chain: values.chain, txHash: values.txHash }),
+        body: JSON.stringify({
+          chain: values.chain,
+          txHash: values.txHash,
+          ...(values.chain === 'ethereum' ? { ethereumAsset: values.ethereumAsset } : {}),
+        }),
       });
 
       const data = (await response.json()) as { data?: OraclePayload } & ApiErrorPayload;
@@ -239,6 +243,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       setProofResult({
         proof:          shareableProof,
         chain:          values.chain,
+        ethereumAsset:  values.ethereumAsset,
         claimedAmount:  values.claimedAmount,
         minDate:        values.minDate,
         ...(receiptMeta?.label ? { receiptLabel: receiptMeta.label } : {}),
@@ -252,6 +257,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       void addReceiptHistoryEntry({
         proof: shareableProof,
         chain: values.chain,
+        ...(values.chain === 'ethereum' ? { ethereumAsset: values.ethereumAsset } : {}),
         claimedAmount: values.claimedAmount,
         minDate: values.minDate,
         ...(receiptMeta?.label ? { receiptLabel: receiptMeta.label } : {}),

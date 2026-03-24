@@ -134,6 +134,23 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
       expect(data.error.code).toBe('INVALID_HASH');
     });
 
+    it('should reject ethereumAsset for non-ethereum chain requests', async () => {
+      const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
+        method: 'POST',
+        body: JSON.stringify({
+          chain: 'bitcoin',
+          ethereumAsset: 'usdc',
+          txHash: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error.code).toBe('INVALID_HASH');
+    });
+
     it('should accept valid Bitcoin request', async () => {
       jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
         chain: 'bitcoin',
@@ -173,6 +190,31 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
         method: 'POST',
         body: JSON.stringify({
           chain: 'ethereum',
+          txHash: '0xa1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
+        }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should accept valid Ethereum request with USDC asset mode', async () => {
+      jest.spyOn(EtherscanProvider.prototype, 'fetchTransaction').mockResolvedValue({
+        chain: 'ethereum',
+        txHash: '0xa1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
+        valueAtomic: '1000000',
+        timestampUnix: 1700000000,
+        confirmations: 12,
+        blockNumber: 19000000,
+        blockHash: `0x${'c'.repeat(64)}`,
+      });
+
+      const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
+        method: 'POST',
+        body: JSON.stringify({
+          chain: 'ethereum',
+          ethereumAsset: 'usdc',
           txHash: '0xa1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
         }),
       });

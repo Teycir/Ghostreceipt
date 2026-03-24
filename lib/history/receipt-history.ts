@@ -1,4 +1,4 @@
-import type { Chain } from '@/lib/generator/types';
+import type { Chain, EthereumAsset } from '@/lib/generator/types';
 
 const RECEIPT_HISTORY_DB_NAME = 'ghostreceipt-db';
 const RECEIPT_HISTORY_STORE_NAME = 'receipt-history';
@@ -12,11 +12,13 @@ const RECEIPT_HISTORY_QUOTA_RETRY_LIMIT = 5;
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 const SUPPORTED_CHAINS: ReadonlySet<Chain> = new Set(['bitcoin', 'ethereum', 'solana']);
+const SUPPORTED_ETHEREUM_ASSETS: ReadonlySet<EthereumAsset> = new Set(['native', 'usdc']);
 
 export interface ReceiptHistoryEntry {
   id: string;
   proof: string;
   chain: Chain;
+  ethereumAsset?: EthereumAsset;
   claimedAmount: string;
   minDate: string;
   openedAt?: string;
@@ -28,6 +30,7 @@ export interface ReceiptHistoryEntry {
 export interface ReceiptHistoryEntryInput {
   proof: string;
   chain: Chain;
+  ethereumAsset?: EthereumAsset;
   claimedAmount: string;
   minDate: string;
   receiptLabel?: string;
@@ -148,6 +151,15 @@ function normalizeInput(input: ReceiptHistoryEntryInput): Omit<ReceiptHistoryEnt
   if (!minDate) {
     throw new Error('Cannot store receipt history without minimum date');
   }
+  if (
+    input.ethereumAsset !== undefined &&
+    !SUPPORTED_ETHEREUM_ASSETS.has(input.ethereumAsset)
+  ) {
+    throw new Error('Cannot store receipt history with unsupported ethereum asset');
+  }
+  if (input.chain !== 'ethereum' && input.ethereumAsset && input.ethereumAsset !== 'native') {
+    throw new Error('Cannot store non-ethereum receipt history with ethereum asset');
+  }
 
   const receiptLabel = normalizeOptionalField(input.receiptLabel, 80);
   const receiptCategory = normalizeOptionalField(input.receiptCategory, 40);
@@ -155,6 +167,9 @@ function normalizeInput(input: ReceiptHistoryEntryInput): Omit<ReceiptHistoryEnt
   return {
     proof,
     chain: input.chain,
+    ...(input.chain === 'ethereum' && input.ethereumAsset
+      ? { ethereumAsset: input.ethereumAsset }
+      : {}),
     claimedAmount,
     minDate,
     ...(receiptLabel ? { receiptLabel } : {}),
@@ -182,6 +197,15 @@ function parseEntry(value: unknown): ReceiptHistoryEntry | null {
 
   const parsedLabel = normalizeOptionalField(maybe.receiptLabel, 80);
   const parsedCategory = normalizeOptionalField(maybe.receiptCategory, 40);
+  const parsedEthereumAsset = (
+    typeof maybe.ethereumAsset === 'string' &&
+    SUPPORTED_ETHEREUM_ASSETS.has(maybe.ethereumAsset as EthereumAsset)
+  )
+    ? (maybe.ethereumAsset as EthereumAsset)
+    : undefined;
+  if ((maybe.chain as Chain) !== 'ethereum' && parsedEthereumAsset && parsedEthereumAsset !== 'native') {
+    return null;
+  }
   const openedAt =
     typeof maybe.openedAt === 'string' && maybe.openedAt.trim().length > 0
       ? maybe.openedAt
@@ -191,6 +215,7 @@ function parseEntry(value: unknown): ReceiptHistoryEntry | null {
     id: maybe.id,
     proof: maybe.proof,
     chain: maybe.chain as Chain,
+    ...(parsedEthereumAsset ? { ethereumAsset: parsedEthereumAsset } : {}),
     claimedAmount: maybe.claimedAmount,
     minDate: maybe.minDate,
     createdAt: maybe.createdAt,
@@ -419,6 +444,7 @@ export function filterReceiptHistoryEntries(
 
     const searchIndex = [
       entry.chain,
+      entry.ethereumAsset ?? '',
       entry.claimedAmount,
       entry.minDate,
       entry.receiptLabel ?? '',
