@@ -1,5 +1,11 @@
 # Lessons Learned
 
+## 2026-03-25 - New Option Discovery Must Be In The Primary Dropdown
+- If a user expects a new option in an existing dropdown, avoid hiding it behind a second conditional selector on first rollout.
+- Prefer a single explicit primary dropdown entry (for example `Ethereum (USDC)`) when feature discoverability is the user's immediate goal.
+- Reset dependent inputs (hash/amount) when chain-asset mode changes to prevent stale values crossing unit contexts.
+- If a requested chain is not yet circuit-capable (for example Solana prove path), keep it visible but disabled with a clear "coming soon" label instead of silently omitting it.
+
 ## 2026-03-25 - Stablecoin Expansion Should Reuse Existing Stable Provider Track
 - When users request stablecoin coverage with free-tier constraints, prefer extending existing stable providers (for example Etherscan ERC-20 on Ethereum) instead of adding new infra-heavy chains.
 - Keep chain semantics stable by adding asset-mode selection (for example `native` vs `usdc`) rather than forcing a new chain identifier.

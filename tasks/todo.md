@@ -1,5 +1,27 @@
 # Task Plan - 2026-03-24
 
+## Objective (Roadmap Continuation: USDC Stabilization + Documentation)
+
+Continue roadmap execution by closing documentation/tracking gaps for the newly added Ethereum USDC mode and adding dedicated regression coverage for unit formatting behavior.
+
+## Plan
+
+- [x] Add focused unit tests for `lib/format/units.ts` covering Ethereum native + USDC modes.
+- [x] Update user-facing docs (`README`, `public/docs/faq.html`) to reflect USDC support and explicit Monero deferral.
+- [x] Update canonical roadmap file with `R-P2-04` completion notes for Ethereum asset selector support.
+- [x] Run typecheck + targeted tests.
+
+## Review (Roadmap Continuation: USDC Stabilization + Documentation)
+
+- Status: Completed
+- Notes:
+  - Added dedicated format-unit tests for `ETH` and `USDC` amount conversions/placeholders.
+  - Updated public docs to state Ethereum USDC support and keep Monero explicitly deferred.
+  - Added roadmap completion entries for `R-P2-04`.
+  - Validation:
+    - `npm run typecheck` pass.
+    - `npm run test -- tests/unit/format/units.test.ts tests/unit/providers/etherscan.test.ts tests/unit/api/oracle-fetch-tx.test.ts` pass.
+
 ## Objective (Ethereum USDC Dropdown + Stable API-Only Scope)
 
 Add a stablecoin option in the generator dropdown flow using Etherscan only (USDC on Ethereum ERC-20), keep Monero excluded due current stability constraints, and preserve existing BTC/ETH/SOL behavior.
@@ -36,12 +58,12 @@ Fix overlap/floating behavior by placing the receipt history CTA directly below 
 - [x] Remove floating/fixed history CTA from home screen layout.
 - [x] Place a single in-flow `View Receipt History` button directly below the generator frame for all breakpoints.
 - [x] Increase mobile bottom spacing so CTA stays visible above footer overlap.
-- [ ] Add only stable free-tier provider integrations; skip Monero integration unless API stability criteria are met.
+- [x] Add only stable free-tier provider integrations; skip Monero integration unless API stability criteria are met.
 - [x] Run validation and record outcome.
 
 ## Review (Receipt History CTA Placement + Stable API Scope)
 
-- Status: In progress
+- Status: Completed
 - Notes:
   - Home page now uses one in-flow history CTA below the generator card (mobile + desktop).
   - Floating corner history link is removed from the home layout to prevent overlap/follow behavior.

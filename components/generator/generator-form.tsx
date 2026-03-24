@@ -16,7 +16,7 @@ import { ReceiptSuccess } from './receipt-success';
 import { ProofStepper }   from './proof-stepper';
 import { useProofGenerator } from '@/lib/generator/use-proof-generator';
 import { formatAtomicAmount, atomicUnitLabel, amountPlaceholder } from '@/lib/format/units';
-import type { GeneratorFormValues, Chain, EthereumAsset } from '@/lib/generator/types';
+import type { GeneratorFormValues } from '@/lib/generator/types';
 
 const DEFAULT_VALUES: GeneratorFormValues = {
   chain:         'bitcoin',
@@ -49,18 +49,53 @@ export function GeneratorForm(): React.JSX.Element {
   // Derived
   const humanAmount = formatAtomicAmount(values.claimedAmount, values.chain, values.ethereumAsset);
 
-  // Chain change also clears the tx hash — formats are mutually exclusive
-  const handleChainChange = useCallback((chain: Chain) => {
-    setValues((prev) => ({
-      ...prev,
-      chain,
-      txHash: '',
-      ethereumAsset: chain === 'ethereum' ? prev.ethereumAsset : 'native',
-    }));
-  }, []);
+  type ChainModeValue = 'bitcoin' | 'ethereum' | 'solana' | 'ethereum-usdc';
+  const chainModeValue: ChainModeValue =
+    values.chain === 'ethereum' && values.ethereumAsset === 'usdc'
+      ? 'ethereum-usdc'
+      : values.chain;
 
-  const handleEthereumAssetChange = useCallback((asset: EthereumAsset) => {
-    setValues((prev) => ({ ...prev, ethereumAsset: asset, claimedAmount: '' }));
+  // Chain/asset mode changes reset tx hash + claimed amount to avoid stale-format claims.
+  const handleChainModeChange = useCallback((mode: ChainModeValue) => {
+    setValues((prev) => {
+      if (mode === 'bitcoin') {
+        return {
+          ...prev,
+          chain: 'bitcoin',
+          ethereumAsset: 'native',
+          txHash: '',
+          claimedAmount: '',
+        };
+      }
+
+      if (mode === 'ethereum-usdc') {
+        return {
+          ...prev,
+          chain: 'ethereum',
+          ethereumAsset: 'usdc',
+          txHash: '',
+          claimedAmount: '',
+        };
+      }
+
+      if (mode === 'solana') {
+        return {
+          ...prev,
+          chain: 'solana',
+          ethereumAsset: 'native',
+          txHash: '',
+          claimedAmount: '',
+        };
+      }
+
+      return {
+        ...prev,
+        chain: 'ethereum',
+        ethereumAsset: 'native',
+        txHash: '',
+        claimedAmount: '',
+      };
+    });
   }, []);
 
   const handleTxHashChange = useCallback((raw: string) => {
@@ -97,33 +132,20 @@ export function GeneratorForm(): React.JSX.Element {
     >
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {/* ── Chain ── */}
-        <div className="space-y-2">
-          <Select
-            label="Chain"
-            value={values.chain}
-            onChange={(e) => handleChainChange(e.target.value as Chain)}
-            disabled={isProcessing}
-            error={errors.chain}
-            labelClassName="text-xs"
-            className="h-8 rounded-lg px-2 py-1 text-[12px]"
-          >
-            <option value="bitcoin">Bitcoin</option>
-            <option value="ethereum">Ethereum</option>
-          </Select>
-          {values.chain === 'ethereum' && (
-            <Select
-              label="Ethereum Asset"
-              value={values.ethereumAsset}
-              onChange={(event) => handleEthereumAssetChange(event.target.value as EthereumAsset)}
-              disabled={isProcessing}
-              labelClassName="text-xs"
-              className="h-8 rounded-lg px-2 py-1 text-[12px]"
-            >
-              <option value="native">ETH (native)</option>
-              <option value="usdc">USDC (ERC-20)</option>
-            </Select>
-          )}
-        </div>
+        <Select
+          label="Chain"
+          value={chainModeValue}
+          onChange={(event) => handleChainModeChange(event.target.value as ChainModeValue)}
+          disabled={isProcessing}
+          error={errors.chain}
+          labelClassName="text-xs"
+          className="h-8 rounded-lg px-2 py-1 text-[12px]"
+        >
+          <option value="bitcoin">Bitcoin</option>
+          <option value="ethereum">Ethereum (ETH)</option>
+          <option value="ethereum-usdc">Ethereum (USDC)</option>
+          <option value="solana" disabled>Solana (SOL) — coming soon</option>
+        </Select>
 
         {/* ── Transaction hash ── */}
         <div>

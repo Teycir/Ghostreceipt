@@ -280,8 +280,11 @@ It proves your claim satisfies the circuit against oracle-signed canonical tx fa
 ### What BTC value does `valueAtomic` represent?
 For BTC, `valueAtomic` is currently tx-level total output value (`sum(vout)` / `output_total`), not recipient-specific net received value. In multi-output transactions, this can exceed what any single recipient received.
 
+### Are stablecoins supported?
+Yes. Ethereum now supports native ETH and ERC-20 USDC claim mode through the same oracle fetch flow.
+
 ### Is Monero supported?
-Planned as a dedicated track with separate constraints due to hidden amounts.
+Not in the active runtime path yet. It remains deferred until a stable free-tier provider strategy is validated for GhostReceipt's canonical receipt model.
 
 ## Complementary Projects
 

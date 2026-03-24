@@ -36,6 +36,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Enforced API-only oracle provider policy (public RPC paths removed from active cascade; live integration now uses Exa-sourced BTC/ETH/SOL fixtures with API-key gating for ETH/SOL).
 - [x] Ported Etherscan v2 throttling/cascade pacing from `smartcontractpatternfinder` and validated full live BTC/ETH/SOL integration pass with API providers only.
 - [x] Generalized provider throttling to doc-driven + context-parameterized policy across Etherscan/Helius/mempool.space/Blockchair with validated live BTC/ETH/SOL flow.
+- [x] Added Ethereum asset-mode support for stablecoin claims (`ETH` native + `USDC` ERC-20 via Etherscan) with API/schema validation and provider normalization.
 
 ---
 
@@ -64,6 +65,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Add PDF export with QR + human-readable proof summary.
 - [x] Add receipt labels/categories in generator + verifier.
 - [x] Add local receipt history (`/history`, IndexedDB, JSON export).
+- [x] Add Ethereum stablecoin selector (`ETH` / `USDC`) in generator with Etherscan-backed canonical fetch path.
 
 ### Shareability and ZK Design (P2-P3)
 
@@ -80,6 +82,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] `R-P2-01` PDF export with QR + human-readable proof summary.
 - [x] `R-P2-02` Receipt labels/categories in generator + verifier.
 - [x] `R-P2-03` Local receipt history (`/history`, IndexedDB, JSON export).
+- [x] `R-P2-04` Ethereum asset selector (`ETH` native + `USDC` ERC-20) with Etherscan normalization.
 
 Scope constraints:
 - No new paid services or required hosted dependencies.
@@ -271,3 +274,4 @@ Minimum required fields:
   - `docs/project/PLAN.md`
   - `docs/project/ROADMAP.md`
 - 2026-03-24: Reintroduced `tasks/todo.md` as lightweight session execution tracking; roadmap remains canonical for planning and prioritization.
+- 2026-03-25: Completed `R-P2-04` by adding Ethereum asset-mode selection (`native` / `usdc`) in generator flow, routing `ethereumAsset` through oracle fetch validation, and normalizing USDC transfer values from Etherscan ERC-20 receipt logs.
