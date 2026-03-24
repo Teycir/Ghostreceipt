@@ -2,25 +2,36 @@
 
 ## Objective
 
-Remove high-volume verification tracks from docs and harden runtime defaults for free-tier capacity safety.
+Study `Repos/Timeseal` local encrypted-link storage flow and abstract it into a reusable GhostReceipt library module.
 
 ## Plan
 
-- [x] Remove batch/compliance verification tracks from roadmap docs.
-- [x] Audit runtime features for free-tier capacity risks.
-- [x] Harden oracle route defaults (rate limits + in-memory registry ceilings) where safe.
-- [x] Run targeted verification tests and typecheck after hardening.
+- [x] Study Timeseal storage flow (`lib/encryptedStorage.ts`, create/dashboard/pulse usage points) and extract reusable primitives.
+- [x] Implement a reusable browser-core encrypted link vault library (adapter-driven storage + encryption + deterministic pruning).
+- [x] Add unit tests in `tests/` for round-trip encryption, pruning behavior, opened-state updates, and quota retry handling.
+- [x] Export/document the new library in `lib/libraries/*` surfaces for cross-project reuse.
+- [x] Run verification (`npm run typecheck` + targeted jest suite).
 
 ## Review
 
 - Status: Complete
 - Notes:
-  - Removed all `R-P2-04`/batch/compliance planning tracks from `docs/project/ENHANCEMENT_ROADMAP.md`.
-  - Hardened free-tier runtime defaults:
-    - `fetch-tx`: global minute `90 -> 60`, global burst `20 -> 12`.
-    - `verify-signature`: global minute `120 -> 60`, global burst `30 -> 20`, replay max entries `5000 -> 2000` (client minute remains `12` for stability).
-    - `check-nullifier`: client minute `15 -> 8`, global minute `150 -> 80`, client burst `4 -> 2`, global burst `40 -> 10`, registry max entries `10000 -> 3000`.
+  - Added `lib/libraries/browser-core/encrypted-link-vault.ts`:
+    - Timeseal-derived encrypted local storage (AES-GCM),
+    - adapter-driven persistence (`LinkVaultStorageAdapter`),
+    - CRUD helpers (`addRecord`, `listRecords`, `saveRecords`, `removeRecord`, `markRecordOpened`, `clearRecords`),
+    - deterministic oldest-first pruning and quota retry flow,
+    - storage pressure/status label support.
+  - Added browser-core package surface:
+    - `lib/libraries/browser-core/index.ts`
+    - `@ghostreceipt/browser-core` + `@ghostreceipt/browser-core/*` aliases in `tsconfig.json`
+    - top-level export via `lib/libraries/index.ts`
+    - docs update in `lib/libraries/README.md`
+  - Added tests in `tests/unit/browser-core/encrypted-link-vault.test.ts`:
+    - encrypted round-trip storage
+    - opened-state updates
+    - high-water pruning
+    - quota retry pruning
   - Verification commands run:
     - `npm run typecheck`
-    - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts --runInBand`
-    - `rg -n "batch verification|R-P2-04|compliance|accounting" docs/project -S`
+    - `npm test -- tests/unit/browser-core/encrypted-link-vault.test.ts tests/unit/backend-core/http/share-pointer-storage.test.ts --runInBand`

@@ -44,6 +44,12 @@
       ],
       "@ghostreceipt/zk-core/*": [
         "./lib/libraries/zk-core/*"
+      ],
+      "@ghostreceipt/browser-core": [
+        "./lib/libraries/browser-core/index.ts"
+      ],
+      "@ghostreceipt/browser-core/*": [
+        "./lib/libraries/browser-core/*"
       ]
     },
     "plugins": [

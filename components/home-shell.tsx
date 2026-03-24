@@ -5,6 +5,7 @@ import { GeneratorForm } from '@/components/generator/generator-form';
 import { Footer } from '@/components/footer';
 import { EyeCandy } from '@/components/eye-candy';
 import { AnimatedTagline } from '@/components/animated-tagline';
+import { CornerNavLink } from '@/lib/libraries/ui';
 import TextPressure from '@/components/text-pressure';
 
 const MIN_LOADING_MS = 1700;
@@ -21,7 +22,7 @@ const LOADER_USE_CASES = [
   },
   {
     title: 'Audit-Ready Payment Records',
-    benefit: 'Keep accounting evidence verifiable without exposing sensitive wallet identities.',
+    benefit: 'Keep payment evidence verifiable without exposing sensitive wallet identities.',
   },
   {
     title: 'Escrow & Third-Party Verification',
@@ -140,13 +141,19 @@ export function HomeShell(): React.JSX.Element {
       </div>
 
       <div
-        className={`main-shell ${loading ? 'main-shell--loading' : 'main-shell--ready'}`}
+        className={`main-shell relative ${loading ? 'main-shell--loading' : 'main-shell--ready'}`}
         style={{
           opacity: loading ? 0 : 1,
           pointerEvents: loading ? 'none' : 'auto',
           transition: 'opacity 620ms ease 120ms',
         }}
       >
+        <CornerNavLink
+          href="/history"
+          label="Receipt History"
+          ariaLabel="Open local receipt history"
+          side="left"
+        />
         <main className="flex min-h-screen flex-col items-center justify-center p-4 pb-20">
           <div className="w-full max-w-2xl space-y-8 fade-up">
             <div className="text-center space-y-3">

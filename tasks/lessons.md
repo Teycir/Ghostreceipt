@@ -1,5 +1,25 @@
 # Lessons Learned
 
+## 2026-03-24 - Timeseal Reuse Requests Should Extract Storage Core, Not App UI
+- When asked to reuse Timeseal logic, first isolate `lib/encryptedStorage.ts` behavior (encrypted local pointer storage lifecycle) as a standalone library API.
+- Keep app pages/components out of the abstraction layer; expose adapter-driven primitives that other projects can adopt without design coupling.
+- Include quota-aware pruning and opened-state metadata in the reusable core so downstream apps do not re-implement lifecycle edge cases.
+
+## 2026-03-24 - Sanctum Parity Requires DB-Backed Storage, Not Memory-Only
+- When matching Sanctum architecture, include a Wrangler/D1 adapter and schema path in the extraction step.
+- Keep in-memory storage only as a test/dev adapter, not the primary durability model.
+- Capture deployment-ready SQL alongside the abstraction so integration does not stall on infra gaps.
+
+## 2026-03-24 - Sanctum-First Pattern Requests Should Start With Reusable Storage Core
+- When the user asks to reuse Sanctum’s approach, implement the storage lifecycle core (pointer IDs, expiry deactivation, hard-delete grace, capacity pruning) as a standalone backend abstraction before touching UI flow.
+- Keep the abstraction API-neutral and adapter-driven so route integration can happen incrementally without redesigning storage semantics.
+- Add focused unit tests for lifecycle transitions and pruning behavior first, then wire routes/hooks.
+
+## 2026-03-24 - Share Payload Upgrades Must Use Hard Cutover When Requested
+- When the user requests no dual-system support, do not keep legacy payload parser branches for compatibility.
+- Use one canonical payload schema and remove old-format support in roadmap and implementation scope.
+- Treat unknown or legacy payloads as explicit errors after cutover instead of fallback parsing.
+
 ## 2026-03-24 - De-Scoped Features Must Be Purged From Canonical Docs
 - When the user asks to remove a feature for capacity reasons, remove its roadmap/docs tracks entirely (not only mark deferred) if requested.
 - After doc cleanup, run a zero-match search against `docs/project` for the removed feature terms before closing.

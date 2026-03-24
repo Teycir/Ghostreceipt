@@ -19,6 +19,7 @@ export interface ReceiptHistoryEntry {
   chain: Chain;
   claimedAmount: string;
   minDate: string;
+  openedAt?: string;
   receiptLabel?: string;
   receiptCategory?: string;
   createdAt: string;
@@ -181,6 +182,10 @@ function parseEntry(value: unknown): ReceiptHistoryEntry | null {
 
   const parsedLabel = normalizeOptionalField(maybe.receiptLabel, 80);
   const parsedCategory = normalizeOptionalField(maybe.receiptCategory, 40);
+  const openedAt =
+    typeof maybe.openedAt === 'string' && maybe.openedAt.trim().length > 0
+      ? maybe.openedAt
+      : undefined;
 
   return {
     id: maybe.id,
@@ -189,6 +194,7 @@ function parseEntry(value: unknown): ReceiptHistoryEntry | null {
     claimedAmount: maybe.claimedAmount,
     minDate: maybe.minDate,
     createdAt: maybe.createdAt,
+    ...(openedAt ? { openedAt } : {}),
     ...(parsedLabel ? { receiptLabel: parsedLabel } : {}),
     ...(parsedCategory ? { receiptCategory: parsedCategory } : {}),
   };
@@ -359,6 +365,29 @@ export async function listReceiptHistoryEntries(): Promise<ReceiptHistoryEntry[]
 
 export async function deleteReceiptHistoryEntry(id: string): Promise<void> {
   await deleteEntryIndexedDb(id);
+}
+
+export async function markReceiptHistoryEntryOpened(
+  id: string,
+  openedAt: Date = new Date()
+): Promise<ReceiptHistoryEntry> {
+  const db = await openHistoryDb();
+  const transaction = db.transaction(RECEIPT_HISTORY_STORE_NAME, 'readwrite');
+  const store = transaction.objectStore(RECEIPT_HISTORY_STORE_NAME);
+  const existingRaw = await toRequestPromise(store.get(id));
+  const existingEntry = parseEntry(existingRaw);
+
+  if (!existingEntry) {
+    throw new Error('History entry not found');
+  }
+
+  const updatedEntry: ReceiptHistoryEntry = {
+    ...existingEntry,
+    openedAt: openedAt.toISOString(),
+  };
+  store.put(updatedEntry);
+  await toTransactionPromise(transaction);
+  return updatedEntry;
 }
 
 export async function clearReceiptHistoryEntries(): Promise<void> {

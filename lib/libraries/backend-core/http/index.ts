@@ -108,3 +108,23 @@ export type {
   NullifierRegistryOptions,
   SharedNullifierRegistryOptions,
 } from './oracle-nullifier';
+export {
+  D1SharePointerStorageAdapter,
+  InMemorySharePointerStorageAdapter,
+  SharePointerStorageManager,
+} from './share-pointer-storage';
+export type {
+  D1DatabaseLike,
+  D1PreparedStatementLike,
+  D1SharePointerStorageAdapterOptions,
+  D1StatementAllResult,
+  ResolveSharePointerOptions,
+  SharePointerCleanupResult,
+  SharePointerResolveResult,
+  SharePointerStorageAdapter,
+  SharePointerStorageEntry,
+  SharePointerStorageManagerOptions,
+  SharePointerStorageStatus,
+  SharePointerStoreResult,
+  StoreSharePointerOptions,
+} from './share-pointer-storage';

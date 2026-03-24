@@ -7,6 +7,7 @@ This folder packages app code into reusable library slices for future zk applica
 - `lib/libraries/ui`
   - `premium-select.ts`: reusable premium select primitives (options parsing, classes, keyboard helpers).
   - `components/premium-select.tsx`: reusable UI component.
+  - `components/corner-nav-link.tsx`: reusable top-corner quick navigation action (TimeSeal-inspired).
   - `index.ts`: UI exports.
 
 - `lib/libraries/backend`
@@ -19,7 +20,7 @@ This folder packages app code into reusable library slices for future zk applica
   - `index.ts`: zk exports.
 
 - `lib/libraries/index.ts`
-  - top-level namespace exports (`UiLibrary`, `BackendLibrary`, `ZkLibrary`).
+  - top-level namespace exports (`UiLibrary`, `BackendLibrary`, `ZkLibrary`, `BrowserCoreLibrary`).
 
 - `lib/libraries/backend-core`
   - package-style backend core surface:
@@ -33,6 +34,13 @@ This folder packages app code into reusable library slices for future zk applica
   - import alias support:
     - `@ghostreceipt/backend-core`
     - `@ghostreceipt/backend-core/*`
+
+- `lib/libraries/browser-core`
+  - package-style browser storage surface:
+    - `encrypted-link-vault.ts`: Timeseal-derived encrypted local link-vault abstraction (AES-GCM at rest, deterministic oldest-first pruning, quota retry, opened-state metadata helpers).
+  - import alias support:
+    - `@ghostreceipt/browser-core`
+    - `@ghostreceipt/browser-core/*`
 
 - `lib/libraries/zk-core`
   - package-style zk core surface (witness build/validate/extract).

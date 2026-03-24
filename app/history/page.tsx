@@ -15,6 +15,7 @@ import {
   getReceiptHistoryStorageStatus,
   listReceiptHistoryCategories,
   listReceiptHistoryEntries,
+  markReceiptHistoryEntryOpened,
   serializeReceiptHistoryExport,
   type ReceiptHistoryEntry,
 } from '@/lib/history/receipt-history';
@@ -27,12 +28,38 @@ interface HistoryFilters {
   category: string;
 }
 
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) {
+    return 'n/a';
+  }
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const kb = bytes / 1024;
+  if (kb < 1024) {
+    return `${kb.toFixed(1)} KB`;
+  }
+  const mb = kb / 1024;
+  if (mb < 1024) {
+    return `${mb.toFixed(1)} MB`;
+  }
+  const gb = mb / 1024;
+  return `${gb.toFixed(2)} GB`;
+}
+
 function formatCreatedAt(isoDate: string): string {
   const parsed = new Date(isoDate);
   if (Number.isNaN(parsed.getTime())) {
     return isoDate;
   }
   return parsed.toLocaleString();
+}
+
+function formatOpenedStatus(openedAt?: string): string {
+  if (!openedAt) {
+    return 'Not opened';
+  }
+  return `Opened ${formatCreatedAt(openedAt)}`;
 }
 
 function buildVerifyUrl(proof: string): string {
@@ -56,6 +83,7 @@ export default function HistoryPage(): React.JSX.Element {
   const [error, setError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [storageWarning, setStorageWarning] = useState('');
+  const [storageSummary, setStorageSummary] = useState('');
   const [filters, setFilters] = useState<HistoryFilters>({
     query: '',
     chain: 'all',
@@ -69,10 +97,24 @@ export default function HistoryPage(): React.JSX.Element {
       const allEntries = await listReceiptHistoryEntries();
       setEntries(allEntries);
       const storageStatus = await getReceiptHistoryStorageStatus();
+      if (
+        typeof storageStatus.pressureRatio === 'number' &&
+        typeof storageStatus.usageBytes === 'number' &&
+        typeof storageStatus.quotaBytes === 'number'
+      ) {
+        const percent = Math.round(storageStatus.pressureRatio * 100);
+        setStorageSummary(
+          `Storage usage: ${percent}% (${formatBytes(storageStatus.usageBytes)} / ${formatBytes(storageStatus.quotaBytes)}).`
+        );
+      } else {
+        setStorageSummary(
+          `Storage usage: unavailable on this browser. Local history still enforces oldest-first pruning.`
+        );
+      }
       if (storageStatus.nearFull && typeof storageStatus.pressureRatio === 'number') {
         const percent = Math.round(storageStatus.pressureRatio * 100);
         setStorageWarning(
-          `Storage ${percent}% full. Oldest receipts are pruned automatically when saving new ones.`
+          `Storage ${percent}% full, pruning oldest records.`
         );
       } else {
         setStorageWarning('');
@@ -130,6 +172,19 @@ export default function HistoryPage(): React.JSX.Element {
       setStatusMessage('Receipt removed from local history.');
     } catch {
       setStatusMessage('Could not remove receipt from local history.');
+    }
+  }, []);
+
+  const handleOpenVerify = useCallback(async (entry: ReceiptHistoryEntry): Promise<void> => {
+    try {
+      const updatedEntry = await markReceiptHistoryEntryOpened(entry.id);
+      setEntries((prev) => prev.map((current) => (
+        current.id === entry.id ? updatedEntry : current
+      )));
+    } catch {
+      // Continue to verification even if opened-status update fails.
+    } finally {
+      globalThis.location.href = buildVerifyUrl(entry.proof);
     }
   }, []);
 
@@ -222,6 +277,12 @@ export default function HistoryPage(): React.JSX.Element {
               <p className="text-xs text-cyan-300/80" aria-live="polite">{statusMessage}</p>
             )}
 
+            {storageSummary && (
+              <p className="rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100/90">
+                {storageSummary}
+              </p>
+            )}
+
             {storageWarning && (
               <p className="rounded-lg border border-amber-400/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
                 {storageWarning}
@@ -261,6 +322,15 @@ export default function HistoryPage(): React.JSX.Element {
                     <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-200">
                       {chainPillLabel(entry.chain)}
                     </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        entry.openedAt
+                          ? 'border border-emerald-400/35 bg-emerald-500/10 text-emerald-200'
+                          : 'border border-white/20 bg-white/5 text-white/70'
+                      }`}
+                    >
+                      {formatOpenedStatus(entry.openedAt)}
+                    </span>
                     <span className="text-xs text-white/45">
                       {formatCreatedAt(entry.createdAt)}
                     </span>
@@ -296,9 +366,7 @@ export default function HistoryPage(): React.JSX.Element {
                   <Button
                     type="button"
                     variant="primary"
-                    onClick={() => {
-                      globalThis.location.href = buildVerifyUrl(entry.proof);
-                    }}
+                    onClick={() => { void handleOpenVerify(entry); }}
                   >
                     Open Verify
                   </Button>

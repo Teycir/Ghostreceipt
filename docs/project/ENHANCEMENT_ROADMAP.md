@@ -63,7 +63,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 ### Shareability and ZK Design (P2-P3)
 
-- [ ] Add proof payload compression/versioning with a single canonical parser and explicit cutover.
+- [ ] Add compact canonical proof payload format with hard cutover (legacy format removed).
 - [ ] Draft selective disclosure public-input contract and phased implementation plan.
 - [ ] Draft bounded amount disclosure/range-proof design and rollout plan.
 
@@ -79,7 +79,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 Scope constraints:
 - No new paid services or required hosted dependencies.
-- Backward compatibility for existing share payloads and verifier links.
+- Share payload policy: one canonical format only after cutover.
 - Mobile-first layout and interaction parity.
 
 Acceptance criteria:
@@ -99,19 +99,19 @@ npm run test:e2e -- --grep "history|pdf|verify"
 
 `Goal`: improve payload ergonomics and privacy controls while preserving deterministic verification.
 
-- [ ] `R-P3-01` Proof payload compression/versioning with canonical-parser cutover.
+- [ ] `R-P3-01` Compact canonical proof payload format with hard cutover.
 - [ ] `R-P3-02` Selective disclosure public-input contract and phased plan.
 - [ ] `R-P3-03` Bounded amount disclosure/range-proof design and rollout plan.
 
 Scope constraints:
-- Deterministic encoding and decoding across all supported payload versions.
-- No silent fallback across payload versions; explicit parser/version behavior only.
+- Deterministic encoding and decoding for one canonical payload schema.
+- No legacy parser retention after cutover; legacy payloads fail with explicit error.
 - Privacy upgrades gated behind benchmark and interoperability evidence.
 
 Acceptance criteria:
 - Compression reduces typical QR payload size with no verification regressions.
-- Selective disclosure plan includes compatibility matrix and migration trigger points.
-- Range-proof plan includes proving-time budget projections and fallback strategy.
+- Selective disclosure plan includes cutover checklist and migration trigger points.
+- Range-proof plan includes proving-time budget projections and rollout safety gating.
 
 Verification commands:
 ```bash
@@ -158,7 +158,7 @@ Exit criteria:
 
 ### Phase 4: Advanced Share and Privacy Controls (P2-P3)
 
-- [ ] Share payload compression and QR scannability optimization.
+- [ ] Canonical compact share payload and QR scannability optimization (hard cutover).
 - [ ] Selective disclosure design and implementation staging.
 - [ ] Range-proof mode design and implementation staging.
 
@@ -227,7 +227,7 @@ Minimum required fields:
   Mitigation: benchmark and gate every circuit-affecting change.
 
 - Risk: payload feature growth harms QR/share usability.  
-  Mitigation: versioned payloads + canonical-parser stability tests + compression tests.
+  Mitigation: canonical payload contract + strict parser stability tests + compression tests.
 
 - Risk: roadmap drift across files.  
   Mitigation: this file is now the single canonical planning/tracking source.
