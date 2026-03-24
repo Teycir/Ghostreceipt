@@ -1,4 +1,8 @@
-import type { EthereumProvider, ProviderConfig, ApiKeyConfig } from '../types';
+import type {
+  ApiKeyConfig,
+  EthereumProvider,
+  ProviderConfig,
+} from '@ghostreceipt/backend-core/providers/types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';

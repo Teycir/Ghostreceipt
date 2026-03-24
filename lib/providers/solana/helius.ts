@@ -1,4 +1,8 @@
-import type { ApiKeyConfig, ProviderConfig, SolanaProvider } from '../types';
+import type {
+  ApiKeyConfig,
+  ProviderConfig,
+  SolanaProvider,
+} from '@ghostreceipt/backend-core/providers/types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { SolanaTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';

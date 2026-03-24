@@ -1,5 +1,5 @@
-import { ProviderCascade } from '@/lib/providers/cascade';
-import type { CascadeConfig, Provider } from '@/lib/providers/types';
+import { ProviderCascade } from '@ghostreceipt/backend-core/providers';
+import type { CascadeConfig, Provider } from '@ghostreceipt/backend-core/providers';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 
 const sampleTx: CanonicalTxData = {

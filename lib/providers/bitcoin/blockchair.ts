@@ -1,4 +1,4 @@
-import type { BitcoinProvider, ProviderConfig } from '../types';
+import type { BitcoinProvider, ProviderConfig } from '@ghostreceipt/backend-core/providers/types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { BitcoinTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';

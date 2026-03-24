@@ -1,4 +1,4 @@
-import { buildWitness, validateWitness } from '@/lib/zk/witness';
+import { buildWitness, validateWitness } from '@ghostreceipt/zk-core/witness';
 import { ProofGenerator } from '@/lib/zk/prover';
 import type { OraclePayload } from '@/lib/validation/schemas';
 
@@ -41,8 +41,8 @@ describe('End-to-End Proof Generation', () => {
       const mockProof = {
         proof: {
           pi_a: ['1', '2', '3'],
-          pi_b: [['4', '5'], ['6', '7']],
-          pi_c: ['8', '9', '10'],
+          pi_b: [['4', '5'], ['6', '7'], ['8', '9']],
+          pi_c: ['10', '11', '12'],
           protocol: 'groth16',
           curve: 'bn128',
         },
@@ -69,7 +69,7 @@ describe('End-to-End Proof Generation', () => {
 
       expect(() => {
         prover.importProof('{"invalid": "format"}');
-      }).toThrow('Invalid proof format');
+      }).toThrow('Failed to import proof');
     });
   });
 

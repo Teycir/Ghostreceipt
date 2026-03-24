@@ -2,36 +2,38 @@
 
 ## Objective
 
-Study `Repos/Timeseal` local encrypted-link storage flow and abstract it into a reusable GhostReceipt library module.
+Audit application dead code and remove safe, confirmed-unused paths, including compatibility wrappers no longer needed.
 
 ## Plan
 
-- [x] Study Timeseal storage flow (`lib/encryptedStorage.ts`, create/dashboard/pulse usage points) and extract reusable primitives.
-- [x] Implement a reusable browser-core encrypted link vault library (adapter-driven storage + encryption + deterministic pruning).
-- [x] Add unit tests in `tests/` for round-trip encryption, pruning behavior, opened-state updates, and quota retry handling.
-- [x] Export/document the new library in `lib/libraries/*` surfaces for cross-project reuse.
-- [x] Run verification (`npm run typecheck` + targeted jest suite).
+- [x] Run static checks (`lint`, `typecheck`) to identify dead/unused candidates.
+- [x] Run import-graph scan to detect likely orphaned app/runtime modules.
+- [x] Remove confirmed-unused app module(s) and fix lint blockers.
+- [x] Migrate wrapper-based imports to package-style aliases and remove obsolete wrapper files.
+- [x] Re-run verification checks.
 
 ## Review
 
 - Status: Complete
 - Notes:
-  - Added `lib/libraries/browser-core/encrypted-link-vault.ts`:
-    - Timeseal-derived encrypted local storage (AES-GCM),
-    - adapter-driven persistence (`LinkVaultStorageAdapter`),
-    - CRUD helpers (`addRecord`, `listRecords`, `saveRecords`, `removeRecord`, `markRecordOpened`, `clearRecords`),
-    - deterministic oldest-first pruning and quota retry flow,
-    - storage pressure/status label support.
-  - Added browser-core package surface:
-    - `lib/libraries/browser-core/index.ts`
-    - `@ghostreceipt/browser-core` + `@ghostreceipt/browser-core/*` aliases in `tsconfig.json`
-    - top-level export via `lib/libraries/index.ts`
-    - docs update in `lib/libraries/README.md`
-  - Added tests in `tests/unit/browser-core/encrypted-link-vault.test.ts`:
-    - encrypted round-trip storage
-    - opened-state updates
-    - high-water pruning
-    - quota retry pruning
+  - Removed unused UI module:
+    - `components/ui/skeleton.tsx` (no imports in app/lib/components/tests)
+  - Fixed lint blocker in reusable browser-core module:
+    - `lib/libraries/browser-core/encrypted-link-vault.ts` (`let` -> `const` where reassignment was not needed)
+  - Fixed existing script-level lint warnings that were failing global lint gate:
+    - `scripts/check-solidity-verifier.mjs` (`console.log` -> `console.info`)
+    - `scripts/export-solidity-verifier.mjs` (`console.log` -> `console.info`)
+  - Removed obsolete compatibility wrappers after import migration:
+    - `lib/zk/witness.ts`
+    - `lib/providers/cascade.ts`
+    - `lib/providers/types.ts`
+    - `lib/providers/api-key-cascade.ts`
+  - Migrated imports to package-style aliases:
+    - `@ghostreceipt/zk-core/witness`
+    - `@ghostreceipt/backend-core/providers`
+    - Provider implementations now type-import from `@ghostreceipt/backend-core/providers/types`
+  - Updated integration/unit tests to use canonical import paths and compact payload expectations.
   - Verification commands run:
+    - `npm run lint`
     - `npm run typecheck`
-    - `npm test -- tests/unit/browser-core/encrypted-link-vault.test.ts tests/unit/backend-core/http/share-pointer-storage.test.ts --runInBand`
+    - `npm test -- tests/unit/providers/cascade.test.ts tests/unit/zk/witness.test.ts tests/unit/generator/witness-integration.test.ts tests/integration/proof-generation.test.ts --runInBand`

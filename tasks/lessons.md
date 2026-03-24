@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Avoid Frankenstein Payload Logic (No Dual Legacy Branches)
+- For payload/schema upgrades, keep exactly one runtime decoder path after cutover.
+- Do not keep old-format compatibility code in production runtime (tests may assert rejection only).
+- If a legacy format must be referenced, confine it to negative tests that prove strict rejection.
+
 ## 2026-03-24 - Timeseal Reuse Requests Should Extract Storage Core, Not App UI
 - When asked to reuse Timeseal logic, first isolate `lib/encryptedStorage.ts` behavior (encrypted local pointer storage lifecycle) as a standalone library API.
 - Keep app pages/components out of the abstraction layer; expose adapter-driven primitives that other projects can adopt without design coupling.

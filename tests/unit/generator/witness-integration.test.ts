@@ -1,4 +1,4 @@
-import { buildWitness, validateWitness } from '@/lib/zk/witness';
+import { buildWitness, validateWitness } from '@ghostreceipt/zk-core/witness';
 import type { OraclePayload } from '@/lib/validation/schemas';
 
 describe('Generator Form Integration', () => {

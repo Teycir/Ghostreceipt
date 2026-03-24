@@ -1,6 +1,6 @@
-import { buildWitness, validateWitness, extractPublicSignals } from '@/lib/zk/witness';
+import { buildWitness, validateWitness, extractPublicSignals } from '@ghostreceipt/zk-core/witness';
 import type { OraclePayload } from '@/lib/validation/schemas';
-import type { UserClaim } from '@/lib/zk/witness';
+import type { UserClaim } from '@ghostreceipt/zk-core/witness';
 
 describe('Witness Builder', () => {
   const mockOraclePayload: OraclePayload = {

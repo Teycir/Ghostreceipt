@@ -44,6 +44,187 @@ export interface ShareableProofPayload extends ProofResult {
   receiptMeta?: ReceiptMetadata;
 }
 
+interface CompactProofPayload {
+  m?: CompactReceiptMeta;
+  o?: CompactOracleAuth;
+  p: CompactProof;
+  s: string[];
+}
+
+interface CompactProof {
+  a: string[];
+  b: string[][];
+  c: string[];
+}
+
+interface CompactOracleAuth {
+  e: number;
+  h: string;
+  k: string;
+  n: string;
+  r: string;
+  sg: string;
+  t: number;
+}
+
+interface CompactReceiptMeta {
+  c?: string;
+  l?: string;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function assertValidReceiptMeta(meta: unknown): ReceiptMetadata {
+  if (!isObjectRecord(meta)) {
+    throw new Error('Invalid proof format');
+  }
+
+  const label = meta['l'];
+  const category = meta['c'];
+
+  if (label !== undefined) {
+    const validLabel =
+      typeof label === 'string' &&
+      label.trim().length > 0 &&
+      label.length <= 80;
+    if (!validLabel) {
+      throw new Error('Invalid proof format');
+    }
+  }
+
+  if (category !== undefined) {
+    const validCategory =
+      typeof category === 'string' &&
+      category.trim().length > 0 &&
+      category.length <= 40;
+    if (!validCategory) {
+      throw new Error('Invalid proof format');
+    }
+  }
+
+  return {
+    ...(typeof label === 'string' ? { label } : {}),
+    ...(typeof category === 'string' ? { category } : {}),
+  };
+}
+
+function assertValidOracleAuth(value: unknown): OracleAuthData {
+  if (!isObjectRecord(value)) {
+    throw new Error('Invalid proof format');
+  }
+
+  const expiresAt = value['e'];
+  const messageHash = value['h'];
+  const nullifier = value['n'];
+  const nonce = value['r'];
+  const oracleSignature = value['sg'];
+  const oraclePubKeyId = value['k'];
+  const signedAt = value['t'];
+
+  const hasRequiredFields =
+    typeof expiresAt === 'number' &&
+    typeof messageHash === 'string' &&
+    typeof nullifier === 'string' &&
+    typeof nonce === 'string' &&
+    typeof oracleSignature === 'string' &&
+    typeof oraclePubKeyId === 'string' &&
+    typeof signedAt === 'number';
+
+  if (!hasRequiredFields) {
+    throw new Error('Invalid proof format');
+  }
+
+  return {
+    expiresAt,
+    messageHash,
+    nullifier,
+    nonce,
+    oracleSignature,
+    oraclePubKeyId,
+    signedAt,
+  };
+}
+
+function toCompactPayload(
+  payload: ShareableProofPayload
+): CompactProofPayload {
+  return {
+    p: {
+      a: payload.proof.pi_a,
+      b: payload.proof.pi_b,
+      c: payload.proof.pi_c,
+    },
+    s: payload.publicSignals,
+    ...(payload.oracleAuth
+      ? {
+          o: {
+            e: payload.oracleAuth.expiresAt,
+            h: payload.oracleAuth.messageHash,
+            n: payload.oracleAuth.nullifier,
+            r: payload.oracleAuth.nonce,
+            sg: payload.oracleAuth.oracleSignature,
+            k: payload.oracleAuth.oraclePubKeyId,
+            t: payload.oracleAuth.signedAt,
+          },
+        }
+      : {}),
+    ...(payload.receiptMeta
+      ? {
+          m: {
+            ...(payload.receiptMeta.label ? { l: payload.receiptMeta.label } : {}),
+            ...(payload.receiptMeta.category ? { c: payload.receiptMeta.category } : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+function fromCompactPayload(raw: unknown): ShareableProofPayload {
+  if (!isObjectRecord(raw)) {
+    throw new Error('Invalid proof format');
+  }
+
+  const compactProof = raw['p'];
+  const publicSignals = raw['s'];
+  if (!isObjectRecord(compactProof) || !isStringArray(publicSignals)) {
+    throw new Error('Invalid proof format');
+  }
+
+  const piA = compactProof['a'];
+  const piB = compactProof['b'];
+  const piC = compactProof['c'];
+
+  const validPiB =
+    Array.isArray(piB) &&
+    piB.length === 3 &&
+    piB.every((row) => isStringArray(row) && row.length === 2);
+  if (!isStringArray(piA) || piA.length !== 3 || !validPiB || !isStringArray(piC) || piC.length !== 3) {
+    throw new Error('Invalid proof format');
+  }
+
+  const compactOracleAuth = raw['o'];
+  const compactMeta = raw['m'];
+
+  return {
+    proof: {
+      pi_a: piA,
+      pi_b: piB,
+      pi_c: piC,
+      protocol: 'groth16',
+      curve: 'bn128',
+    },
+    publicSignals,
+    ...(compactOracleAuth !== undefined ? { oracleAuth: assertValidOracleAuth(compactOracleAuth) } : {}),
+    ...(compactMeta !== undefined ? { receiptMeta: assertValidReceiptMeta(compactMeta) } : {}),
+  };
+}
+
 /**
  * Verification result
  */
@@ -241,7 +422,7 @@ export class ProofGenerator {
       ...(oracleAuth ? { oracleAuth } : {}),
       ...(receiptMeta ? { receiptMeta } : {}),
     };
-    return encodeSharePayload(JSON.stringify(payload));
+    return encodeSharePayload(JSON.stringify(toCompactPayload(payload)));
   }
 
   /**
@@ -270,54 +451,7 @@ export class ProofGenerator {
         throw new Error('Invalid proof format: potentially malicious structure');
       }
 
-      // Validate structure
-      if (!parsed.proof || !Array.isArray(parsed.publicSignals)) {
-        throw new Error('Invalid proof format');
-      }
-
-      if (parsed.oracleAuth) {
-        const hasRequiredFields =
-          typeof parsed.oracleAuth.expiresAt === 'number' &&
-          typeof parsed.oracleAuth.messageHash === 'string' &&
-          typeof parsed.oracleAuth.nullifier === 'string' &&
-          typeof parsed.oracleAuth.nonce === 'string' &&
-          typeof parsed.oracleAuth.oracleSignature === 'string' &&
-          typeof parsed.oracleAuth.oraclePubKeyId === 'string' &&
-          typeof parsed.oracleAuth.signedAt === 'number';
-        if (!hasRequiredFields) {
-          throw new Error('Invalid proof format');
-        }
-      }
-
-      if (parsed.receiptMeta !== undefined) {
-        const meta = parsed.receiptMeta;
-        const validObject = typeof meta === 'object' && meta !== null && !Array.isArray(meta);
-        if (!validObject) {
-          throw new Error('Invalid proof format');
-        }
-
-        if (meta.label !== undefined) {
-          const validLabel =
-            typeof meta.label === 'string' &&
-            meta.label.trim().length > 0 &&
-            meta.label.length <= 80;
-          if (!validLabel) {
-            throw new Error('Invalid proof format');
-          }
-        }
-
-        if (meta.category !== undefined) {
-          const validCategory =
-            typeof meta.category === 'string' &&
-            meta.category.trim().length > 0 &&
-            meta.category.length <= 40;
-          if (!validCategory) {
-            throw new Error('Invalid proof format');
-          }
-        }
-      }
-
-      return parsed as ShareableProofPayload;
+      return fromCompactPayload(parsed);
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to import proof: ${error.message}`, {

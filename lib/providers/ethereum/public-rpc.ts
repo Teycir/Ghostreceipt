@@ -1,4 +1,8 @@
-import type { EthereumProvider, ProviderConfig, ProviderError } from '../types';
+import type {
+  EthereumProvider,
+  ProviderConfig,
+  ProviderError,
+} from '@ghostreceipt/backend-core/providers/types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { createPublicClient, http, type Hash } from 'viem';

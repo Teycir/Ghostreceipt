@@ -20,4 +20,4 @@ execFileSync(
   { stdio: 'inherit' }
 );
 
-console.log(`[solidity-verifier] Generated ${path.relative(projectRoot, outputPath)}`);
+console.info(`[solidity-verifier] Generated ${path.relative(projectRoot, outputPath)}`);

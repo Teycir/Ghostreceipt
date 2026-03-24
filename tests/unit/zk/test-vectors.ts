@@ -1,4 +1,4 @@
-import type { ReceiptWitness } from '@/lib/zk/witness';
+import type { ReceiptWitness } from '@ghostreceipt/zk-core/witness';
 
 /**
  * Test vectors for circuit validation

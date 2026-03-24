@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { groth16 } from 'snarkjs';
-import { buildWitness } from '@/lib/zk/witness';
+import { buildWitness } from '@ghostreceipt/zk-core/witness';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import type { OraclePayload } from '@/lib/validation/schemas';
 

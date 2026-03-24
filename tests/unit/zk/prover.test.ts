@@ -28,6 +28,13 @@ describe('ProofGenerator share payload encoding', () => {
     expect(imported).toEqual(sampleProof);
   });
 
+  it('uses a compact canonical encoded payload compared to legacy shape', () => {
+    const compactExported = generator.exportProof(sampleProof);
+    const legacyExported = encodeSharePayload(JSON.stringify(sampleProof));
+
+    expect(compactExported.length).toBeLessThan(legacyExported.length);
+  });
+
   it('rejects plain JSON payloads and requires encoded share format', () => {
     const plainJsonPayload = JSON.stringify(sampleProof);
 
@@ -94,14 +101,19 @@ describe('ProofGenerator share payload encoding', () => {
 
   it('rejects malformed oracleAuth blocks in imported payloads', () => {
     const malformedOracleAuthPayload = encodeSharePayload(JSON.stringify({
-      ...sampleProof,
-      oracleAuth: {
-        expiresAt: 1700000300,
-        messageHash: '123456789',
-        nullifier: 'd'.repeat(64),
-        nonce: 'c'.repeat(32),
-        oraclePubKeyId: 'b'.repeat(16),
-        signedAt: 1700000000,
+      p: {
+        a: sampleProof.proof.pi_a,
+        b: sampleProof.proof.pi_b,
+        c: sampleProof.proof.pi_c,
+      },
+      s: sampleProof.publicSignals,
+      o: {
+        e: 1700000300,
+        h: '123456789',
+        n: 'd'.repeat(64),
+        r: 'c'.repeat(32),
+        k: 'b'.repeat(16),
+        t: 1700000000,
       },
     }));
 
@@ -112,9 +124,9 @@ describe('ProofGenerator share payload encoding', () => {
 
   it('rejects payloads containing prototype-pollution keys', () => {
     const maliciousPayload = encodeSharePayload(
-      '{"proof":{"pi_a":["1","2","3"],"pi_b":[["4","5"],["6","7"],["8","9"]],"pi_c":["10","11","12"],"protocol":"groth16","curve":"bn128"},"publicSignals":["1","2","3"],"oracleAuth":{"messageHash":"123","oracleSignature":"' +
+      '{"p":{"a":["1","2","3"],"b":[["4","5"],["6","7"],["8","9"]],"c":["10","11","12"]},"s":["1","2","3"],"o":{"h":"123","sg":"' +
       'a'.repeat(128) +
-      '","oraclePubKeyId":"k1","signedAt":1700000000,"__proto__":{"polluted":true}}}'
+      '","k":"k1","e":1700000300,"n":"x","r":"y","t":1700000000,"__proto__":{"polluted":true}}}'
     );
 
     expect(() => generator.importProof(maliciousPayload)).toThrow(
@@ -124,15 +136,39 @@ describe('ProofGenerator share payload encoding', () => {
 
   it('rejects malformed receipt metadata in imported payloads', () => {
     const malformedMetaPayload = encodeSharePayload(JSON.stringify({
-      ...sampleProof,
-      receiptMeta: {
-        label: '',
-        category: 'Operations',
+      p: {
+        a: sampleProof.proof.pi_a,
+        b: sampleProof.proof.pi_b,
+        c: sampleProof.proof.pi_c,
+      },
+      s: sampleProof.publicSignals,
+      m: {
+        l: '',
+        c: 'Operations',
       },
     }));
 
     expect(() => generator.importProof(malformedMetaPayload)).toThrow(
       'Invalid proof format'
     );
+  });
+
+  it('rejects legacy encoded payload shape after hard cutover', () => {
+    const legacyPayload = encodeSharePayload(
+      JSON.stringify({
+        ...sampleProof,
+        oracleAuth: {
+          expiresAt: 1700000300,
+          messageHash: '123456789',
+          nullifier: 'd'.repeat(64),
+          nonce: 'c'.repeat(32),
+          oracleSignature: 'a'.repeat(128),
+          oraclePubKeyId: 'b'.repeat(16),
+          signedAt: 1700000000,
+        },
+      })
+    );
+
+    expect(() => generator.importProof(legacyPayload)).toThrow('Invalid proof format');
   });
 });

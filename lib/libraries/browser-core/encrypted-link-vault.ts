@@ -376,7 +376,7 @@ export class EncryptedLinkVault<TData extends object> {
     const pruneTargetCount = Math.floor((this.maxEntries * this.pruneToPercent) / 100);
     const targetBeforeInsert = Math.max(0, pruneTargetCount - 1);
 
-    let working = [...sorted];
+    const working = [...sorted];
     let prunedCount = 0;
 
     if (projectedCount >= pruneStartCount) {

@@ -175,7 +175,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       announceToScreenReader('Validating transaction data');
       const witnessStart = nowMs();
 
-      const { buildWitness, validateWitness } = await import('@/lib/zk/witness');
+      const { buildWitness, validateWitness } = await import('@ghostreceipt/zk-core/witness');
       const witness = buildWitness(data.data, {
         claimedAmount: values.claimedAmount,
         minDate: Math.floor(new Date(values.minDate).getTime() / 1000),

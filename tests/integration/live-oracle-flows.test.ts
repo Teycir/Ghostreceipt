@@ -9,7 +9,7 @@ import {
 } from '@/app/api/oracle/verify-signature/route';
 import { SuccessResponseSchema } from '@/lib/validation/schemas';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
-import { buildWitness, validateWitness } from '@/lib/zk/witness';
+import { buildWitness, validateWitness } from '@ghostreceipt/zk-core/witness';
 import { groth16 } from 'snarkjs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';

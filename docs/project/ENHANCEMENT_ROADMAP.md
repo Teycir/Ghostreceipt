@@ -32,6 +32,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added dedicated proof-performance regression gate with CI budget enforcement.
 - [x] Published proof-system decision artifact with migration triggers and phased path notes.
 - [x] Added regression tests for canonical share-payload parsing and verifier route stability.
+- [x] Added compact canonical proof payload format with hard cutover (legacy format removed).
 
 ---
 
@@ -63,7 +64,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 
 ### Shareability and ZK Design (P2-P3)
 
-- [ ] Add compact canonical proof payload format with hard cutover (legacy format removed).
+- [x] Add compact canonical proof payload format with hard cutover (legacy format removed).
 - [ ] Draft selective disclosure public-input contract and phased implementation plan.
 - [ ] Draft bounded amount disclosure/range-proof design and rollout plan.
 
@@ -99,7 +100,7 @@ npm run test:e2e -- --grep "history|pdf|verify"
 
 `Goal`: improve payload ergonomics and privacy controls while preserving deterministic verification.
 
-- [ ] `R-P3-01` Compact canonical proof payload format with hard cutover.
+- [x] `R-P3-01` Compact canonical proof payload format with hard cutover.
 - [ ] `R-P3-02` Selective disclosure public-input contract and phased plan.
 - [ ] `R-P3-03` Bounded amount disclosure/range-proof design and rollout plan.
 
@@ -158,7 +159,7 @@ Exit criteria:
 
 ### Phase 4: Advanced Share and Privacy Controls (P2-P3)
 
-- [ ] Canonical compact share payload and QR scannability optimization (hard cutover).
+- [x] Canonical compact share payload and QR scannability optimization (hard cutover).
 - [ ] Selective disclosure design and implementation staging.
 - [ ] Range-proof mode design and implementation staging.
 

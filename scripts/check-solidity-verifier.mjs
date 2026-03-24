@@ -41,7 +41,7 @@ try {
     );
   }
 
-  console.log('[solidity-verifier] Artifact is synchronized with receipt_final.zkey');
+  console.info('[solidity-verifier] Artifact is synchronized with receipt_final.zkey');
 } finally {
   rmSync(tempDir, { force: true, recursive: true });
 }
