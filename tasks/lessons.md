@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-24 - Mobile Form Height Must Be Treated As A Blocking UX Defect
+- If users report excessive scroll friction on mobile forms, prioritize vertical-density fixes immediately (spacing, font size, control height) before adding new features.
+- Optional fields should be collapsed by default behind an explicit toggle so the primary flow fits in one screen as much as possible.
+- For optional metadata inputs, prefer compact two-column layouts when safe to reduce total scroll distance.
+
 ## 2026-03-24 - Visibility Beats Subtlety For Primary Navigation Actions
 - If the user says they cannot see a key action (for example receipt history access), treat it as a UX bug even if the action technically exists.
 - Add an explicit, high-visibility CTA in the primary flow, not only a subtle corner utility link.

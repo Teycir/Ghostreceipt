@@ -9,6 +9,9 @@ interface InputProps {
   label?: string;
   error?: string | undefined;
   disabled?: boolean;
+  className?: string;
+  containerClassName?: string;
+  labelClassName?: string;
 }
 
 export function Input({
@@ -20,11 +23,14 @@ export function Input({
   label,
   error,
   disabled,
+  className = "",
+  containerClassName = "",
+  labelClassName = "",
 }: Readonly<InputProps>): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={`flex flex-col gap-1.5 ${containerClassName}`}>
       {label && (
-        <label className="text-sm font-medium text-white/70">
+        <label className={`text-sm font-medium text-white/70 ${labelClassName}`}>
           {label}
         </label>
       )}
@@ -46,6 +52,7 @@ export function Input({
             ? "border-red-500/50 focus-visible:ring-red-500/50"
             : "border-white/10 hover:border-white/20 focus-visible:border-blue-500/50"
           }
+          ${className}
         `}
       />
       {error && (

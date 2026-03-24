@@ -19,12 +19,16 @@ import {
 export interface PremiumSelectProps
   extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children"> {
   label?: string;
+  labelClassName?: string;
+  containerClassName?: string;
   error?: string | undefined;
   children?: ReactNode;
 }
 
 export function PremiumSelect({
   label,
+  labelClassName = "",
+  containerClassName = "",
   error,
   className = "",
   children,
@@ -138,9 +142,9 @@ export function PremiumSelect({
   }, [open, selectedIndex, options]);
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={`flex flex-col gap-1.5 ${containerClassName}`}>
       {label && (
-        <label htmlFor={selectId} className="text-sm font-medium text-white/70">
+        <label htmlFor={selectId} className={`text-sm font-medium text-white/70 ${labelClassName}`}>
           {label}
         </label>
       )}

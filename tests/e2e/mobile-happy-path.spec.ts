@@ -23,6 +23,8 @@ test.describe('Mobile happy path', () => {
     await expect(
       page.getByRole('button', { name: 'View Receipt History' })
     ).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Add/ })).toBeVisible();
+    await expect(page.getByLabel('Receipt Label')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'View Receipt History' }).click();
     await expect(page).toHaveURL('/history');

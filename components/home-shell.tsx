@@ -152,12 +152,12 @@ export function HomeShell(): React.JSX.Element {
           transition: 'opacity 620ms ease 120ms',
         }}
       >
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-center">
             <Button
               type="button"
               variant="secondary"
-              className="w-full sm:w-auto"
+              className="w-full py-2 text-xs sm:w-auto sm:text-sm"
               onClick={() => {
                 globalThis.location.href = '/history';
               }}
@@ -165,7 +165,7 @@ export function HomeShell(): React.JSX.Element {
               View Receipt History
             </Button>
           </div>
-          <div className="glass-card rounded-xl p-8 shadow-2xl">
+          <div className="glass-card rounded-xl p-4 shadow-2xl sm:p-6">
             <GeneratorForm />
           </div>
         </div>

@@ -30,6 +30,7 @@ const DEFAULT_VALUES: GeneratorFormValues = {
 export function GeneratorForm(): React.JSX.Element {
   const formId = useId();
   const [values, setValues] = useState<GeneratorFormValues>(DEFAULT_VALUES);
+  const [optionalExpanded, setOptionalExpanded] = useState(false);
   const {
     state,
     errors,
@@ -73,8 +74,15 @@ export function GeneratorForm(): React.JSX.Element {
     await generate(values);
   }, [generate, values]);
 
+  const optionalCount =
+    (values.receiptLabel.trim() ? 1 : 0) + (values.receiptCategory.trim() ? 1 : 0);
+
   return (
-    <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4" id={`${formId}-form`}>
+    <form
+      onSubmit={(e) => { void handleSubmit(e); }}
+      className="space-y-2.5 sm:space-y-3"
+      id={`${formId}-form`}
+    >
       {/* ── Chain ── */}
       <Select
         label="Chain"
@@ -82,6 +90,8 @@ export function GeneratorForm(): React.JSX.Element {
         onChange={(e) => handleChainChange(e.target.value as Chain)}
         disabled={isProcessing}
         error={errors.chain}
+        labelClassName="text-xs"
+        className="h-9 rounded-lg px-2.5 py-1.5 text-[13px]"
       >
         <option value="bitcoin">Bitcoin</option>
         <option value="ethereum">Ethereum</option>
@@ -89,15 +99,15 @@ export function GeneratorForm(): React.JSX.Element {
 
       {/* ── Transaction hash ── */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label htmlFor={`${formId}-txhash`} className="text-sm font-medium text-white/70">
+        <div className="mb-1.5 flex items-center justify-between">
+          <label htmlFor={`${formId}-txhash`} className="text-xs font-medium text-white/70">
             Transaction Hash
           </label>
           <button
             type="button"
             onClick={() => { void handlePaste('txHash'); }}
             disabled={isProcessing}
-            className="px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40"
+            className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60 transition-colors hover:bg-white/10 hover:text-white/85 disabled:opacity-40"
             aria-label="Paste transaction hash from clipboard"
           >
             📋 Paste
@@ -111,69 +121,102 @@ export function GeneratorForm(): React.JSX.Element {
           onChange={handleTxHashChange}
           disabled={isProcessing}
           error={errors.txHash}
+          className="h-9 px-2.5 py-1.5 text-[13px]"
         />
       </div>
 
       {/* ── Claimed amount with live unit hint ── */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label htmlFor={`${formId}-amount`} className="text-sm font-medium text-white/70">
+      <div className="grid grid-cols-1 gap-2.5 min-[540px]:grid-cols-2">
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label htmlFor={`${formId}-amount`} className="text-xs font-medium text-white/70">
             Claimed Amount{' '}
-            <span className="text-white/35 font-normal">({atomicUnitLabel(values.chain)})</span>
-          </label>
-          {humanAmount && (
-            <span
-              className="text-xs font-mono text-cyan-400/80 tabular-nums transition-all duration-300"
-              aria-live="polite"
-            >
-              {humanAmount}
-            </span>
-          )}
+              <span className="font-normal text-white/35">({atomicUnitLabel(values.chain)})</span>
+            </label>
+            {humanAmount && (
+              <span
+                className="tabular-nums text-[11px] font-mono text-cyan-300/85 transition-all duration-300"
+                aria-live="polite"
+              >
+                {humanAmount}
+              </span>
+            )}
+          </div>
+          <Input
+            id={`${formId}-amount`}
+            type="text"
+            placeholder={amountPlaceholder(values.chain)}
+            value={values.claimedAmount}
+            onChange={(v) => setValues((prev) => ({ ...prev, claimedAmount: v.replaceAll(/\D/g, '') }))}
+            disabled={isProcessing}
+            error={errors.claimedAmount}
+            className="h-9 px-2.5 py-1.5 text-[13px]"
+          />
         </div>
+
+        {/* ── Min date ── */}
         <Input
-          id={`${formId}-amount`}
-          type="text"
-          placeholder={amountPlaceholder(values.chain)}
-          value={values.claimedAmount}
-          onChange={(v) => setValues((prev) => ({ ...prev, claimedAmount: v.replaceAll(/\D/g, '') }))}
+          id={`${formId}-date`}
+          label="Minimum Date"
+          type="date"
+          value={values.minDate}
+          onChange={(v) => setValues((prev) => ({ ...prev, minDate: v }))}
           disabled={isProcessing}
-          error={errors.claimedAmount}
+          error={errors.minDate}
+          className="h-9 px-2.5 py-1.5 text-[13px]"
+          labelClassName="text-xs"
         />
       </div>
 
-      {/* ── Min date ── */}
-      <Input
-        id={`${formId}-date`}
-        label="Minimum Date"
-        type="date"
-        value={values.minDate}
-        onChange={(v) => setValues((prev) => ({ ...prev, minDate: v }))}
-        disabled={isProcessing}
-        error={errors.minDate}
-      />
-
       {/* ── Optional receipt metadata ── */}
-      <Input
-        id={`${formId}-label`}
-        label="Receipt Label (optional)"
-        type="text"
-        placeholder="Invoice #428, Team Lunch, Q1 Deposit..."
-        value={values.receiptLabel}
-        onChange={(v) => setValues((prev) => ({ ...prev, receiptLabel: v }))}
-        disabled={isProcessing}
-        error={errors.receiptLabel}
-      />
+      <div className="rounded-lg border border-white/10 bg-black/10 px-2.5 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-medium text-white/75">
+            Optional receipt details
+          </p>
+          <button
+            type="button"
+            disabled={isProcessing}
+            onClick={() => setOptionalExpanded((prev) => !prev)}
+            className="rounded border border-white/12 bg-white/5 px-2 py-0.5 text-[11px] text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+            aria-expanded={optionalExpanded}
+            aria-controls={`${formId}-optional-fields`}
+          >
+            {optionalExpanded ? 'Hide' : 'Add'}
+            {optionalCount > 0 && ` (${optionalCount})`}
+          </button>
+        </div>
 
-      <Input
-        id={`${formId}-category`}
-        label="Category (optional)"
-        type="text"
-        placeholder="Operations, Travel, Payroll..."
-        value={values.receiptCategory}
-        onChange={(v) => setValues((prev) => ({ ...prev, receiptCategory: v }))}
-        disabled={isProcessing}
-        error={errors.receiptCategory}
-      />
+        {optionalExpanded && (
+          <div id={`${formId}-optional-fields`} className="mt-2.5 grid grid-cols-2 gap-2.5">
+            <Input
+              id={`${formId}-label`}
+              label="Receipt Label"
+              type="text"
+              placeholder="Invoice #428"
+              value={values.receiptLabel}
+              onChange={(v) => setValues((prev) => ({ ...prev, receiptLabel: v }))}
+              disabled={isProcessing}
+              error={errors.receiptLabel}
+              className="h-9 px-2.5 py-1.5 text-[13px]"
+              labelClassName="text-xs"
+            />
+
+            <Input
+              id={`${formId}-category`}
+              label="Category"
+              type="text"
+              placeholder="Operations"
+              value={values.receiptCategory}
+              onChange={(v) => setValues((prev) => ({ ...prev, receiptCategory: v }))}
+              disabled={isProcessing}
+              error={errors.receiptCategory}
+              className="h-9 px-2.5 py-1.5 text-[13px]"
+              labelClassName="text-xs"
+            />
+          </div>
+        )}
+      </div>
 
       {/* ── Animated stepper while processing ── */}
       {isProcessing && (
