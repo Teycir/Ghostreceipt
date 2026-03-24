@@ -35,6 +35,9 @@ jobs:
       - name: Validate oracle transparency log
         run: npm run check:oracle-transparency-log
 
+      - name: Validate Solidity verifier artifact
+        run: npm run check:solidity-verifier
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

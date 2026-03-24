@@ -1,5 +1,15 @@
 # Lessons Learned
 
+## 2026-03-24 - Roadmap Must Respect Zero-Budget Constraints
+- When the user states there is no budget, remove roadmap items that can require spending (for example on-chain gas/deployment, paid-tier provider expansion, or additional hosted-operator infrastructure).
+- Keep active milestones local-first and off-chain, and rewrite sequence/acceptance criteria so they do not implicitly depend on paid services.
+- Apply the same constraint consistently across all roadmap documents (`tasks/todo.md`, `docs/project/ROADMAP.md`, and `docs/project/ENHANCEMENT_ROADMAP.md`) to avoid plan drift.
+
+## 2026-03-24 - Nullifier Conflict Checks Should Avoid Paid State Dependencies
+- If free-tier constraints block managed KV/Redis options, prefer proof-linked/client-side nullifier validation paths over server-side registries.
+- Derive nullifier deterministically from signed/public proof-linked data (for example `messageHash`) so verification can run without paid infrastructure.
+- Keep conflict semantics local-first (`first_seen`/`idempotent`/`conflict`) and treat shared server state as optional, not required.
+
 ## 2026-03-23 - File Patch Edits Must Use apply_patch Tool Directly
 - When a change requires patch-style edits, call the dedicated `apply_patch` tool directly instead of invoking it through `exec_command`.
 - Keep `exec_command` for read/inspect commands and non-patch shell actions (for example test runs), to avoid tool-policy violations.

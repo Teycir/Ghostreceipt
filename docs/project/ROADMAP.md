@@ -1,9 +1,10 @@
 # GhostReceipt Roadmap (Start to Finish)
 
 This roadmap is execution-first and checkbox-driven so progress is visible at every step.
+Budget rule: roadmap items must remain executable without mandatory paid services, gas fees, or paid API tiers.
 
 ## Phase 0: Project Setup and Governance
-- [ ] Confirm product scope for v1 (BTC + ETH first, Monero as separate track)
+- [ ] Confirm product scope for v1 (BTC + ETH, local-first and zero-budget)
 - [ ] Finalize architecture decisions from `PLAN.md`
 - [ ] Define coding standards and contribution workflow
 - [ ] Create `THIRD_PARTY_NOTICES.md` for reusable code attribution
@@ -135,24 +136,21 @@ This roadmap is execution-first and checkbox-driven so progress is visible at ev
 
 ## Phase 11: Launch Readiness
 - [ ] Finalize README and docs links
-- [ ] Prepare production env and secret rotation runbook
+- [ ] Prepare zero-budget deployment guidance and secret rotation runbook
 - [ ] Create release checklist and rollback checklist
-- [ ] Smoke test staging end-to-end
+- [ ] Smoke test local and free-tier preview end-to-end
 - [ ] Publish v1.0.0 release notes
 - [ ] Monitor first-week metrics and error budget
 
-## Phase 12: Post-Launch and Expansion
-- [ ] Add Monero flow track with separate circuit path
-- [ ] Add additional chains as adapters
+## Phase 12: Post-Launch Local-First Expansion
 - [ ] Improve proof compression and share size
 - [ ] Add optional account features (still no-login default)
-- [ ] Add observability dashboards and SLA alerts
-- [ ] Design and prototype multi-oracle attestation/quorum path to reduce single-operator trust
-- [ ] Evaluate TLS-notary/light-client approaches for trust-minimized transaction attestation
+- [ ] Expand verifier UX for batch workflows and export ergonomics
+- [ ] Optimize offline/local verification tooling and docs
 
 ## Definition of Done (Global)
 - [ ] No-credit-card local setup documented and verified
-- [ ] No-API-key user journey verified in staging and production
+- [ ] No-API-key user journey verified in local and free-tier preview environments
 - [ ] Security checks pass and critical issues resolved
 - [ ] Tests pass in CI with required thresholds
 - [ ] Staff-level review checklist completed

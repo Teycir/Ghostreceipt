@@ -4,6 +4,10 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { extractVerifiedClaims } from '@/lib/zk/share';
+import {
+  checkClientNullifierConflict,
+  deriveNullifierFromMessageHash,
+} from '@/lib/zk/nullifier';
 import { EyeCandy } from '@/components/eye-candy';
 import { AnimatedTagline } from '@/components/animated-tagline';
 import TextPressure from '@/components/text-pressure';
@@ -102,62 +106,6 @@ async function verifyOracleSignature(oracleAuth: OracleAuthPayload): Promise<Ora
   };
 }
 
-async function checkNullifierConflict(input: {
-  claimedAmount: string;
-  messageHash: string;
-  minDateUnix: number;
-  nullifier: string;
-}): Promise<NullifierVerificationResult> {
-  const response = await fetch('/api/oracle/check-nullifier', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    try {
-      const payload = (await response.json()) as {
-        error?: {
-          message?: string;
-          details?: {
-            retryAfterSeconds?: number;
-          };
-        };
-      };
-      if (response.status === 429) {
-        const retryAfterSeconds = payload.error?.details?.retryAfterSeconds;
-        const waitSeconds =
-          typeof retryAfterSeconds === 'number' && retryAfterSeconds > 0
-            ? Math.ceil(retryAfterSeconds)
-            : 60;
-        const waitLabel = waitSeconds === 1 ? '1 second' : `${waitSeconds} seconds`;
-        return {
-          valid: false,
-          error: `Rate limit reached. Please wait ${waitLabel} and try again.`,
-        };
-      }
-
-      return {
-        valid: false,
-        error: payload.error?.message ?? 'Nullifier verification failed',
-      };
-    } catch {
-      return {
-        valid: false,
-        error: 'Nullifier verification failed',
-      };
-    }
-  }
-
-  const payload = (await response.json()) as { valid?: boolean };
-  return {
-    valid: payload.valid === true,
-    ...(payload.valid === true ? {} : { error: 'Nullifier verification failed' }),
-  };
-}
-
 function VerifyContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const [result, setResult] = useState<VerificationResult | null>(null);
@@ -249,12 +197,39 @@ function VerifyContent(): React.JSX.Element {
       }
 
       const claims = extractVerifiedClaims(proofData.publicSignals);
-      const nullifierVerification = await checkNullifierConflict({
-        claimedAmount: claims.claimedAmount,
-        messageHash: oracleAuth.messageHash,
-        minDateUnix: claims.minDateUnix,
-        nullifier: oracleAuth.nullifier,
-      });
+      const derivedNullifier = await deriveNullifierFromMessageHash(
+        oracleAuth.messageHash
+      );
+      if (oracleAuth.nullifier.toLowerCase() !== derivedNullifier.toLowerCase()) {
+        setResult({
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Oracle nullifier mismatch detected',
+        });
+        return;
+      }
+
+      const nullifierCheck = checkClientNullifierConflict(
+        {
+          claim: {
+            claimedAmount: claims.claimedAmount,
+            minDateUnix: claims.minDateUnix,
+          },
+          nullifier: derivedNullifier,
+        },
+        typeof window !== 'undefined' ? window.localStorage : null
+      );
+      const nullifierVerification: NullifierVerificationResult = {
+        valid: nullifierCheck.valid,
+        ...(nullifierCheck.valid
+          ? {}
+          : {
+              error:
+                nullifierCheck.message ??
+                'Nullifier conflict detected',
+            }),
+      };
       if (!nullifierVerification.valid) {
         setResult({
           valid: false,
