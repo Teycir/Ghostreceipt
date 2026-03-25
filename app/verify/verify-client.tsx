@@ -212,6 +212,22 @@ function VerifyContent(): React.JSX.Element {
           </div>
         )}
 
+        <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-500/5 p-4">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-cyan-200/70">
+            Generated With GhostReceipt
+          </p>
+          <p className="mt-1 text-xs text-cyan-100/85">
+            Share private payment proof links without exposing wallet addresses.
+          </p>
+          <Button
+            onClick={() => (window.location.href = '/')}
+            variant="secondary"
+            className="mt-3 w-full border-cyan-300/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-200/50 hover:bg-cyan-500/15"
+          >
+            Generate Your Own →
+          </Button>
+        </div>
+
         <div className="mt-6">
           <Button
             onClick={() => (window.location.href = '/')}

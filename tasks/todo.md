@@ -1,5 +1,51 @@
 # Task Plan - 2026-03-25
 
+## Objective (Low-Cost Premium UX Batch: Share + Errors + Shortcuts + Referral)
+
+Ship the next free-plan-safe UX improvements with strong visual consistency:
+- one-click "copy all share data" packet,
+- keyboard shortcuts (`Cmd/Ctrl+V`, `Cmd/Ctrl+Enter`, `Cmd/Ctrl+C` on success),
+- smarter actionable validation/fetch errors,
+- premium but subtle referral CTA on verify page.
+
+## Plan
+
+- [x] Add share packet helpers (`verification code` + copy-all text) in shared social utilities.
+- [x] Extend `useReceiptShare` and success card UI with one-click copy-all and premium status presentation.
+- [x] Add generator keyboard shortcuts for paste and generate, with safe editable-field guards.
+- [x] Improve generator smart error copy for amount/date mismatch and confirmation guidance.
+- [x] Add verify-page referral footer CTA with consistent glass-card styling.
+- [x] Add/update unit tests and run typecheck + targeted tests.
+
+## Review (Low-Cost Premium UX Batch: Share + Errors + Shortcuts + Referral)
+
+- Status: Completed
+- Notes:
+  - Added share packet utilities in `lib/share/social.ts`:
+    - `deriveVerificationCode(proof)`
+    - `buildShareBundleText({ chain, proof, verifyUrl })`
+  - Extended `useReceiptShare` with:
+    - `copyShareBundle()`
+    - `copyFlavor` state (`url` vs `bundle`)
+    - returned `verificationCode`
+  - Updated `components/generator/receipt-success.tsx` with premium consistent share UX:
+    - verification code card,
+    - one-click "Copy Link + Code (All)" action,
+    - keyboard shortcut chips,
+    - unified status strip,
+    - `Cmd/Ctrl + C` quick-copy shortcut for verify URL.
+  - Updated `components/generator/generator-form.tsx` with guarded shortcuts:
+    - `Cmd/Ctrl + V` paste tx hash when not focused in editable inputs,
+    - `Cmd/Ctrl + Enter` generate receipt.
+  - Upgraded actionable smart errors in `lib/generator/error-messages.ts`:
+    - amount mismatch now suggests exact value correction,
+    - date mismatch now includes human-readable dates,
+    - added `INSUFFICIENT_CONFIRMATIONS` guidance.
+  - Added premium referral CTA card in `app/verify/verify-client.tsx`.
+- Validation:
+  - `npm run typecheck` pass.
+  - `npm test -- tests/unit/generator/error-messages.test.ts tests/unit/share/social.test.ts --runInBand --ci` pass.
+
 ## Objective (Harmonized Validation UX Across Generator + Verify)
 
 Implement the next low-cost UX improvements with zero additional API spend:

@@ -12,6 +12,12 @@ export interface SharePayload {
   title: string;
 }
 
+export interface ShareBundleOptions {
+  chain?: string;
+  proof: string;
+  verifyUrl: string;
+}
+
 /**
  * Builds a SharePayload from a verify URL and an optional chain label.
  */
@@ -22,6 +28,34 @@ export function buildSharePayload(verifyUrl: string, chain?: string): SharePaylo
     title: 'GhostReceipt Verification Link',
     text: `I generated a privacy-preserving${chainLabel} receipt with GhostReceipt. Verify it here:`,
   };
+}
+
+export function deriveVerificationCode(proof: string): string {
+  const compact = proof.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (compact.length < 10) {
+    return 'UNAVAILABLE';
+  }
+  const start = compact.slice(0, 4);
+  const middleStart = Math.max(Math.floor(compact.length / 2) - 2, 4);
+  const middle = compact.slice(middleStart, middleStart + 4);
+  const end = compact.slice(-4);
+  return `${start}-${middle}-${end}`;
+}
+
+export function buildShareBundleText({
+  chain,
+  proof,
+  verifyUrl,
+}: ShareBundleOptions): string {
+  const code = deriveVerificationCode(proof);
+  const chainLabel = chain ? chain.toUpperCase() : 'MULTI-CHAIN';
+  return [
+    'GhostReceipt - Verification Packet',
+    `Chain: ${chainLabel}`,
+    `Verification code: ${code}`,
+    `Verify link: ${verifyUrl}`,
+    'QR note: the QR code opens the same verify link above.',
+  ].join('\n');
 }
 
 /**

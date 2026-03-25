@@ -27,6 +27,18 @@ describe('generator smart error messages', () => {
     expect(message).toContain('temporarily busy');
   });
 
+  it('maps insufficient confirmations to confirmation wait guidance', () => {
+    const message = mapFetchTxApiError(422, {
+      error: {
+        code: 'INSUFFICIENT_CONFIRMATIONS',
+        message: 'not enough confirmations',
+      },
+    });
+
+    expect(message).toContain('still confirming');
+    expect(message).toContain('5 minutes');
+  });
+
   it('maps rate limit errors with retry-after timing', () => {
     const message = mapFetchTxApiError(429, {
       error: {
@@ -46,8 +58,9 @@ describe('generator smart error messages', () => {
       'Real timestamp (10) is before minimum date (20)',
     ]);
 
-    expect(amountMessage).toContain('Claim amount exceeds');
-    expect(dateMessage).toContain('before your selected minimum date');
+    expect(amountMessage).toContain('Claim amount (200) exceeds transaction value (100)');
+    expect(amountMessage).toContain('Did you mean 100?');
+    expect(dateMessage).toContain('Transaction date (1970-01-01)');
+    expect(dateMessage).toContain('minimum date (1970-01-01)');
   });
 });
-

@@ -12,7 +12,9 @@ import { useSecureClipboard } from '@/lib/shared/use-secure-clipboard';
 import { toHumanAmount } from '@/lib/format/units';
 import { exportReceiptPdf } from '@/lib/generator/pdf-export';
 import {
+  buildShareBundleText,
   buildSharePayload,
+  deriveVerificationCode,
   openSocialShare,
   nativeShare,
 } from '@/lib/share/social';
@@ -40,9 +42,14 @@ export interface UseReceiptShareReturn {
   shareStatus: string;
   /** True for ~2s after successful copy */
   copied: boolean;
+  /** Identifies the latest clipboard action while copied=true */
+  copyFlavor: 'url' | 'bundle' | null;
+  /** Short code recipients can use to confirm they opened the intended receipt */
+  verificationCode: string;
   /** True when Web Share API is available in current browser */
   nativeShareAvailable: boolean;
   copyLink: () => Promise<void>;
+  copyShareBundle: () => Promise<void>;
   shareToNetwork: (network: SocialNetwork) => void;
   shareNatively: () => Promise<void>;
   downloadQR: () => void;
@@ -80,8 +87,10 @@ export function useReceiptShare({
   const [qrCode, setQrCode]       = useState('');
   const [qrError, setQrError]     = useState('');
   const [shareStatus, setShareStatus] = useState('');
+  const [copyFlavor, setCopyFlavor] = useState<'url' | 'bundle' | null>(null);
   const [nativeShareAvailable, setNativeShareAvailable] = useState(false);
   const { copied, copyToClipboard } = useSecureClipboard();
+  const verificationCode = deriveVerificationCode(proof);
 
   useEffect(() => {
     const canNativeShare =
@@ -108,11 +117,28 @@ export function useReceiptShare({
     if (!verifyUrl) return;
     try {
       await copyToClipboard(verifyUrl);
+      setCopyFlavor('url');
       setShareStatus('Link copied (auto-clears in 60s)');
     } catch {
       setShareStatus('Copy failed');
     }
   }, [verifyUrl, copyToClipboard]);
+
+  const copyShareBundle = useCallback(async (): Promise<void> => {
+    if (!verifyUrl) return;
+    try {
+      const packet = buildShareBundleText({
+        chain,
+        proof,
+        verifyUrl,
+      });
+      await copyToClipboard(packet);
+      setCopyFlavor('bundle');
+      setShareStatus('Share packet copied: link + verification code');
+    } catch {
+      setShareStatus('Copy failed');
+    }
+  }, [chain, copyToClipboard, proof, verifyUrl]);
 
   const shareToNetwork = useCallback((network: SocialNetwork): void => {
     if (!verifyUrl) return;
@@ -166,14 +192,23 @@ export function useReceiptShare({
     }
   }, [chain, claimedAmount, ethereumAsset, minDate, proof, qrCode, receiptCategory, receiptLabel, verifyUrl]);
 
+  useEffect(() => {
+    if (!copied) {
+      setCopyFlavor(null);
+    }
+  }, [copied]);
+
   return {
     verifyUrl,
     qrCode,
     qrError,
     shareStatus,
     copied,
+    copyFlavor,
+    verificationCode,
     nativeShareAvailable,
     copyLink,
+    copyShareBundle,
     shareToNetwork,
     shareNatively,
     downloadQR,

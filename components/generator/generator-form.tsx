@@ -51,6 +51,14 @@ function buildVerifyUrl(proof: string): string {
   return `${globalThis.location.origin}/verify?${params.toString()}`;
 }
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = target.tagName.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
+}
+
 export function GeneratorForm(): React.JSX.Element {
   const formId = useId();
   const [values, setValues] = useState<GeneratorFormValues>(DEFAULT_VALUES);
@@ -249,6 +257,33 @@ export function GeneratorForm(): React.JSX.Element {
     e.preventDefault();
     await generate(values);
   }, [generate, values]);
+
+  useEffect(() => {
+    const handleKeydown = (event: KeyboardEvent): void => {
+      const withModifier = event.metaKey || event.ctrlKey;
+      if (!withModifier) {
+        return;
+      }
+
+      const canRunGeneratorAction = (state === 'idle' || state === 'error') && !isProcessing;
+
+      if (event.key.toLowerCase() === 'v' && canRunGeneratorAction && !isEditableTarget(event.target)) {
+        event.preventDefault();
+        void handlePaste('txHash');
+        return;
+      }
+
+      if (event.key === 'Enter' && canRunGeneratorAction) {
+        event.preventDefault();
+        void generate(values);
+      }
+    };
+
+    globalThis.addEventListener('keydown', handleKeydown);
+    return () => {
+      globalThis.removeEventListener('keydown', handleKeydown);
+    };
+  }, [generate, handlePaste, isProcessing, state, values]);
 
   const optionalCount =
     (values.receiptLabel.trim() ? 1 : 0) + (values.receiptCategory.trim() ? 1 : 0);

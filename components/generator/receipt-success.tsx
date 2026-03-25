@@ -68,12 +68,15 @@ export function ReceiptSuccess({
 }: Readonly<ReceiptSuccessProps>): React.JSX.Element {
   const {
     verifyUrl,
+    verificationCode,
     qrCode,
     qrError,
     shareStatus,
     copied,
+    copyFlavor,
     nativeShareAvailable,
     copyLink,
+    copyShareBundle,
     shareToNetwork,
     shareNatively,
     downloadQR,
@@ -95,6 +98,37 @@ export function ReceiptSuccess({
     const t = globalThis.setTimeout(() => setRevealed(true), 60);
     return () => globalThis.clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent): void => {
+      const withModifier = event.metaKey || event.ctrlKey;
+      if (!withModifier || event.key.toLowerCase() !== 'c') {
+        return;
+      }
+
+      const selectedText = globalThis.getSelection?.()?.toString().trim();
+      if (selectedText) {
+        return;
+      }
+
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName.toLowerCase();
+        const isEditableTag = tag === 'input' || tag === 'textarea' || tag === 'select';
+        if (isEditableTag || target.isContentEditable) {
+          return;
+        }
+      }
+
+      event.preventDefault();
+      void copyLink();
+    };
+
+    globalThis.addEventListener('keydown', handleShortcut);
+    return () => {
+      globalThis.removeEventListener('keydown', handleShortcut);
+    };
+  }, [copyLink]);
 
   const receiptFields = [
     { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.15s' },
@@ -183,9 +217,27 @@ export function ReceiptSuccess({
         <code className="block w-full max-h-24 overflow-auto break-all rounded-lg border border-white/12 bg-black/35 px-3 py-2 text-[11px] text-white/85">
           {verifyUrl || 'Preparing link…'}
         </code>
+        <div className="rounded-lg border border-cyan-300/20 bg-cyan-500/5 px-3 py-2">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-cyan-200/70">
+            Verification Code
+          </p>
+          <p className="mt-1 font-mono text-sm text-cyan-100">{verificationCode}</p>
+        </div>
 
+        <Button
+          type="button"
+          onClick={() => { void copyShareBundle(); }}
+          variant="primary"
+          className="w-full"
+        >
+          {copied && copyFlavor === 'bundle'
+            ? '✓ Copied Share Packet'
+            : '⎘ Copy Link + Code (All)'}
+        </Button>
         <Button type="button" onClick={() => { void copyLink(); }} variant="primary" className="w-full">
-          {copied ? '✓ Copied! (Auto-clears in 60s)' : '⎘ Copy Verify URL'}
+          {copied && copyFlavor === 'url'
+            ? '✓ Copied Verify URL'
+            : '⎘ Copy Verify URL'}
         </Button>
         <Button
           type="button"
@@ -219,6 +271,20 @@ export function ReceiptSuccess({
               {label}
             </Button>
           ))}
+        </div>
+
+        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-white/45">
+            Keyboard Shortcuts
+          </p>
+          <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-white/70">
+            <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono">Cmd/Ctrl + C</span>
+            <span>copy verify URL</span>
+            <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono">Cmd/Ctrl + Enter</span>
+            <span>generate</span>
+            <span className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono">Cmd/Ctrl + V</span>
+            <span>paste tx hash</span>
+          </div>
         </div>
       </div>
 
@@ -288,14 +354,19 @@ export function ReceiptSuccess({
         </div>
       )}
 
-      {qrError && (
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-400">
-          {qrError}
+      {(shareStatus || qrError) && (
+        <div className="glass-card rounded-xl border border-cyan-300/15 bg-cyan-500/5 px-4 py-3">
+          {shareStatus && (
+            <p className="text-xs text-cyan-200/85" aria-live="polite">
+              {shareStatus}
+            </p>
+          )}
+          {qrError && (
+            <p className="mt-1 text-xs text-amber-300/85" aria-live="polite">
+              {qrError}
+            </p>
+          )}
         </div>
-      )}
-
-      {shareStatus && (
-        <p className="text-xs text-white/55 px-1" aria-live="polite">{shareStatus}</p>
       )}
     </div>
   );
