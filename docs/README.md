@@ -18,6 +18,7 @@ This directory is the central home for project documentation.
 - Cloudflare deployment: [docs/runbooks/CLOUDFLARE_DEPLOYMENT.md](./runbooks/CLOUDFLARE_DEPLOYMENT.md)
 - Cloudflare edge rate-limits: [docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md](./runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - Oracle fail-safe routing (client primary, edge backup): [docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md](./runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
+- Manual QA and live-data reproduction: [docs/runbooks/MANUAL_TESTING.md](./runbooks/MANUAL_TESTING.md)
 - Circuit compilation: [docs/runbooks/CIRCUIT_COMPILATION.md](./runbooks/CIRCUIT_COMPILATION.md)
 - Trusted setup provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)
 - Trusted setup provenance record (2026-03-22): [docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md](./runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md)

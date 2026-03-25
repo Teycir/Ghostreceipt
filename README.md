@@ -387,6 +387,7 @@ See `.env.example` for all available options.
 - [Quick deploy](./docs/runbooks/QUICK_DEPLOY.md)
 - [Cloudflare edge rate-limit runbook](./docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - [Oracle fail-safe architecture runbook](./docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
+- [Manual testing runbook (step-by-step + live data)](./docs/runbooks/MANUAL_TESTING.md)
 - [Security runbook](./docs/runbooks/SECURITY.md)
 - [Changelog](./CHANGELOG.md)
 

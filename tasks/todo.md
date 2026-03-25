@@ -1,5 +1,32 @@
 # Task Plan - 2026-03-25
 
+## Objective (Manual Testing Runbook)
+
+Create a step-by-step manual QA guide with real live-data reproduction flow.
+
+## Plan
+
+- [x] Add a dedicated manual testing runbook under `docs/runbooks/`.
+- [x] Include real on-chain reproduction data and live test commands.
+- [x] Link the runbook from docs and root README hubs.
+
+## Review (Manual Testing Runbook)
+
+- Status: Completed
+- Added:
+  - `docs/runbooks/MANUAL_TESTING.md`
+- Coverage:
+  - setup + prerequisites,
+  - UI happy-path/negative-path checks,
+  - static docs checks,
+  - fail-safe drill,
+  - live data CLI reproduction commands (`test:live:*`),
+  - CI-quality verification commands,
+  - sign-off template.
+- Linked from:
+  - `docs/README.md`
+  - `README.md`
+
 ## Objective (Input Sanitization Hardening)
 
 Strengthen JSON request sanitization for both Next API routes and Cloudflare Pages wrappers with shared, deterministic behavior.
