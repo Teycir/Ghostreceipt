@@ -19,7 +19,9 @@ interface ReceiptSuccessProps {
   chain:          Chain;
   ethereumAsset:  EthereumAsset;
   claimedAmount:  string;
+  claimedAmountDisclosure: 'disclosed' | 'hidden';
   minDate:        string;
+  minDateDisclosure: 'disclosed' | 'hidden';
   oracleValidationLabel?: string;
   receiptLabel?:  string;
   receiptCategory?: string;
@@ -47,7 +49,9 @@ export function ReceiptSuccess({
   chain,
   ethereumAsset,
   claimedAmount,
+  claimedAmountDisclosure,
   minDate,
+  minDateDisclosure,
   oracleValidationLabel,
   receiptLabel,
   receiptCategory,
@@ -59,6 +63,7 @@ export function ReceiptSuccess({
     qrError,
     shareStatus,
     copied,
+    nativeShareAvailable,
     copyLink,
     shareToNetwork,
     shareNatively,
@@ -166,6 +171,14 @@ export function ReceiptSuccess({
         <Button type="button" onClick={() => { void copyLink(); }} variant="primary" className="w-full">
           {copied ? '✓ Copied! (Auto-clears in 60s)' : '⎘ Copy Verify URL'}
         </Button>
+        <Button
+          type="button"
+          onClick={() => { void shareNatively(); }}
+          variant={nativeShareAvailable ? 'primary' : 'secondary'}
+          className="w-full"
+        >
+          {nativeShareAvailable ? '↗ Share via Apps (Recommended)' : '↗ Share (copy fallback)'}
+        </Button>
         <Button type="button" onClick={exportPdf} variant="secondary" className="w-full">
           ↓ Export as PDF
         </Button>
@@ -190,14 +203,40 @@ export function ReceiptSuccess({
               {label}
             </Button>
           ))}
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-xs col-span-2 sm:col-span-4"
-            onClick={() => { void shareNatively(); }}
-          >
-            ↗ Share via…
-          </Button>
+        </div>
+      </div>
+
+      {/* ── Recipient preview ── */}
+      <div className="glass-card rounded-xl p-5 space-y-3">
+        <p className="text-xs uppercase tracking-[0.14em] text-white/50">Recipient Preview</p>
+        <p className="text-xs text-white/55">
+          This is what someone sees on the verification page after opening your shared link.
+        </p>
+        <div className="space-y-2 text-sm">
+          <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+            <span className="text-white/50">Amount</span>
+            <p className="mt-0.5 font-mono text-white/90">
+              {claimedAmountDisclosure === 'disclosed'
+                ? `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`
+                : 'Hidden'}
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+            <span className="text-white/50">Minimum Date</span>
+            <p className="mt-0.5 font-mono text-white/90">
+              {minDateDisclosure === 'disclosed' ? minDate : 'Hidden'}
+            </p>
+          </div>
+          {(receiptLabel || receiptCategory) && (
+            <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+              <span className="text-white/50">Metadata</span>
+              <p className="mt-0.5 text-white/90">
+                {receiptLabel ? `Label: ${receiptLabel}` : 'Label: n/a'}
+                <br />
+                {receiptCategory ? `Category: ${receiptCategory}` : 'Category: n/a'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -729,3 +729,54 @@ Add a Playwright regression test for the `/history` JSON import flow to verify u
   - Validation:
     - `npm run test:e2e -- tests/e2e/history-import.spec.ts` pass.
     - `npm run typecheck` pass.
+
+## Objective (Cost-Constrained UX Wave: Features 1-6)
+
+Ship six high-ROI UX upgrades while keeping default API/provider usage flat so free-tier operation remains safe.
+
+## Plan
+
+- [x] Update roadmap with a dedicated no-extra-API UX slice for features 1-6 and explicit deferrals for higher-cost ideas.
+- [x] Add smart transaction-hash detection with local chain auto-selection (no auto-submit, no background fetch).
+- [x] Add local draft save/restore for generator input state.
+- [x] Add smart actionable generator error messaging for common failure classes.
+- [x] Add recent receipts quick panel (last 5 local entries) on the generator surface.
+- [x] Add recipient-facing verification preview card on success page.
+- [x] Refine native share to a prominent one-tap path with graceful unsupported fallback.
+- [x] Add/update tests and run targeted verification commands.
+
+## Review (Cost-Constrained UX Wave: Features 1-6)
+
+- Status: Completed
+- Notes:
+  - Roadmap updates:
+    - Added/closed `R-P2-05`..`R-P2-10` in `docs/project/ENHANCEMENT_ROADMAP.md`.
+    - Marked explicit deferrals as accepted for higher-cost items (`Paste & Go`, auto-retry loops, live demo auto-calls, public gallery).
+  - Smart tx hash detection:
+    - Added `lib/generator/tx-hash-detection.ts`.
+    - Generator now auto-detects BTC/ETH/SOL hash format and auto-selects chain locally.
+    - Added inline format feedback and detection hint in generator form.
+  - Draft-safe form:
+    - Added `lib/generator/form-draft.ts` with load/save/clear helpers.
+    - Generator now auto-restores local draft and auto-saves edits (debounced, localStorage only).
+  - Smart error guidance:
+    - Added `lib/generator/error-messages.ts`.
+    - `use-proof-generator` now maps fetch/validation failures to actionable user-facing guidance.
+  - Recent receipts quick panel:
+    - Generator now shows last 5 local receipts with `Open Verify` / `Copy URL` quick actions.
+  - Verification preview + native share:
+    - Added recipient preview card on success screen reflecting disclosed/hidden fields.
+    - Promoted one-tap native share CTA with graceful fallback text when Web Share is unavailable.
+  - Test coverage:
+    - Added unit tests:
+      - `tests/unit/generator/tx-hash-detection.test.ts`
+      - `tests/unit/generator/form-draft.test.ts`
+      - `tests/unit/generator/error-messages.test.ts`
+    - Added e2e coverage:
+      - `tests/e2e/recent-receipts-panel.spec.ts`
+      - Updated `tests/e2e/generator.spec.ts` with chain auto-detection scenario.
+  - Validation:
+    - `npm test -- tests/unit/generator/tx-hash-detection.test.ts tests/unit/generator/form-draft.test.ts tests/unit/generator/error-messages.test.ts tests/unit/history/receipt-history.test.ts --runInBand --ci` pass.
+    - `npm run test:e2e -- tests/e2e/history-import.spec.ts tests/e2e/recent-receipts-panel.spec.ts` pass.
+    - `npm run test:e2e -- tests/e2e/generator.spec.ts --grep "auto-detect chain from tx hash format"` pass.
+    - `npm run typecheck` pass.

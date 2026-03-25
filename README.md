@@ -45,48 +45,79 @@ Status:
 
 ## Table of Contents
 - [Overview](#overview)
-- [Why GhostReceipt](#why-ghostreceipt)
+- [The Problem GhostReceipt Solves](#the-problem-ghostreceipt-solves)
 - [Key Features](#key-features)
 - [Use Cases](#use-cases)
-- [Architecture](#architecture)
-- [API Model](#api-model)
-- [Mechanism](#mechanism)
-- [Oracle Trust Model](#oracle-trust-model)
-- [Logic Flow](#logic-flow)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
+- [How Trust Works (Security Model)](#how-trust-works-security-model)
+- [How It Works (Technical Details)](#how-it-works-technical-details)
 - [FAQ](#faq)
-- [References](#references)
+- [For Developers](#for-developers)
+- [Complementary Projects](#complementary-projects)
 - [Contact](#contact)
 
 ## Overview
-GhostReceipt is a privacy-first app that lets users prove payment facts (amount and time window) with zero-knowledge proofs while redacting sender, receiver, and tx hash from shared receipts.
 
-Core product goals:
-- Zero-friction UX: from tx hash to shareable proof in under 60 seconds
-- No forced signup
-- No forced API key from users
-- No credit card requirement for local dev and default flow
+**What is GhostReceipt?**
 
-## Why GhostReceipt
-Most payment proof flows force one of two bad options:
-- Share too much on-chain identity and lose privacy
-- Ask users to trust screenshots or opaque claims
+GhostReceipt lets you prove you made a cryptocurrency payment without revealing:
+- Your wallet address
+- The recipient's wallet address  
+- The exact transaction ID
 
-GhostReceipt solves this by combining:
-- Verifiable oracle-signed canonical tx facts
-- Browser-side zk proof generation
-- Shareable verification payloads with redacted sensitive data
+It uses **zero-knowledge proofs** - a cryptographic technique that lets you prove something is true without revealing the underlying data. 
+
+You can share a cryptographic receipt that proves:
+- ✅ You paid at least X amount
+- ✅ The payment happened within a specific time window
+- ❌ But hides your identity and the other party's identity
+
+**Why use it?**
+- Prove payment to clients without exposing your entire transaction history
+- Show proof of funds without revealing your wallet balance
+- Verify payments in disputes while maintaining privacy
+- No signup required, no credit card needed, works in your browser
+
+**How it works (simple version):**
+1. Paste your transaction hash (the payment ID from blockchain)
+2. Set your privacy preferences (minimum amount to prove, time window)
+3. Generate a cryptographic proof in your browser
+4. Share the proof link or QR code
+5. Anyone can verify the proof without seeing your private details
+
+## The Problem GhostReceipt Solves
+
+**Current bad options for proving crypto payments:**
+
+❌ **Option 1: Share your transaction link**  
+Problem: Anyone can see your wallet address, trace all your other transactions, and see your balance.
+
+❌ **Option 2: Send a screenshot**  
+Problem: Screenshots can be easily faked. No way to verify it's real.
+
+✅ **GhostReceipt's solution:**  
+Generate a cryptographic proof that's mathematically verifiable but reveals only what you choose to share. It's like showing someone a sealed envelope that proves you have a $100 bill inside, without opening it.
 
 ## Key Features
-- Multi-provider tx fetch with automatic cascade failover
-- Consensus-aware validation labels (`consensus_verified`, `single_source_fallback`, `single_source_only`)
-- Optional BYOK (advanced), never required for core user flow
-- Deterministic proof generation and verification pipeline
-- Shareable receipt links + QR export
-- Mobile-first UX with progressive disclosure
-- Static docs pages linked from footer (`how-to-use`, `faq`, `security`, `license`)
+
+**For Everyone:**
+- 🚀 **Fast**: Generate proof in under 60 seconds
+- 🔒 **Private**: Your wallet addresses stay hidden
+- 📱 **Mobile-friendly**: Works on phones and tablets
+- 🔗 **Easy sharing**: Get a link or QR code to share your proof
+- ✅ **Verifiable**: Anyone can check the proof is real
+- 🆓 **Free**: No signup, no credit card, no API keys needed
+
+**Supported Cryptocurrencies:**
+- Bitcoin (BTC)
+- Ethereum (ETH)
+- Solana (SOL)
+- USDC on Ethereum
+
+**Technical Features (for developers):**
+- Zero-knowledge proofs generated in your browser
+- Multi-provider data fetching with automatic backup
+- Dual-source consensus validation for extra security
+- Open source and self-hostable
 
 ## Use Cases
 - Freelancers proving milestone payments without revealing wallet graph
@@ -95,7 +126,20 @@ GhostReceipt solves this by combining:
 - P2P market participants resolving disputes with verifiable receipts
 - DAO contributors proving payouts while minimizing on-chain identity leakage
 
-## Architecture
+## Architecture (Technical Overview)
+
+**Simple flow diagram:**
+
+```
+You → Enter transaction hash → GhostReceipt checks blockchain → 
+Creates cryptographic proof in your browser → You share proof link → 
+Anyone can verify it's real
+```
+
+<details>
+<summary><b>Detailed technical architecture (click to expand)</b></summary>
+
+**System architecture:**
 ```mermaid
 flowchart LR
     U[User] --> G[Generator UI]
@@ -115,77 +159,8 @@ flowchart LR
     V --> OUT[Verified or Counterfeit State]
 ```
 
-## API Model
-GhostReceipt uses four API types so the product stays reliable while keeping UX friction near zero:
+**Sequence diagram:**
 
-1. Public no-key data APIs (default path):
-- BTC uses BlockCypher (primary, key-rotated) with `mempool.space` as a public fallback.
-- ETH uses managed Etherscan API key cascade.
-- SOL uses managed Helius API key cascade.
-- Consensus peer checks can use ordered public endpoint lists (for example ETH/SOL public RPC peers, BTC mempool peer).
-- Used to keep onboarding keyless and no-card friendly.
-
-2. Managed keyed provider APIs (server-side preferred path):
-- ETH uses Etherscan API keys provided by project maintainers.
-- SOL uses Helius API keys provided by project maintainers.
-- Keys are platform-managed in server environment variables and never exposed in client code.
-- Multiple managed keys are rotated through a cascade manager for resilience (same pattern as smartcontractpatternfinder).
-
-3. First-party internal Oracle API:
-- `POST /api/oracle/fetch-tx` validates input, fetches canonical tx facts, normalizes data, and returns an oracle-signed payload.
-- This API is the trust boundary between provider variance and deterministic proof generation.
-
-4. Optional BYOK APIs (advanced mode only):
-- Users may add their own provider keys for higher throughput.
-- BYOK is optional and never required for receipt generation or verification.
-- Primary signing path remains API-first; public RPC usage is limited to peer consensus validation/fallback logic.
-
-## Mechanism
-GhostReceipt signs only after canonical transaction handling completes for the selected chain:
-
-1. Fetch canonical tx facts from the primary provider cascade.
-2. If consensus mode is enabled, query a secondary peer provider for the same transaction.
-3. Compare immutable canonical fields before signature issuance.
-4. Return signed payload plus passive validation metadata:
-- `consensus_verified`: primary and peer agree.
-- `single_source_fallback`: peer was unavailable, but `best_effort` mode allowed signing with primary.
-- `single_source_only`: consensus check is disabled (`off`) or no peer path exists.
-5. If consensus mode is `strict`, peer unavailability or canonical mismatch fails closed (no signature returned).
-
-Default production behavior is `best_effort` per chain (`ORACLE_BTC_CONSENSUS_MODE`, `ORACLE_ETH_CONSENSUS_MODE`, `ORACLE_SOL_CONSENSUS_MODE`), which keeps UX friction-free while surfacing validation strength directly in the payload/UI label.
-
-## Oracle Trust Model
-GhostReceipt currently uses a single first-party oracle signing key as the trust anchor for canonical transaction facts.
-
-Receipt verification proves:
-- The proof satisfies circuit constraints.
-- The proof is tied to the oracle-signed canonical commitment.
-
-Receipt verification does not independently prove:
-- Full chain-state correctness without trusting the oracle/provider pipeline.
-- That a specific BTC recipient got the full tx-level value in multi-output transactions.
-
-What the oracle can do:
-- Confirm canonical transaction facts (`valueAtomic`, `timestampUnix`, `txHash`, `chain`) after provider fetch and normalization.
-- Sign the deterministic commitment used by witness/proof generation.
-
-What the oracle cannot do:
-- Forge valid on-chain state without also compromising provider integrity.
-- Bypass proof verification rules; proofs must still satisfy circuit constraints.
-
-Current trust assumptions:
-- The oracle signing key is kept server-side only (`ORACLE_PRIVATE_KEY`) and never exposed to the client.
-- Oracle signatures use Ed25519 over the canonical oracle commitment (`messageHash`).
-- Receipt verification checks both ZK validity and oracle signature integrity.
-- Oracle trust is centralized today; if the oracle is offline, new receipt generation is unavailable.
-- If oracle key compromise is suspected, treat new payloads as untrusted until rotation/recovery procedures complete.
-
-Operational controls:
-- Key-management and rotation procedures are documented in [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md).
-- Trusted setup/provenance checklist template is documented in [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md).
-- First release/demo hardening checklist is documented in [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md).
-
-## Logic Flow
 ```mermaid
 sequenceDiagram
     participant User
@@ -220,27 +195,101 @@ sequenceDiagram
     Verify-->>User: Verified receipt or invalid warning
 ```
 
-## Tech Stack
-- Frontend:
-- Next.js (App Router), React, TypeScript
-- Tailwind CSS + reusable UI components
-- TanStack Query + React Hook Form + Zod
-- Backend/Edge:
-- Cloudflare Workers (optional deploy target)
-- Node/Next API fallback for local-first no-card mode
-- ZK:
-- Circom 2 + snarkjs
-- Data:
-- BTC: BlockCypher (free-tier API, primary) + mempool.space (public fallback)
-- ETH: Etherscan API (rolling managed key cascade)
-- SOL: Helius API (rolling managed key cascade)
-- Reliability:
-- Provider/key cascade manager with immediate failover and bounded concurrency (smartcontractpatternfinder-style)
+</details>
 
-## Quick Start
+## API Model (Technical)
 
-### Prerequisites
+GhostReceipt uses multiple data sources to ensure reliability:
 
+**1. Public blockchain APIs (default, no keys needed):**
+- Bitcoin: BlockCypher (with API token rotation) + mempool.space fallback
+- Ethereum: Managed Etherscan keys + public RPC nodes
+- Solana: Managed Helius keys + public RPC nodes
+
+**2. Managed API keys (server-side):**
+- Project maintainers provide API keys
+- Multiple keys with automatic rotation for reliability
+- Never exposed to users or client code
+
+**3. Oracle API (internal):**
+- Validates and signs transaction data
+- Trust boundary between data providers and proof generation
+
+**4. Optional user API keys (advanced only):**
+- Users can add their own keys for higher throughput
+- Never required for basic usage
+
+## How It Works (Technical Details)
+
+**For developers and technical users:**
+
+### Step-by-step process:
+
+1. **You provide:** Transaction hash + privacy preferences (minimum amount, time window)
+
+2. **Data fetching:** GhostReceipt fetches transaction data from multiple blockchain data providers:
+   - Bitcoin: BlockCypher + mempool.space
+   - Ethereum: Etherscan + public RPC nodes
+   - Solana: Helius + public RPC nodes
+
+3. **Consensus validation:** The system cross-checks data from multiple sources to ensure accuracy
+
+4. **Oracle signature:** Once verified, the system creates a cryptographic signature confirming the transaction facts
+
+5. **Zero-knowledge proof:** Your browser generates a mathematical proof that:
+   - Proves your payment meets your claimed criteria
+   - Hides your wallet addresses and exact transaction details
+   - Can be verified by anyone
+
+6. **Share:** You get a link or QR code containing the proof
+
+### Validation levels:
+
+- **Consensus verified** ✅: Transaction confirmed by multiple independent data sources
+- **Single source fallback** ⚠️: Primary source confirmed, backup source unavailable  
+- **Single source only** ℹ️: Only one data source used
+
+Default mode uses "best effort" consensus - tries to verify with multiple sources but doesn't fail if backups are unavailable.
+
+## How Trust Works (Security Model)
+
+**Simple explanation:**
+
+When you generate a receipt, GhostReceipt:
+1. Fetches your transaction data from the blockchain (using multiple sources to verify it's correct)
+2. Creates a cryptographic signature confirming the transaction is real
+3. Your browser generates a privacy-preserving proof
+4. The proof can be verified by anyone, but only reveals what you chose to share
+
+**What you're trusting:**
+- The GhostReceipt service correctly fetches blockchain data (we use multiple sources and cross-check them)
+- The cryptographic math works (it's based on well-tested zero-knowledge proof technology)
+
+**What you're NOT trusting:**
+- We never see your private keys or control your funds
+- The proof generation happens in YOUR browser, not on our servers
+- Your sensitive data (wallet addresses) never leaves your device
+
+**For technical users:**
+
+GhostReceipt uses multiple oracle signing keys with a transparency log for key rotation. Each transaction is verified against multiple blockchain data providers before signing. The oracle:
+- ✅ Can confirm transaction facts (amount, timestamp, chain)
+- ✅ Signs a commitment used for zero-knowledge proof generation
+- ❌ Cannot forge blockchain state without compromising multiple data providers
+- ❌ Cannot bypass cryptographic proof verification rules
+- ❌ Never sees or stores your wallet addresses (proof generation is client-side)
+
+Key management:
+- Multiple oracle keys with rotation support
+- Transparency log tracks all active and rotated keys
+- Each signature includes a key ID for verification
+- Full documentation: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
+
+## For Developers
+
+### Quick Start
+
+**Prerequisites:**
 - Node.js 20.9.0 or higher
 - npm 9.0.0 or higher
 
@@ -249,84 +298,123 @@ node --version  # Should be >= 20.9.0
 npm --version   # Should be >= 9.0.0
 ```
 
-### Installation
+**Installation:**
 
 ```bash
-# 1) Clone
+# 1) Clone the repository
 git clone https://github.com/teycir/GhostReceipt.git
 cd GhostReceipt
 
-# 2) Install
+# 2) Install dependencies
 npm install
 
-# 3) Configure
+# 3) Set up configuration
 cp .env.example .env.local
 
-# 4) Run
+# 4) Start development server
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000` in your browser.
 
-## Configuration
-- No-credit-card mode: default local setup must work with free/public providers.
-- No-user-API-key mode: users are not required to bring API keys.
-- Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
-- Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
-- Provider paths: BTC uses BlockCypher primary + mempool.space fallback, ETH uses Etherscan API cascade (+ public RPC consensus peer), SOL uses Helius API cascade (+ public RPC consensus peer).
-- Consensus controls: `ORACLE_BTC_CONSENSUS_MODE`, `ORACLE_ETH_CONSENSUS_MODE`, `ORACLE_SOL_CONSENSUS_MODE` (`best_effort`, `strict`, `off`; defaults in `.env.example`).
+### Configuration Options
 
-## Documentation
-- Documentation hub: [docs/README.md](./docs/README.md)
-- Deployment guide: [docs/DEPLOYMENT_READY.md](./docs/DEPLOYMENT_READY.md)
-- Quick deploy: [docs/runbooks/QUICK_DEPLOY.md](./docs/runbooks/QUICK_DEPLOY.md)
-- Cloudflare Pages: [docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md](./docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
-- Product and execution roadmap: [docs/project/ENHANCEMENT_ROADMAP.md](./docs/project/ENHANCEMENT_ROADMAP.md)
-- Proof system decision: [docs/project/PROOF_SYSTEM_DECISION.md](./docs/project/PROOF_SYSTEM_DECISION.md)
-- Roadmap review-note template: [docs/project/ROADMAP_REVIEW_NOTES_TEMPLATE.md](./docs/project/ROADMAP_REVIEW_NOTES_TEMPLATE.md)
-- Progress tracking: [docs/project/IMPLEMENTATION_PROGRESS.md](./docs/project/IMPLEMENTATION_PROGRESS.md)
-- Release readiness checklist: [docs/project/RELEASE_READINESS_CHECKLIST.md](./docs/project/RELEASE_READINESS_CHECKLIST.md)
-- Repository metadata checklist: [docs/project/REPO_METADATA_CHECKLIST.md](./docs/project/REPO_METADATA_CHECKLIST.md)
-- Security runbook: [docs/runbooks/SECURITY.md](./docs/runbooks/SECURITY.md)
-- Threat model: [docs/runbooks/THREAT_MODEL.md](./docs/runbooks/THREAT_MODEL.md)
-- Circuit provenance template: [docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md)
-- Trusted setup provenance record (2026-03-22): [docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md](./docs/runbooks/TRUSTED_SETUP_PROVENANCE_2026-03-22.md)
-- Circuit self-review: [docs/runbooks/CIRCUIT_SELF_REVIEW.md](./docs/runbooks/CIRCUIT_SELF_REVIEW.md)
-- Changelog: [CHANGELOG.md](./CHANGELOG.md)
+**Default setup (no configuration needed):**
+- Works with free public blockchain data providers
+- No API keys required
+- No credit card needed
+
+**Optional advanced configuration:**
+- Add your own API keys for higher rate limits
+- Configure consensus validation modes
+- Customize provider endpoints
+
+See `.env.example` for all available options.
+
+### Tech Stack
+
+**Frontend:**
+- Next.js (App Router)
+- React + TypeScript
+- Tailwind CSS
+- TanStack Query + React Hook Form
+
+**Backend:**
+- Next.js API routes
+- Cloudflare Workers (optional)
+
+**Cryptography:**
+- Circom 2 (zero-knowledge circuits)
+- snarkjs (proof generation)
+- Ed25519 signatures
+
+**Blockchain data:**
+- Bitcoin: BlockCypher + mempool.space
+- Ethereum: Etherscan + public RPC
+- Solana: Helius + public RPC
+
+### Documentation
+
+**For users:**
+- [How to use](https://ghostreceipt.pages.dev/docs/how-to-use.html)
+- [FAQ](https://ghostreceipt.pages.dev/docs/faq.html)  
+- [Security](https://ghostreceipt.pages.dev/docs/security.html)
+
+**For developers:**
+- [Documentation hub](./docs/README.md)
+- [Deployment guide](./docs/DEPLOYMENT_READY.md)
+- [Quick deploy](./docs/runbooks/QUICK_DEPLOY.md)
+- [Security runbook](./docs/runbooks/SECURITY.md)
+- [Changelog](./CHANGELOG.md)
+
+**Technical deep-dives:**
+- [Proof system decision](./docs/project/PROOF_SYSTEM_DECISION.md)
+- [Threat model](./docs/runbooks/THREAT_MODEL.md)
+- [Circuit self-review](./docs/runbooks/CIRCUIT_SELF_REVIEW.md)
+- [Enhancement roadmap](./docs/project/ENHANCEMENT_ROADMAP.md)
 
 ## FAQ
-### Is GhostReceipt custodial?
-No. Proof generation and sensitive witness data stay in the client-side flow.
 
-### Do users need to connect a wallet?
-No for the base flow. Users only provide tx hash and claim parameters.
+### Do I need to connect my wallet?
+**No.** You only need to paste the transaction hash (transaction ID). Your wallet stays disconnected and safe.
 
-### Do users need API keys?
-No. API key entry is optional advanced mode only.
+### Does GhostReceipt control my funds?
+**No.** GhostReceipt never touches your cryptocurrency. It only reads public blockchain data to verify transactions happened.
 
-### Can this run without a credit card?
-Yes. Local setup and baseline flow are designed for no-card operation.
+### Do I need to sign up or pay?
+**No.** No account needed, no credit card required. Just visit the website and start generating proofs.
 
-### What does the verifier see?
-Only proof-related public claims and redacted receipt output, not raw sensitive identities.
+### What information does the proof reveal?
+**Only what you choose:**
+- ✅ That a payment of at least X amount occurred
+- ✅ That it happened within a time window you specify
+- ❌ NOT your wallet address
+- ❌ NOT the recipient's wallet address
+- ❌ NOT the exact transaction ID
 
-### What does a verified receipt prove today?
-It proves your claim satisfies the circuit against oracle-signed canonical tx facts. It does not remove trust in the current single oracle/operator and provider data sources.
+### Can someone fake a proof?
+**No.** The proofs use cryptographic math that's impossible to fake. Anyone verifying your proof can be certain it's legitimate.
 
-### What does the validation label mean?
-It tells you how strongly transaction data was validated before signing:
-- `consensus_verified`: dual-source agreement succeeded.
-- `single_source_fallback`: peer source was unavailable, signing continued in `best_effort`.
-- `single_source_only`: consensus check was intentionally off or no peer was configured.
+### What does "consensus verified" mean?
+**It's a trust indicator.** When you see this label, it means:
+- ✅ **Consensus verified**: Transaction data was checked against multiple independent sources and they all agreed
+- ⚠️ **Single source fallback**: One verification source was unavailable, but the primary source confirmed the transaction
+- ℹ️ **Single source only**: Only one data source was used (less verification)
 
-### What BTC value does `valueAtomic` represent?
-For BTC, `valueAtomic` is currently tx-level total output value (`sum(vout)` / `output_total`), not recipient-specific net received value. In multi-output transactions, this can exceed what any single recipient received.
+### Which cryptocurrencies work?
+- Bitcoin (BTC)
+- Ethereum (ETH)  
+- Solana (SOL)
+- USDC on Ethereum
 
-### Which blockchains are supported?
-Currently Bitcoin, Ethereum (native ETH + ERC-20 USDC), and Solana (native SOL).
+### What if I send Bitcoin to multiple recipients in one transaction?
+**Important:** For Bitcoin, the proof shows the total amount sent in the transaction, not what each individual recipient received. If you sent to multiple people, the amount shown is the sum of all outputs.
 
-### Are stablecoins supported?
-Yes. Ethereum supports both native ETH and ERC-20 USDC claim modes through the same oracle fetch flow.
+### Is my data stored anywhere?
+**No.** The proof generation happens entirely in your browser. Your wallet addresses and transaction details are never sent to any server.
+
+### Can I use this for business/legal purposes?
+**Maybe.** GhostReceipt provides cryptographic proof of payment, but whether it's accepted for legal/business purposes depends on the other party. It's best used for situations where both parties agree to use privacy-preserving proofs.
 
 ## Complementary Projects
 

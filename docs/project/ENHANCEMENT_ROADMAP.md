@@ -14,6 +14,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - No credit card required for local setup, testing, and deployment baseline.
 - No forced user API keys; BYOK stays optional.
 - Keep default flow local-first and free-tier safe.
+- Keep UX improvements API-budget neutral by default: no hidden auto-submit polling or retry loops that increase provider call volume.
 - Keep proof UX target as a hard SLO: `p95 < 60s`, `p50 < 25s`.
 - Keep all tests in `tests/` only.
 
@@ -72,6 +73,32 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Add receipt labels/categories in generator + verifier.
 - [x] Add local receipt history (`/history`, IndexedDB, JSON export).
 - [x] Add Ethereum stablecoin selector (`ETH` / `USDC`) in generator with Etherscan-backed canonical fetch path.
+
+### Cost-Constrained UX Slice (P2, No-Extra-API)
+
+`Goal`: improve conversion and clarity without increasing default oracle/provider request volume.
+
+- [x] `R-P2-05` Smart transaction-hash detection:
+  - auto-detect BTC/ETH/SOL format from input,
+  - auto-select chain mode locally (no network request).
+- [x] `R-P2-06` Draft-safe generator form:
+  - local draft persistence/restore (localStorage only),
+  - no server writes or background sync.
+- [x] `R-P2-07` Native-share-first success flow:
+  - one-tap Web Share API CTA with graceful fallback.
+- [x] `R-P2-08` Verification preview before sharing:
+  - render exactly what recipient will see (hidden/disclosed claims, metadata).
+- [x] `R-P2-09` Smart error guidance:
+  - map common failures to actionable recovery text (`pending confirmation`, `claim exceeds tx value`, `provider busy`).
+- [x] `R-P2-10` Recent receipts quick panel on generator:
+  - show last 5 local receipts for quick verify/copy,
+  - reduce redundant re-generation attempts.
+
+Explicit deferrals (to preserve free-tier API budget):
+- [x] Deferred: auto-submit on paste (`Paste & Go`) by default.
+- [x] Deferred: automatic network retries/backoff that add provider requests per user action.
+- [x] Deferred: interactive live demo mode that performs additional fetch/prove calls automatically.
+- [x] Deferred: public receipt gallery requiring hosted storage/moderation.
 
 ### Shareability and ZK Design (P2-P3)
 

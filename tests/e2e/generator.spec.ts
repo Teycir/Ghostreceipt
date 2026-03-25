@@ -96,6 +96,17 @@ test.describe('GhostReceipt E2E Flow', () => {
     await expect(page.locator('text=Invalid Ethereum transaction hash')).toBeVisible();
   });
 
+  test('should auto-detect chain from tx hash format', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    const txInput = page.locator('input[placeholder*="64 hex"]').first();
+    await txInput.fill(`0x${'a'.repeat(64)}`);
+
+    await expect(page.locator('input[placeholder*="0x + 64 hex characters"]')).toBeVisible();
+    await expect(page.locator('text=✓ Auto-selected Ethereum transaction hash.')).toBeVisible();
+  });
+
   test('should show paste button for tx hash', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);

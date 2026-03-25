@@ -23,6 +23,7 @@ import type { OraclePayload } from '@/lib/validation/schemas';
 import { scheduleZkArtifactPreload } from '@/lib/zk/artifacts';
 import type { ReceiptMetadata } from '@/lib/zk/prover';
 import { addReceiptHistoryEntry } from '@/lib/history/receipt-history';
+import { mapFetchTxApiError, mapWitnessValidationErrors } from '@/lib/generator/error-messages';
 
 // ── Field-level validation ───────────────────────────────────────────────────
 function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
@@ -73,16 +74,6 @@ function normalizeReceiptMetadata(values: GeneratorFormValues): ReceiptMetadata 
     ...(label ? { label } : {}),
     ...(category ? { category } : {}),
   };
-}
-
-// ── Rate-limit message helper ────────────────────────────────────────────────
-function rateLimitMessage(retryAfterSeconds?: number): string {
-  const waitSeconds =
-    typeof retryAfterSeconds === 'number' && retryAfterSeconds > 0
-      ? Math.ceil(retryAfterSeconds)
-      : 60;
-  const waitLabel = waitSeconds === 1 ? '1 second' : `${waitSeconds} seconds`;
-  return `Rate limit reached. Please wait ${waitLabel} and try again.`;
 }
 
 // ── Hook return type ─────────────────────────────────────────────────────────
@@ -164,17 +155,19 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         }),
       });
 
-      const data = (await response.json()) as { data?: OraclePayload } & ApiErrorPayload;
+      let data: ({ data?: OraclePayload } & ApiErrorPayload) | null = null;
+      try {
+        data = (await response.json()) as { data?: OraclePayload } & ApiErrorPayload;
+      } catch {
+        data = null;
+      }
       telemetry.fetchMs = nowMs() - fetchStart;
 
       if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error(rateLimitMessage(data.error?.details?.retryAfterSeconds));
-        }
-        throw new Error(data.error?.message ?? 'Failed to fetch transaction');
+        throw new Error(mapFetchTxApiError(response.status, data));
       }
 
-      if (!data.data) throw new Error('Invalid response: missing oracle payload');
+      if (!data?.data) throw new Error('Invalid response: missing oracle payload');
 
       // 3. Build & validate witness
       setState('validating');
@@ -190,7 +183,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
 
       const validation = validateWitness(witness);
       if (!validation.valid) {
-        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+        throw new Error(mapWitnessValidationErrors(validation.errors));
       }
       telemetry.witnessMs = nowMs() - witnessStart;
 
@@ -247,7 +240,9 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         chain:          values.chain,
         ethereumAsset:  values.ethereumAsset,
         claimedAmount:  values.claimedAmount,
+        claimedAmountDisclosure: values.discloseAmount ? 'disclosed' : 'hidden',
         minDate:        values.minDate,
+        minDateDisclosure: values.discloseMinDate ? 'disclosed' : 'hidden',
         ...(data.data.oracleValidationLabel
           ? { oracleValidationLabel: data.data.oracleValidationLabel }
           : {}),

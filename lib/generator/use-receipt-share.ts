@@ -40,6 +40,8 @@ export interface UseReceiptShareReturn {
   shareStatus: string;
   /** True for ~2s after successful copy */
   copied: boolean;
+  /** True when Web Share API is available in current browser */
+  nativeShareAvailable: boolean;
   copyLink: () => Promise<void>;
   shareToNetwork: (network: SocialNetwork) => void;
   shareNatively: () => Promise<void>;
@@ -78,7 +80,15 @@ export function useReceiptShare({
   const [qrCode, setQrCode]       = useState('');
   const [qrError, setQrError]     = useState('');
   const [shareStatus, setShareStatus] = useState('');
+  const [nativeShareAvailable, setNativeShareAvailable] = useState(false);
   const { copied, copyToClipboard } = useSecureClipboard();
+
+  useEffect(() => {
+    const canNativeShare =
+      typeof globalThis.navigator !== 'undefined' &&
+      typeof globalThis.navigator.share === 'function';
+    setNativeShareAvailable(canNativeShare);
+  }, []);
 
   // Build URL + QR whenever proof changes
   useEffect(() => {
@@ -162,6 +172,7 @@ export function useReceiptShare({
     qrError,
     shareStatus,
     copied,
+    nativeShareAvailable,
     copyLink,
     shareToNetwork,
     shareNatively,

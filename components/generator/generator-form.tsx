@@ -3,11 +3,11 @@
 /**
  * components/generator/generator-form.tsx
  *
- * Pure rendering layer — NO async logic, NO inline state machines.
- * All side-effects live in useProofGenerator().
+ * Generator UI layer with local-only UX effects (draft/history helpers).
+ * Proof fetch/validate/generate side-effects live in useProofGenerator().
  */
 
-import { useState, useCallback, useId } from 'react';
+import { useState, useCallback, useEffect, useId, useMemo } from 'react';
 import { Button }       from '@/components/ui/button';
 import { Input }        from '@/components/ui/input';
 import { Select }       from '@/components/ui/select';
@@ -17,6 +17,12 @@ import { ProofStepper }   from './proof-stepper';
 import { useProofGenerator } from '@/lib/generator/use-proof-generator';
 import { formatAtomicAmount, atomicUnitLabel, amountPlaceholder } from '@/lib/format/units';
 import type { GeneratorFormValues } from '@/lib/generator/types';
+import {
+  listReceiptHistoryEntries,
+  type ReceiptHistoryEntry,
+} from '@/lib/history/receipt-history';
+import { detectChainFromTxHash, isValidTxHashForChain } from '@/lib/generator/tx-hash-detection';
+import { loadGeneratorDraft, saveGeneratorDraft } from '@/lib/generator/form-draft';
 
 const DEFAULT_VALUES: GeneratorFormValues = {
   chain:         'bitcoin',
@@ -30,10 +36,29 @@ const DEFAULT_VALUES: GeneratorFormValues = {
   receiptCategory: '',
 };
 
+function formatRecentChain(entry: ReceiptHistoryEntry): string {
+  if (entry.chain === 'bitcoin') {
+    return 'BTC';
+  }
+  if (entry.chain === 'solana') {
+    return 'SOL';
+  }
+  return entry.ethereumAsset === 'usdc' ? 'ETH-USDC' : 'ETH';
+}
+
+function buildVerifyUrl(proof: string): string {
+  const params = new URLSearchParams({ proof });
+  return `${globalThis.location.origin}/verify?${params.toString()}`;
+}
+
 export function GeneratorForm(): React.JSX.Element {
   const formId = useId();
   const [values, setValues] = useState<GeneratorFormValues>(DEFAULT_VALUES);
   const [optionalExpanded, setOptionalExpanded] = useState(false);
+  const [draftStatus, setDraftStatus] = useState('');
+  const [txHashHint, setTxHashHint] = useState('');
+  const [recentReceipts, setRecentReceipts] = useState<ReceiptHistoryEntry[]>([]);
+  const [recentStatus, setRecentStatus] = useState('');
   const {
     state,
     errors,
@@ -48,6 +73,7 @@ export function GeneratorForm(): React.JSX.Element {
 
   // Derived
   const humanAmount = formatAtomicAmount(values.claimedAmount, values.chain, values.ethereumAsset);
+  const txHashFormatValid = isValidTxHashForChain(values.txHash, values.chain);
 
   type ChainModeValue = 'bitcoin' | 'ethereum' | 'solana' | 'ethereum-usdc';
   const chainModeValue: ChainModeValue =
@@ -55,8 +81,63 @@ export function GeneratorForm(): React.JSX.Element {
       ? 'ethereum-usdc'
       : values.chain;
 
+  const refreshRecentReceipts = useCallback(async (): Promise<void> => {
+    try {
+      const entries = await listReceiptHistoryEntries();
+      setRecentReceipts(entries.slice(0, 5));
+    } catch {
+      setRecentReceipts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const draft = loadGeneratorDraft();
+    if (!draft) {
+      return;
+    }
+
+    setValues(draft);
+    setOptionalExpanded(Boolean(draft.receiptLabel.trim() || draft.receiptCategory.trim()));
+    setDraftStatus('Restored your saved draft from this browser.');
+    const clearTimer = globalThis.setTimeout(() => {
+      setDraftStatus('');
+    }, 3500);
+
+    return () => {
+      globalThis.clearTimeout(clearTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const saveTimer = globalThis.setTimeout(() => {
+      saveGeneratorDraft(values);
+    }, 250);
+
+    return () => {
+      globalThis.clearTimeout(saveTimer);
+    };
+  }, [values]);
+
+  useEffect(() => {
+    void refreshRecentReceipts();
+  }, [refreshRecentReceipts]);
+
+  useEffect(() => {
+    if (state !== 'success') {
+      return;
+    }
+    const refreshTimer = globalThis.setTimeout(() => {
+      void refreshRecentReceipts();
+    }, 300);
+
+    return () => {
+      globalThis.clearTimeout(refreshTimer);
+    };
+  }, [state, refreshRecentReceipts]);
+
   // Chain/asset mode changes reset tx hash + claimed amount to avoid stale-format claims.
   const handleChainModeChange = useCallback((mode: ChainModeValue) => {
+    setTxHashHint('');
     setValues((prev) => {
       if (mode === 'bitcoin') {
         return {
@@ -99,22 +180,70 @@ export function GeneratorForm(): React.JSX.Element {
   }, []);
 
   const handleTxHashChange = useCallback((raw: string) => {
-    // Auto-lowercase Bitcoin hashes as they are case-insensitive hex
-    const normalised = values.chain === 'bitcoin' ? raw.toLowerCase() : raw;
-    setValues((prev) => ({ ...prev, txHash: normalised }));
+    const trimmed = raw.trim();
+    const detected = detectChainFromTxHash(trimmed);
+    const chainChanged = detected ? detected.chain !== values.chain : false;
+
+    if (!trimmed) {
+      setTxHashHint('');
+    } else if (detected && chainChanged) {
+      setTxHashHint(`Auto-selected ${detected.label}.`);
+    } else if (detected) {
+      setTxHashHint('');
+    }
+
+    setValues((prev) => {
+      const normalizedTxHash =
+        (detected?.chain ?? prev.chain) === 'bitcoin'
+          ? trimmed.toLowerCase()
+          : trimmed;
+
+      if (!detected) {
+        return {
+          ...prev,
+          txHash: normalizedTxHash,
+        };
+      }
+
+      const nextEthereumAsset =
+        detected.chain === 'ethereum'
+          ? (prev.chain === 'ethereum' ? prev.ethereumAsset : 'native')
+          : 'native';
+
+      return {
+        ...prev,
+        chain: detected.chain,
+        ethereumAsset: nextEthereumAsset,
+        txHash: normalizedTxHash,
+      };
+    });
   }, [values.chain]);
 
   const handlePaste = useCallback(async (field: 'txHash'): Promise<void> => {
     try {
       const text = await globalThis.navigator.clipboard.readText();
-      const value = field === 'txHash' && values.chain === 'bitcoin'
-        ? text.trim().toLowerCase()
-        : text.trim();
-      setValues((prev) => ({ ...prev, [field]: value }));
+      const value = text.trim();
+      if (field === 'txHash') {
+        handleTxHashChange(value);
+      }
     } catch {
       // Clipboard permission denied — silently ignore; user can type manually
     }
-  }, [values.chain]);
+  }, [handleTxHashChange]);
+
+  const handleCopyRecentVerifyUrl = useCallback(async (proof: string): Promise<void> => {
+    const verifyUrl = buildVerifyUrl(proof);
+    try {
+      await globalThis.navigator.clipboard.writeText(verifyUrl);
+      setRecentStatus('Copied verify URL from recent receipts.');
+    } catch {
+      setRecentStatus('Could not copy verify URL.');
+    }
+  }, []);
+
+  const handleOpenRecentReceipt = useCallback((proof: string): void => {
+    globalThis.location.href = buildVerifyUrl(proof);
+  }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -123,6 +252,21 @@ export function GeneratorForm(): React.JSX.Element {
 
   const optionalCount =
     (values.receiptLabel.trim() ? 1 : 0) + (values.receiptCategory.trim() ? 1 : 0);
+  const txHashFeedback = useMemo(() => {
+    if (!values.txHash.trim()) {
+      return '';
+    }
+    if (txHashHint) {
+      return txHashHint;
+    }
+    if (txHashFormatValid) {
+      return 'Hash format matches the selected chain.';
+    }
+    if (values.txHash.trim().length >= 24) {
+      return 'Hash format does not match the selected chain yet.';
+    }
+    return '';
+  }, [txHashFormatValid, txHashHint, values.txHash]);
 
   return (
     <form
@@ -179,6 +323,14 @@ export function GeneratorForm(): React.JSX.Element {
             error={errors.txHash}
             className="h-8 px-2 py-1 text-[12px]"
           />
+          {txHashFeedback && !errors.txHash && (
+            <p
+              className={`mt-1 text-[11px] ${txHashFormatValid ? 'text-emerald-300/90' : 'text-amber-300/90'}`}
+              aria-live="polite"
+            >
+              {txHashFormatValid ? `✓ ${txHashFeedback}` : txHashFeedback}
+            </p>
+          )}
         </div>
       </div>
 
@@ -310,6 +462,65 @@ export function GeneratorForm(): React.JSX.Element {
         )}
       </div>
 
+      {(state === 'idle' || state === 'error') && recentReceipts.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-black/15 p-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-medium text-white/75">Recent receipts</p>
+            <button
+              type="button"
+              className="text-[11px] text-cyan-300/90 hover:text-cyan-200"
+              onClick={() => {
+                globalThis.location.href = '/history';
+              }}
+            >
+              View all
+            </button>
+          </div>
+          <div className="space-y-2">
+            {recentReceipts.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded border border-white/10 bg-white/[0.03] px-2 py-1.5"
+              >
+                <div className="flex items-center justify-between gap-2 text-[11px] text-white/70">
+                  <span>
+                    {formatRecentChain(entry)} - {entry.receiptLabel || entry.receiptCategory || 'Unlabeled'}
+                  </span>
+                  <span className="font-mono text-white/55">{entry.claimedAmount}</span>
+                </div>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="py-1 text-[11px]"
+                    onClick={() => {
+                      handleOpenRecentReceipt(entry.proof);
+                    }}
+                  >
+                    Open Verify
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="py-1 text-[11px]"
+                    onClick={() => {
+                      void handleCopyRecentVerifyUrl(entry.proof);
+                    }}
+                  >
+                    Copy URL
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {recentStatus && (
+            <p className="mt-2 text-[11px] text-cyan-300/85" aria-live="polite">
+              {recentStatus}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Animated stepper while processing ── */}
       {isProcessing && (
         <>
@@ -337,7 +548,9 @@ export function GeneratorForm(): React.JSX.Element {
           chain={proofResult.chain}
           ethereumAsset={proofResult.ethereumAsset}
           claimedAmount={proofResult.claimedAmount}
+          claimedAmountDisclosure={proofResult.claimedAmountDisclosure}
           minDate={proofResult.minDate}
+          minDateDisclosure={proofResult.minDateDisclosure}
           {...(proofResult.oracleValidationLabel
             ? { oracleValidationLabel: proofResult.oracleValidationLabel }
             : {})}
@@ -345,6 +558,10 @@ export function GeneratorForm(): React.JSX.Element {
           {...(proofResult.receiptCategory ? { receiptCategory: proofResult.receiptCategory } : {})}
           {...(proofResult.timings ? { timings: proofResult.timings } : {})}
         />
+      )}
+
+      {draftStatus && (
+        <StatusBanner variant="info" message={draftStatus} aria="polite" />
       )}
 
       {/* ── Submit ── */}

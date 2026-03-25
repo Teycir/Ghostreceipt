@@ -48,7 +48,9 @@ export interface ProofResult {
   chain: Chain;
   ethereumAsset: EthereumAsset;
   claimedAmount: string;
+  claimedAmountDisclosure: 'disclosed' | 'hidden';
   minDate: string;
+  minDateDisclosure: 'disclosed' | 'hidden';
   oracleValidationLabel?: string;
   receiptLabel?: string;
   receiptCategory?: string;
@@ -58,6 +60,7 @@ export interface ProofResult {
 /** Shape of the structured API error payload */
 export interface ApiErrorPayload {
   error?: {
+    code?: string;
     message?: string;
     details?: {
       retryAfterSeconds?: number;
