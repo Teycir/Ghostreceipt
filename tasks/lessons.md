@@ -1,5 +1,35 @@
 # Lessons Learned
 
+## 2026-03-25 - Add Endpoint Lists Inside Providers When User Forbids Cascade Refactors
+- If user says “do not touch what works” in cascade ordering, keep `ProviderCascade` topology unchanged and add fallback lists inside the public-provider implementation instead.
+- Endpoint failover order must be deterministic (env list order), not random, and backward-compatible with existing single-URL env vars.
+- For asset-specific Ethereum paths, keep separate endpoint-list controls (`ETHEREUM_USDC_PUBLIC_RPC_URLS`) so USDC reliability tuning does not impact native ETH defaults.
+
+## 2026-03-25 - Strict Signature Verification Depends On Transparency Log, Not Just Private Key
+- In live strict flows, setting `ORACLE_PRIVATE_KEY` alone is insufficient; `/api/oracle/verify-signature` also checks key validity windows against `config/oracle/transparency-log.json`.
+- When rotating/introducing a signing key for strict validation, register the derived public key/keyId in transparency log with a valid hash-chain entry.
+- If tests fail with `KEY_UNKNOWN`, inspect transparency-log membership before debugging signer code.
+
+## 2026-03-25 - ETH Strict Consensus Reliability Depends On Public RPC Capability
+- ETH strict consensus can fail even when Etherscan succeeds if the configured public RPC endpoint cannot serve historical tx/block lookups.
+- For strict multi-provider parity, verify candidate tx hashes against both providers (primary + consensus peer) before locking test inputs.
+- Public RPC consensus provider must match asset mode behavior (`native` and `usdc`) or strict asset-specific tests will fail by design.
+
+## 2026-03-25 - Strict Live Tests Must Enforce Production Parity, Not Convenience
+- If the user asks for zero fallback/zero synthetic behavior, live integration tests must not use fixture candidate lists or dynamic fallback discovery.
+- Do not inject synthetic `ORACLE_PRIVATE_KEY` in strict live suites; require real env-provided signing keys and fail fast when missing.
+- For consensus validation under strict policy, force chain consensus modes to `strict` and assert `oracleValidationStatus === "consensus_verified"` only.
+
+## 2026-03-25 - Jest Must Hydrate Local Provider Keys For Realistic Test Runs
+- In `NODE_ENV=test`, local env files may not be loaded as expected, so provider key tests/live-gated tests can fail with misleading missing-key errors.
+- Add key-scoped hydration in `jest.setup.js` from local env files, and never overwrite already-set CI/runtime env values.
+- Restrict automatic hydration to provider key vars only to avoid broad test-side effects.
+
+## 2026-03-25 - Fixed Env Key-Loader Ceilings Can Masquerade As Rate-Limit Bugs
+- Do not hard-code provider key discovery to a fixed suffix window (for example `_1.._6`) when runtime/config scripts support larger pools.
+- Load numeric-suffixed keys dynamically (`_1..N`) and sort by numeric suffix for deterministic ordering.
+- When users report “keys work elsewhere,” verify both key classification logic and whether the application is silently dropping part of the key pool.
+
 ## 2026-03-25 - Fresh Key Exhaustion Often Means Misclassified Errors, Not Real Quota Burn
 - Do not rotate through all API keys for generic transport/upstream failures (`fetch failed`, `HTTP 5xx`, unknown provider outage); treat these as key-agnostic failures and stop key spray.
 - Reserve key rotation for key-specific signals only: auth/key errors, explicit quota/rate-limit errors (`401/403/429`, invalid key/token, quota exceeded).

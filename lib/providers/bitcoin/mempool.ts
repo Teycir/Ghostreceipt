@@ -65,8 +65,12 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     },
   };
 
-  private readonly baseUrl = 'https://mempool.space/api';
+  private readonly baseUrls: string[];
   private readonly throttlePolicy = resolveProviderThrottlePolicy('mempool.space');
+
+  constructor() {
+    this.baseUrls = this.resolveBaseUrls();
+  }
 
   async fetchTransaction(
     txHash: string,
@@ -78,42 +82,24 @@ export class MempoolSpaceProvider implements BitcoinProvider {
       throw new Error(`Invalid Bitcoin transaction hash: ${txHash}`);
     }
 
-    const url = `${this.baseUrl}/tx/${txHash}`;
-    const urlValidation = validateUrl(url);
-    if (!urlValidation.valid) {
-      throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
-    }
+    const errors: string[] = [];
+    const endpointErrors: Error[] = [];
 
-    await waitForProviderThrottleSlot(
-      this.throttlePolicy.scope,
-      this.throttlePolicy.requestThrottleMs
-    );
-
-    const response = await fetch(url, {
-      method: 'GET',
-      signal: signal ?? null,
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`Transaction not found: ${txHash}`);
+    for (const baseUrl of this.baseUrls) {
+      try {
+        return await this.fetchTransactionFromBaseUrl(baseUrl, txHash, signal);
+      } catch (error) {
+        const normalized = error instanceof Error ? error : new Error(String(error));
+        endpointErrors.push(normalized);
+        errors.push(`${baseUrl} -> ${normalized.message}`);
       }
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded');
-      }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as MempoolTxResponse;
-    let currentTipHeight: number | undefined;
-    if (data.status.confirmed) {
-      currentTipHeight = await this.fetchCurrentBlockHeight(signal);
+    if (endpointErrors.length > 0 && endpointErrors.every((error) => this.isNotFoundError(error))) {
+      throw new Error(`Transaction not found: ${txHash}`);
     }
 
-    return this.normalize(data, currentTipHeight);
+    throw new Error(`Bitcoin public RPC endpoints failed: ${errors.join(' | ')}`);
   }
 
   /**
@@ -163,15 +149,15 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     return Math.max(currentTipHeight - blockHeight + 1, 1);
   }
 
-  private async fetchCurrentBlockHeight(signal?: AbortSignal): Promise<number> {
-    const tipUrl = `${this.baseUrl}/blocks/tip/height`;
+  private async fetchCurrentBlockHeight(baseUrl: string, signal?: AbortSignal): Promise<number> {
+    const tipUrl = `${baseUrl}/blocks/tip/height`;
     const tipUrlValidation = validateUrl(tipUrl);
     if (!tipUrlValidation.valid) {
       throw new Error(`Blocked provider URL: ${tipUrlValidation.error ?? 'invalid URL'}`);
     }
 
     await waitForProviderThrottleSlot(
-      this.throttlePolicy.scope,
+      `${this.throttlePolicy.scope}:${baseUrl}`,
       this.throttlePolicy.requestThrottleMs
     );
 
@@ -194,25 +180,103 @@ export class MempoolSpaceProvider implements BitcoinProvider {
   }
 
   async isHealthy(): Promise<boolean> {
-    try {
-      const healthUrl = `${this.baseUrl}/blocks/tip/height`;
-      const urlValidation = validateUrl(healthUrl);
-      if (!urlValidation.valid) {
-        throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+    for (const baseUrl of this.baseUrls) {
+      try {
+        const healthUrl = `${baseUrl}/blocks/tip/height`;
+        const urlValidation = validateUrl(healthUrl);
+        if (!urlValidation.valid) {
+          throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+        }
+
+        await waitForProviderThrottleSlot(
+          `${this.throttlePolicy.scope}:${baseUrl}`,
+          this.throttlePolicy.requestThrottleMs
+        );
+
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+        });
+        if (response.ok) {
+          return true;
+        }
+      } catch (error) {
+        secureError(`[${this.name}] Health check failed for ${baseUrl}:`, error);
       }
-
-      await waitForProviderThrottleSlot(
-        this.throttlePolicy.scope,
-        this.throttlePolicy.requestThrottleMs
-      );
-
-      const response = await fetch(healthUrl, {
-        method: 'GET',
-      });
-      return response.ok;
-    } catch (error) {
-      secureError(`[${this.name}] Health check failed:`, error);
-      return false;
     }
+
+    return false;
+  }
+
+  private async fetchTransactionFromBaseUrl(
+    baseUrl: string,
+    txHash: string,
+    signal?: AbortSignal
+  ): Promise<CanonicalTxData> {
+    const url = `${baseUrl}/tx/${txHash}`;
+    const urlValidation = validateUrl(url);
+    if (!urlValidation.valid) {
+      throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
+    }
+
+    await waitForProviderThrottleSlot(
+      `${this.throttlePolicy.scope}:${baseUrl}`,
+      this.throttlePolicy.requestThrottleMs
+    );
+
+    const response = await fetch(url, {
+      method: 'GET',
+      signal: signal ?? null,
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Transaction not found: ${txHash}`);
+      }
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as MempoolTxResponse;
+    let currentTipHeight: number | undefined;
+    if (data.status.confirmed) {
+      currentTipHeight = await this.fetchCurrentBlockHeight(baseUrl, signal);
+    }
+
+    return this.normalize(data, currentTipHeight);
+  }
+
+  private resolveBaseUrls(): string[] {
+    const listFromEnv = this.parseListEnv('BITCOIN_PUBLIC_RPC_URLS');
+    const singleFromEnv = process.env['BITCOIN_PUBLIC_RPC_URL']?.trim() ?? '';
+    const defaultBaseUrls = ['https://mempool.space/api'];
+
+    return Array.from(
+      new Set([
+        ...listFromEnv,
+        singleFromEnv,
+        ...defaultBaseUrls,
+      ].map((value) => value.trim()).filter((value) => value.length > 0))
+    );
+  }
+
+  private parseListEnv(envKey: string): string[] {
+    const raw = process.env[envKey]?.trim() ?? '';
+    if (!raw) {
+      return [];
+    }
+
+    return raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+
+  private isNotFoundError(error: Error): boolean {
+    return error.message.toLowerCase().includes('transaction not found');
   }
 }

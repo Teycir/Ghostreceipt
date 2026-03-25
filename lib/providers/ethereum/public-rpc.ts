@@ -26,6 +26,7 @@ interface RpcTransaction {
 interface RpcReceipt {
   blockNumber?: string | null;
   status?: string;
+  logs?: RpcReceiptLog[];
 }
 
 interface RpcBlock {
@@ -33,10 +34,25 @@ interface RpcBlock {
   hash?: string;
 }
 
+interface RpcReceiptLog {
+  address?: string;
+  data?: string;
+  topics?: string[];
+}
+
 const HEX_QUANTITY_REGEX = /^0x[0-9a-f]+$/i;
-const DEFAULT_ETH_PUBLIC_RPC_URL = 'https://cloudflare-eth.com';
+const DEFAULT_ETH_PUBLIC_RPC_URLS = [
+  'https://ethereum-rpc.publicnode.com',
+  'https://cloudflare-eth.com',
+];
+const DEFAULT_ETH_USDC_PUBLIC_RPC_URLS = [
+  'https://ethereum-rpc.publicnode.com',
+  'https://cloudflare-eth.com',
+];
 const DEFAULT_ETH_PUBLIC_RPC_THROTTLE_MS = 900;
 const RPC_SCOPE = 'provider:ethereum-public-rpc';
+const USDC_CONTRACT_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const ERC20_TRANSFER_TOPIC0 = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
 function parseNonNegativeIntEnv(key: string, fallback: number): number {
   const rawValue = process.env[key];
@@ -78,12 +94,12 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
   };
 
   private readonly ethereumAsset: EthereumAsset;
-  private readonly endpointUrl: string;
+  private readonly endpointUrls: string[];
   private readonly throttleMs: number;
 
   constructor(ethereumAsset: EthereumAsset = 'native') {
     this.ethereumAsset = ethereumAsset;
-    this.endpointUrl = process.env['ETHEREUM_PUBLIC_RPC_URL']?.trim() || DEFAULT_ETH_PUBLIC_RPC_URL;
+    this.endpointUrls = this.resolveEndpointUrls();
     this.throttleMs = parseNonNegativeIntEnv(
       'ETHEREUM_PUBLIC_RPC_REQUEST_THROTTLE_MS',
       DEFAULT_ETH_PUBLIC_RPC_THROTTLE_MS
@@ -94,10 +110,6 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     const validationResult = EthereumTxHashSchema.safeParse(txHash);
     if (!validationResult.success) {
       throw new Error(`Invalid Ethereum transaction hash: ${txHash}`);
-    }
-
-    if (this.ethereumAsset !== 'native') {
-      throw new Error('Ethereum public RPC consensus currently supports native ETH mode only');
     }
 
     const tx = await this.requestRpc<RpcTransaction | null>(
@@ -143,7 +155,7 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     return {
       chain: 'ethereum',
       txHash: tx.hash,
-      valueAtomic: this.hexToBigInt(tx.value, 'transaction value').toString(),
+      valueAtomic: this.resolveValueAtomic(txHash, tx.value, receipt.logs),
       timestampUnix,
       confirmations,
       blockNumber,
@@ -151,19 +163,88 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     };
   }
 
+  private resolveValueAtomic(
+    txHash: string,
+    nativeValueHex: string,
+    logs: RpcReceiptLog[] | undefined
+  ): string {
+    if (this.ethereumAsset === 'native') {
+      return this.hexToBigInt(nativeValueHex, 'transaction value').toString();
+    }
+
+    const usdcValue = this.extractUsdcValueAtomic(logs);
+    if (usdcValue <= BigInt(0)) {
+      throw new Error(`USDC transfer not found in transaction: ${txHash}`);
+    }
+
+    return usdcValue.toString();
+  }
+
+  private extractUsdcValueAtomic(logs: RpcReceiptLog[] | undefined): bigint {
+    if (!Array.isArray(logs) || logs.length === 0) {
+      return BigInt(0);
+    }
+
+    const expectedTopic = ERC20_TRANSFER_TOPIC0;
+
+    return logs.reduce((total, log) => {
+      const logAddress = (log.address ?? '').toLowerCase();
+      const firstTopic = (log.topics?.[0] ?? '').toLowerCase();
+      const valueData = log.data ?? '';
+
+      if (logAddress !== USDC_CONTRACT_ADDRESS) {
+        return total;
+      }
+
+      if (firstTopic !== expectedTopic) {
+        return total;
+      }
+
+      if (!HEX_QUANTITY_REGEX.test(valueData)) {
+        return total;
+      }
+
+      try {
+        return total + BigInt(valueData);
+      } catch {
+        return total;
+      }
+    }, BigInt(0));
+  }
+
   private async requestRpc<T>(
     method: string,
     params: unknown[],
     signal?: AbortSignal
   ): Promise<T> {
-    const urlValidation = validateUrl(this.endpointUrl);
+    const errors: string[] = [];
+
+    for (const endpointUrl of this.endpointUrls) {
+      try {
+        return await this.requestRpcOnEndpoint(endpointUrl, method, params, signal);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(`${endpointUrl} -> ${message}`);
+      }
+    }
+
+    throw new Error(`Ethereum public RPC endpoints failed: ${errors.join(' | ')}`);
+  }
+
+  private async requestRpcOnEndpoint<T>(
+    endpointUrl: string,
+    method: string,
+    params: unknown[],
+    signal?: AbortSignal
+  ): Promise<T> {
+    const urlValidation = validateUrl(endpointUrl);
     if (!urlValidation.valid) {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
 
-    await waitForProviderThrottleSlot(RPC_SCOPE, this.throttleMs);
+    await waitForProviderThrottleSlot(`${RPC_SCOPE}:${endpointUrl}`, this.throttleMs);
 
-    const response = await fetch(this.endpointUrl, {
+    const response = await fetch(endpointUrl, {
       method: 'POST',
       signal: signal ?? null,
       headers: {
@@ -206,6 +287,44 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     }
 
     return payload.result as T;
+  }
+
+  private resolveEndpointUrls(): string[] {
+    const usdcPreferred = this.ethereumAsset === 'usdc'
+      ? this.parseEndpointListEnv('ETHEREUM_USDC_PUBLIC_RPC_URLS')
+      : [];
+    const sharedList = this.parseEndpointListEnv('ETHEREUM_PUBLIC_RPC_URLS');
+
+    const usdcSingle =
+      this.ethereumAsset === 'usdc' ? process.env['ETHEREUM_USDC_PUBLIC_RPC_URL']?.trim() ?? '' : '';
+    const sharedSingle = process.env['ETHEREUM_PUBLIC_RPC_URL']?.trim() ?? '';
+
+    const defaults =
+      this.ethereumAsset === 'usdc'
+        ? DEFAULT_ETH_USDC_PUBLIC_RPC_URLS
+        : DEFAULT_ETH_PUBLIC_RPC_URLS;
+
+    return Array.from(
+      new Set([
+        ...usdcPreferred,
+        ...sharedList,
+        usdcSingle,
+        sharedSingle,
+        ...defaults,
+      ].map((value) => value.trim()).filter((value) => value.length > 0))
+    );
+  }
+
+  private parseEndpointListEnv(envKey: string): string[] {
+    const raw = process.env[envKey]?.trim() ?? '';
+    if (!raw) {
+      return [];
+    }
+
+    return raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
   }
 
   private hexToBigInt(value: string, fieldName: string): bigint {

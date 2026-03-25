@@ -643,17 +643,10 @@ export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
 export function loadEtherscanKeysFromEnv(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
-  const candidates = [
-    env['ETHERSCAN_API_KEY'],
-    env['ETHERSCAN_API_KEY_1'],
-    env['ETHERSCAN_API_KEY_2'],
-    env['ETHERSCAN_API_KEY_3'],
-    env['ETHERSCAN_API_KEY_4'],
-    env['ETHERSCAN_API_KEY_5'],
-    env['ETHERSCAN_API_KEY_6'],
-  ]
-    .map((value) => value?.trim() ?? '')
-    .filter((value) => value.length > 0);
+  const candidates = collectOrderedEnvValuesFromKeys(env, [
+    'ETHERSCAN_API_KEY',
+    ...collectNumericSuffixEnvKeys(env, 'ETHERSCAN_API_KEY_'),
+  ]);
 
   return Array.from(new Set(candidates));
 }
@@ -661,17 +654,10 @@ export function loadEtherscanKeysFromEnv(
 export function loadHeliusKeysFromEnv(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
-  const candidates = [
-    env['HELIUS_API_KEY'],
-    env['HELIUS_API_KEY_1'],
-    env['HELIUS_API_KEY_2'],
-    env['HELIUS_API_KEY_3'],
-    env['HELIUS_API_KEY_4'],
-    env['HELIUS_API_KEY_5'],
-    env['HELIUS_API_KEY_6'],
-  ]
-    .map((value) => value?.trim() ?? '')
-    .filter((value) => value.length > 0);
+  const candidates = collectOrderedEnvValuesFromKeys(env, [
+    'HELIUS_API_KEY',
+    ...collectNumericSuffixEnvKeys(env, 'HELIUS_API_KEY_'),
+  ]);
 
   return Array.from(new Set(candidates));
 }
@@ -679,27 +665,64 @@ export function loadHeliusKeysFromEnv(
 export function loadBlockCypherKeysFromEnv(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
-  const candidates = [
+  const candidates = collectOrderedEnvValues([
     env['BLOCKCYPHER_API_TOKEN'],
-    env['BLOCKCYPHER_API_TOKEN_1'],
-    env['BLOCKCYPHER_API_TOKEN_2'],
-    env['BLOCKCYPHER_API_TOKEN_3'],
-    env['BLOCKCYPHER_API_TOKEN_4'],
-    env['BLOCKCYPHER_API_TOKEN_5'],
-    env['BLOCKCYPHER_API_TOKEN_6'],
+    ...collectNumericSuffixEnvValues(env, 'BLOCKCYPHER_API_TOKEN_'),
     // Backward-compatible aliasing for teams that already use *_API_KEY naming.
     env['BLOCKCYPHER_API_KEY'],
-    env['BLOCKCYPHER_API_KEY_1'],
-    env['BLOCKCYPHER_API_KEY_2'],
-    env['BLOCKCYPHER_API_KEY_3'],
-    env['BLOCKCYPHER_API_KEY_4'],
-    env['BLOCKCYPHER_API_KEY_5'],
-    env['BLOCKCYPHER_API_KEY_6'],
-  ]
-    .map((value) => value?.trim() ?? '')
-    .filter((value) => value.length > 0);
+    ...collectNumericSuffixEnvValues(env, 'BLOCKCYPHER_API_KEY_'),
+  ]);
 
   return Array.from(new Set(candidates));
+}
+
+function collectOrderedEnvValues(
+  values: Array<string | undefined>
+): string[] {
+  return values
+    .map((value) => value?.trim() ?? '')
+    .filter((value) => value.length > 0);
+}
+
+function collectOrderedEnvValuesFromKeys(
+  env: NodeJS.ProcessEnv,
+  keys: string[]
+): string[] {
+  return collectOrderedEnvValues(keys.map((key) => env[key]));
+}
+
+function collectNumericSuffixEnvKeys(
+  env: NodeJS.ProcessEnv,
+  prefix: string
+): string[] {
+  return Object.keys(env)
+    .map((key) => {
+      if (!key.startsWith(prefix)) {
+        return null;
+      }
+      const suffix = key.slice(prefix.length);
+      if (!/^[1-9][0-9]*$/.test(suffix)) {
+        return null;
+      }
+      return { key, index: Number.parseInt(suffix, 10) };
+    })
+    .filter(
+      (
+        value
+      ): value is {
+        key: string;
+        index: number;
+      } => value !== null
+    )
+    .sort((a, b) => a.index - b.index)
+    .map((value) => value.key);
+}
+
+function collectNumericSuffixEnvValues(
+  env: NodeJS.ProcessEnv,
+  prefix: string
+): Array<string | undefined> {
+  return collectNumericSuffixEnvKeys(env, prefix).map((key) => env[key]);
 }
 
 export function createProviderCascadeForChain(

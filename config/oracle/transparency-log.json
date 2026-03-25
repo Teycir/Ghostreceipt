@@ -21,6 +21,16 @@
       "status": "active",
       "prevEntryHash": "f6c9976b5b358782efc640ff379c98afde86777591d10846fa30605586132cde",
       "entryHash": "762e38f930130daf526d5da26b3f983b89ddf96fd2a8b7cda5375833d7aa0f88"
+    },
+    {
+      "index": 2,
+      "keyId": "fb799d7d5cee5079",
+      "publicKey": "60dfc10ee6f2e47a77b3a78b68d5dd9692266c5ab2c5d4fb94ab9c0d17092118",
+      "validFrom": 1704067200,
+      "validUntil": null,
+      "status": "active",
+      "prevEntryHash": "762e38f930130daf526d5da26b3f983b89ddf96fd2a8b7cda5375833d7aa0f88",
+      "entryHash": "b82dfa944d3a6e8b0d73db2a447d8ed22eb31e6854d05966e3809e2282b10f6a"
     }
   ]
 }

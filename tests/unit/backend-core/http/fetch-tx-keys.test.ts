@@ -13,9 +13,11 @@ describe('provider key env loaders', () => {
       ETHERSCAN_API_KEY_2: '  beta  ',
       ETHERSCAN_API_KEY_3: '',
       ETHERSCAN_API_KEY_4: 'gamma',
+      ETHERSCAN_API_KEY_9: 'delta',
+      ETHERSCAN_API_KEY_10: 'epsilon',
     } as unknown as NodeJS.ProcessEnv);
 
-    expect(keys).toEqual(['alpha', 'beta', 'gamma']);
+    expect(keys).toEqual(['alpha', 'beta', 'gamma', 'delta', 'epsilon']);
   });
 
   it('loads and deduplicates helius keys', () => {
@@ -25,9 +27,10 @@ describe('provider key env loaders', () => {
       HELIUS_API_KEY_2: ' h-2 ',
       HELIUS_API_KEY_3: '',
       HELIUS_API_KEY_6: 'h-6',
+      HELIUS_API_KEY_12: 'h-12',
     } as unknown as NodeJS.ProcessEnv);
 
-    expect(keys).toEqual(['h-1', 'h-2', 'h-6']);
+    expect(keys).toEqual(['h-1', 'h-2', 'h-6', 'h-12']);
   });
 
   it('loads and deduplicates blockcypher tokens', () => {
@@ -36,10 +39,12 @@ describe('provider key env loaders', () => {
       BLOCKCYPHER_API_TOKEN_1: 'bc-1',
       BLOCKCYPHER_API_TOKEN_2: ' bc-2 ',
       BLOCKCYPHER_API_TOKEN_3: '',
+      BLOCKCYPHER_API_TOKEN_8: 'bc-8',
       BLOCKCYPHER_API_KEY_1: 'bc-3',
+      BLOCKCYPHER_API_KEY_11: 'bc-11',
     } as unknown as NodeJS.ProcessEnv);
 
-    expect(keys).toEqual(['bc-1', 'bc-2', 'bc-3']);
+    expect(keys).toEqual(['bc-1', 'bc-2', 'bc-8', 'bc-3', 'bc-11']);
   });
 
   it('enforces api-only provider selection for ethereum and solana', () => {

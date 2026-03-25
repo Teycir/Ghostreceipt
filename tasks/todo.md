@@ -1,5 +1,134 @@
 # Task Plan - 2026-03-24
 
+## Objective (Strict Real-Only Live Consensus Validation)
+
+Align live consensus integration tests with production-parity requirements:
+- no fixture candidates,
+- no runtime fallback discovery in tests,
+- no synthetic oracle key injection,
+- strict consensus only (`consensus_verified` required).
+
+## Plan
+
+- [x] Refactor `tests/integration/live-consensus-flows.test.ts` to require real tx inputs from env (`LIVE_*` vars) for BTC/ETH(native)/ETH(USDC)/SOL.
+- [x] Remove test-side fixture/fallback discovery paths and candidate retry loops.
+- [x] Disable synthetic `ORACLE_PRIVATE_KEY` injection and require real key configuration.
+- [x] Enforce strict consensus mode and assert `consensus_verified` only.
+- [x] Run typecheck and the strict live suite.
+
+## Review (Strict Real-Only Live Consensus Validation)
+
+- Status: Completed
+- Notes:
+  - `tests/integration/live-consensus-flows.test.ts` now runs in strict real-only mode:
+    - requires `LIVE_BTC_TX_HASH`, `LIVE_ETH_TX_HASH`, `LIVE_ETH_USDC_TX_HASH`, `LIVE_SOL_TX_SIGNATURE`,
+    - requires real `ORACLE_PRIVATE_KEY`,
+    - forces `ORACLE_*_CONSENSUS_MODE=strict`,
+    - rejects single-source fallback by asserting `oracleValidationStatus === "consensus_verified"`.
+  - Removed Exa fixture candidates and live fallback discovery helpers from the suite.
+  - Validation:
+    - `npm run typecheck` pass.
+    - `LIVE_INTEGRATION=1 npm test -- tests/integration/live-consensus-flows.test.ts --runInBand --ci` fails fast with clear prerequisite error when `ORACLE_PRIVATE_KEY` is missing, as intended in strict mode.
+
+## Objective (Activate User-Supplied Oracle Key + Exa-Derived Strict Inputs)
+
+Use the user-provided oracle private key and Exa-derived live transaction inputs under strict consensus mode, then remove remaining runtime blockers so strict BTC/ETH(native+USDC)/SOL live validation passes end-to-end.
+
+## Plan
+
+- [x] Add user-provided `ORACLE_PRIVATE_KEY` and Exa-derived `LIVE_*` tx env values to local live env.
+- [x] Register the corresponding oracle public key/keyId in transparency log so verify-signature accepts the signing key.
+- [x] Extend Ethereum public RPC consensus provider to support `ethereumAsset='usdc'` in strict mode.
+- [x] Validate Exa-derived tx hashes against real providers and adjust local RPC endpoint for strict dual-source ETH verification.
+- [x] Run typecheck and strict live consensus integration test.
+
+## Review (Activate User-Supplied Oracle Key + Exa-Derived Strict Inputs)
+
+- Status: Completed
+- Notes:
+  - Added user key + Exa-derived live tx inputs in `.env.local`:
+    - `ORACLE_PRIVATE_KEY=05e80e1b4829c78e4f1839f678741a7a06d33235197bd57df36e722c952942fe`
+    - `LIVE_BTC_TX_HASH=d07422d13247b8f59bddd9ea53f8ccbd0f6a14e6f666eb3dde703c7db4fd1f58`
+    - `LIVE_ETH_TX_HASH=0x07f38e681d32e36213e575b25a5f6367ac2fee9eb3c3976d9651ec0786c8ca42`
+    - `LIVE_ETH_USDC_TX_HASH=0x49f81b3603bda9461ce92925666c215442ed48f53e62ea8b066f3e46d828213c`
+    - `LIVE_SOL_TX_SIGNATURE=4AotthQtPNPMenWxNHr9QGaPh8moLAwX4bRMdbi8sezPW5N3vesV9HUDFYo9kH3anGgLNZTtPYDxpKfq7e58o5zs`
+  - Added transparency log entry for the user key (`keyId=fb799d7d5cee5079`) in `config/oracle/transparency-log.json`.
+  - Updated `lib/providers/ethereum/public-rpc.ts` to support USDC transfer extraction from receipt logs for strict consensus.
+  - Set local `ETHEREUM_PUBLIC_RPC_URL=https://ethereum-rpc.publicnode.com` to satisfy strict dual-source ETH verification for Exa-derived hashes.
+  - Validation:
+    - `npm run typecheck` pass.
+    - `LIVE_INTEGRATION=1 npm test -- tests/integration/live-consensus-flows.test.ts --runInBand --ci` pass (`4 passed`).
+
+## Objective (Deterministic Multi-Endpoint Public RPC Lists Without Cascade Refactor)
+
+Keep existing provider cascade topology intact while adding ordered public endpoint lists (most-likely first, deterministic fallback) for BTC/ETH/ETH-USDC/SOL consensus/public providers.
+
+## Plan
+
+- [x] Add ordered endpoint-list support in Ethereum public RPC provider, including dedicated list for USDC mode.
+- [x] Add ordered endpoint-list support in Solana public RPC provider.
+- [x] Add ordered endpoint-list support in Bitcoin mempool public provider.
+- [x] Update `.env.example` with list-based env vars and backward-compatible single-URL vars.
+- [x] Run typecheck, targeted unit tests, and strict live consensus integration suite.
+
+## Review (Deterministic Multi-Endpoint Public RPC Lists Without Cascade Refactor)
+
+- Status: Completed
+- Notes:
+  - Existing cascade chain ordering was not changed; only public providers gained internal endpoint failover lists.
+  - Added deterministic, ordered list support:
+    - ETH native: `ETHEREUM_PUBLIC_RPC_URLS` (+ single `ETHEREUM_PUBLIC_RPC_URL` fallback)
+    - ETH USDC: `ETHEREUM_USDC_PUBLIC_RPC_URLS` (falls back to shared ETH list/single)
+    - SOL: `SOLANA_PUBLIC_RPC_URLS` (+ single `SOLANA_PUBLIC_RPC_URL`)
+    - BTC (mempool API): `BITCOIN_PUBLIC_RPC_URLS` (+ single `BITCOIN_PUBLIC_RPC_URL`)
+  - Endpoint selection is deterministic by list order (no random selection).
+  - Validation:
+    - `npm run typecheck` pass.
+    - `npm test -- tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts tests/unit/api/fetch-tx-route.test.ts --runInBand --ci` pass.
+    - `LIVE_INTEGRATION=1 npm test -- tests/integration/live-consensus-flows.test.ts --runInBand --ci` pass (`4 passed`).
+
+## Objective (Hydrate Provider Keys In Jest From Local Env)
+
+Load provider API keys into in-memory test env from local env files so test runs can use local secrets without manual export.
+
+## Plan
+
+- [x] Add provider-key hydration to `jest.setup.js`.
+- [x] Load from local env files with sane precedence and do not override already-set env vars.
+- [x] Restrict hydration to provider key variables only.
+- [x] Run targeted provider/key-loader tests.
+
+## Review (Hydrate Provider Keys In Jest From Local Env)
+
+- Status: Completed
+- Notes:
+  - `jest.setup.js` now hydrates provider keys from `.env.test.local`, `.env.local`, `.env.test`, `.env` into `process.env` for tests.
+  - Hydration is key-scoped (`ETHERSCAN_*`, `HELIUS_*`, `BLOCKCYPHER_*`) and non-destructive (existing env vars win).
+  - Validation:
+    - `npm test -- tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/providers/etherscan.test.ts tests/unit/providers/helius.test.ts --runInBand --ci` pass.
+
+## Objective (Remove Key Loader Ceiling That Causes False Exhaustion)
+
+Ensure provider key loaders consume full key pools from env (`_1..N`), not only `_1.._6`, so valid extra keys are not silently ignored and exhausted errors reflect real capacity.
+
+## Plan
+
+- [x] Replace fixed-suffix env loading with dynamic numeric suffix discovery for Etherscan/Helius/BlockCypher.
+- [x] Keep deterministic ordering by numeric suffix while preserving primary key precedence.
+- [x] Add unit coverage for suffixes above `_6`.
+- [x] Run targeted key-loader/provider tests and typecheck.
+
+## Review (Remove Key Loader Ceiling That Causes False Exhaustion)
+
+- Status: Completed
+- Notes:
+  - `loadEtherscanKeysFromEnv`, `loadHeliusKeysFromEnv`, and `loadBlockCypherKeysFromEnv` now discover all numeric-suffixed env vars (`_1..N`) instead of hard-coding `_1.._6`.
+  - Ordering is deterministic (base key first, then numeric suffix ascending), then deduplicated.
+  - Added tests with `_9`, `_10`, `_12`, `_11` suffixes to prove non-truncated loading.
+  - Validation:
+    - `npm test -- tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/providers/api-key-cascade.test.ts tests/unit/providers/etherscan.test.ts tests/unit/providers/helius.test.ts tests/unit/providers/blockcypher.test.ts --runInBand --ci` pass.
+    - `npm run typecheck` pass.
+
 ## Objective (Prevent False API-Key Exhaustion On Fresh Key Pools)
 
 Treat key rotation as a key-specific recovery mechanism (rate-limit/auth/quota), not a generic response to upstream transport outages. Ensure unknown/5xx/fetch failures stop key rotation to avoid burning through healthy keys and emitting misleading "all keys exhausted" errors.

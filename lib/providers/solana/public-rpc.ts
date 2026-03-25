@@ -53,7 +53,10 @@ interface SignatureStatusesResult {
   value?: Array<SignatureStatusValue | null>;
 }
 
-const DEFAULT_SOLANA_PUBLIC_RPC_URL = 'https://api.mainnet-beta.solana.com';
+const DEFAULT_SOLANA_PUBLIC_RPC_URLS = [
+  'https://api.mainnet-beta.solana.com',
+  'https://solana-rpc.publicnode.com',
+];
 const DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS = 500;
 const RPC_SCOPE = 'provider:solana-public-rpc';
 
@@ -84,11 +87,11 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
     },
   };
 
-  private readonly endpointUrl: string;
+  private readonly endpointUrls: string[];
   private readonly throttleMs: number;
 
   constructor() {
-    this.endpointUrl = process.env['SOLANA_PUBLIC_RPC_URL']?.trim() || DEFAULT_SOLANA_PUBLIC_RPC_URL;
+    this.endpointUrls = this.resolveEndpointUrls();
     this.throttleMs = parseNonNegativeIntEnv(
       'SOLANA_PUBLIC_RPC_REQUEST_THROTTLE_MS',
       DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS
@@ -223,14 +226,34 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
     params: unknown[],
     signal?: AbortSignal
   ): Promise<T> {
-    const urlValidation = validateUrl(this.endpointUrl);
+    const errors: string[] = [];
+
+    for (const endpointUrl of this.endpointUrls) {
+      try {
+        return await this.requestRpcOnEndpoint(endpointUrl, method, params, signal);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(`${endpointUrl} -> ${message}`);
+      }
+    }
+
+    throw new Error(`Solana public RPC endpoints failed: ${errors.join(' | ')}`);
+  }
+
+  private async requestRpcOnEndpoint<T>(
+    endpointUrl: string,
+    method: string,
+    params: unknown[],
+    signal?: AbortSignal
+  ): Promise<T> {
+    const urlValidation = validateUrl(endpointUrl);
     if (!urlValidation.valid) {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
 
-    await waitForProviderThrottleSlot(RPC_SCOPE, this.throttleMs);
+    await waitForProviderThrottleSlot(`${RPC_SCOPE}:${endpointUrl}`, this.throttleMs);
 
-    const response = await fetch(this.endpointUrl, {
+    const response = await fetch(endpointUrl, {
       method: 'POST',
       signal: signal ?? null,
       headers: {
@@ -273,6 +296,31 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
     }
 
     return payload.result as T;
+  }
+
+  private resolveEndpointUrls(): string[] {
+    const listFromEnv = this.parseEndpointListEnv('SOLANA_PUBLIC_RPC_URLS');
+    const singleFromEnv = process.env['SOLANA_PUBLIC_RPC_URL']?.trim() ?? '';
+
+    return Array.from(
+      new Set([
+        ...listFromEnv,
+        singleFromEnv,
+        ...DEFAULT_SOLANA_PUBLIC_RPC_URLS,
+      ].map((value) => value.trim()).filter((value) => value.length > 0))
+    );
+  }
+
+  private parseEndpointListEnv(envKey: string): string[] {
+    const raw = process.env[envKey]?.trim() ?? '';
+    if (!raw) {
+      return [];
+    }
+
+    return raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
   }
 
   async isHealthy(): Promise<boolean> {
