@@ -1,3 +1,36 @@
+# Task Plan - 2026-03-25
+
+## Objective (Harmonized Validation UX Across Generator + Verify)
+
+Implement the next low-cost UX improvements with zero additional API spend:
+- shared visual validation-strength badge on both generator and verifier,
+- shared inline explainers/tooltips for proof meaning and hidden fields,
+- shared-proof metadata support so verifier can render the same validation context.
+
+## Plan
+
+- [x] Add shared UI primitives for validation badges and inline explainers.
+- [x] Extend share payload metadata in `lib/zk/prover.ts` to persist validation status/label.
+- [x] Thread validation metadata through proof generation and verifier result types.
+- [x] Apply shared UI components in `components/generator/receipt-success.tsx` and `app/verify/page.tsx`.
+- [x] Add/update unit tests for metadata round-trip and verification result mapping.
+- [x] Run typecheck + targeted unit tests.
+
+## Review (Harmonized Validation UX Across Generator + Verify)
+
+- Status: Completed
+- Notes:
+  - Added shared components:
+    - `components/ui/validation-strength-badge.tsx`
+    - `components/ui/info-tooltip.tsx`
+  - Validation metadata (`oracleValidationStatus`, `oracleValidationLabel`) is now persisted inside compact proof payload metadata and round-tripped in `lib/zk/prover.ts`.
+  - Generator flow now exports validation metadata with the share payload and surfaces status + label in `proofResult`.
+  - Generator success and verify pages now both render the same validation-strength badge and inline explainers for claim meaning/privacy.
+  - Verifier result now exposes validation status/label when present in shared payload metadata.
+- Validation:
+  - `npm run typecheck` pass.
+  - `npm test -- tests/unit/zk/prover.test.ts tests/unit/verify/receipt-verifier.test.ts --runInBand --ci` pass.
+
 # Task Plan - 2026-03-24
 
 ## Objective (Strict Real-Only Live Consensus Validation)
