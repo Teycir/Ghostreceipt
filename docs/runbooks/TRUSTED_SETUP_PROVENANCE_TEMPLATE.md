@@ -56,6 +56,7 @@ sha256sum public/zk/receipt.r1cs \
   public/zk/receipt_js/receipt.wasm \
   public/zk/receipt_final.zkey \
   public/zk/verification_key.json
+npm run check:zk-artifact-checksums
 ```
 
 ## Review & Approval

@@ -23,7 +23,7 @@ Use this checklist before cutting the first public tag and announcing the live d
 - [ ] Circuit constraints reviewed against current product claims.
 - [ ] Trusted setup provenance record completed from template:
   - `docs/runbooks/TRUSTED_SETUP_PROVENANCE_TEMPLATE.md`
-- [ ] Artifact checksums captured for `receipt.wasm`, `receipt_final.zkey`, and `verification_key.json`.
+- [ ] Artifact checksums captured for `receipt.wasm`, `receipt_final.zkey`, and `verification_key.json` (`npm run check:zk-artifact-checksums`).
 - [ ] Proof generation/verification tests passing with current artifacts.
 
 ## 4) Reliability
@@ -47,6 +47,7 @@ Use this checklist before cutting the first public tag and announcing the live d
   - [ ] `npm run lint`
   - [ ] `npm run typecheck`
   - [ ] `npm run check:oracle-transparency-log`
+  - [ ] `npm run check:zk-artifact-checksums`
   - [ ] `npm run test:coverage -- --ci --runInBand`
   - [ ] `npm run build`
 - [ ] Publish GitHub release with:

@@ -1,7 +1,7 @@
 # GhostReceipt Roadmap (Single Source of Truth)
 
 **Status**: Active  
-**Last Updated**: 2026-03-24  
+**Last Updated**: 2026-03-25  
 **Scope**: Consolidated from `tasks/todo.md`, `docs/project/PLAN.md`, and `docs/project/ROADMAP.md`
 
 This is the only planning/tracking document for GhostReceipt.  
@@ -37,6 +37,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Ported Etherscan v2 throttling/cascade pacing from `smartcontractpatternfinder` and validated full live BTC/ETH/SOL integration pass with API providers only.
 - [x] Generalized provider throttling to doc-driven + context-parameterized policy across Etherscan/Helius/mempool.space/Blockchair with validated live BTC/ETH/SOL flow.
 - [x] Added Ethereum asset-mode support for stablecoin claims (`ETH` native + `USDC` ERC-20 via Etherscan) with API/schema validation and provider normalization.
+- [x] Added deterministic ZK artifact checksum automation command for release-readiness evidence (`npm run check:zk-artifact-checksums`).
 
 ---
 
@@ -253,6 +254,7 @@ Minimum required fields:
 - Phase 3 mobile gate review note: [ROADMAP_REVIEW_NOTES_PHASE3_MOBILE_GATES_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE3_MOBILE_GATES_2026-03-24.md)
 - Phase 4 compressed payload determinism review note: [ROADMAP_REVIEW_NOTES_PHASE4_COMPRESSED_DETERMINISM_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE4_COMPRESSED_DETERMINISM_2026-03-24.md)
 - Phase 4 advanced privacy benchmark gate review note: [ROADMAP_REVIEW_NOTES_PHASE4_ADVANCED_PRIVACY_BENCHMARK_GATE_2026-03-24.md](./ROADMAP_REVIEW_NOTES_PHASE4_ADVANCED_PRIVACY_BENCHMARK_GATE_2026-03-24.md)
+- Release-readiness checksum automation review note: [ROADMAP_REVIEW_NOTES_RELEASE_READINESS_CHECKSUM_AUTOMATION_2026-03-25.md](./ROADMAP_REVIEW_NOTES_RELEASE_READINESS_CHECKSUM_AUTOMATION_2026-03-25.md)
 - Roadmap review-note template: [ROADMAP_REVIEW_NOTES_TEMPLATE.md](./ROADMAP_REVIEW_NOTES_TEMPLATE.md)
 
 ---
@@ -275,3 +277,4 @@ Minimum required fields:
   - `docs/project/ROADMAP.md`
 - 2026-03-24: Reintroduced `tasks/todo.md` as lightweight session execution tracking; roadmap remains canonical for planning and prioritization.
 - 2026-03-25: Completed `R-P2-04` by adding Ethereum asset-mode selection (`native` / `usdc`) in generator flow, routing `ethereumAsset` through oracle fetch validation, and normalizing USDC transfer values from Etherscan ERC-20 receipt logs.
+- 2026-03-25: Continued roadmap execution into release-readiness by adding deterministic ZK artifact checksum automation (`npm run check:zk-artifact-checksums`) and wiring it into release checklist guidance.

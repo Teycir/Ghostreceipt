@@ -59,7 +59,7 @@ This record is completed from the current local artifact set.
 - `public/zk/verification_key.json`
   - `070e1417683d844eaf6a65aef9436a8d4292f26bc10279a276fcd2fbd6547d09`
 - `public/zk/Verifier.sol`
-  - Not present in current tracked artifact set (optional output).
+  - `2b78a0b25d5c6453a01ba303073e17f65d9932dfc5fbbfee7cc2927105c92e21`
 
 ## Reproducibility Commands
 
@@ -73,6 +73,7 @@ sha256sum public/zk/receipt.r1cs \
   public/zk/pot14_final.ptau
 snarkjs powersoftau verify public/zk/pot14_final.ptau
 snarkjs zkey verify public/zk/receipt.r1cs public/zk/pot14_final.ptau public/zk/receipt_final.zkey
+npm run check:zk-artifact-checksums
 ```
 
 ## Review & Approval

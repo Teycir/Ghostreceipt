@@ -241,3 +241,29 @@ Resolve CI failure in `tests/unit/zk/artifacts.test.ts` caused by hardcoded fall
   - Validation:
     - `npm run test -- tests/unit/zk/artifacts.test.ts` pass
     - `npm run typecheck` pass
+
+## Objective (Release Readiness Artifact Checksum Automation)
+
+Advance the roadmap into release-readiness execution by automating deterministic checksum capture for core ZK artifacts and wiring the command into release/provenance docs.
+
+## Plan
+
+- [x] Add a reusable checksum utility for canonical ZK artifacts (`wasm`, `zkey`, `verification_key`, plus optional related artifacts).
+- [x] Add a CLI script + npm command to print a deterministic checksum report for release evidence collection.
+- [x] Add focused unit tests for checksum utility behavior in `tests/unit`.
+- [x] Update release/provenance docs to reference the new checksum command and current artifact evidence path.
+- [x] Run typecheck + targeted tests + checksum command and record outcomes.
+
+## Review (Release Readiness Artifact Checksum Automation)
+
+- Status: Completed
+- Notes:
+  - Added reusable checksum utility at `lib/zk/artifact-checksums.js` with deterministic canonical target ordering and strict required-artifact enforcement.
+  - Added CLI command `npm run check:zk-artifact-checksums` via `scripts/check-zk-artifact-checksums.mjs` (supports `--json` and `--required-only`).
+  - Added focused unit coverage at `tests/unit/zk/artifact-checksums.test.ts`.
+  - Updated release/provenance docs and roadmap tracking to include checksum automation in release gates and reproducibility commands.
+  - Added roadmap review note: `docs/project/ROADMAP_REVIEW_NOTES_RELEASE_READINESS_CHECKSUM_AUTOMATION_2026-03-25.md`.
+  - Validation:
+    - `npm run test -- tests/unit/zk/artifact-checksums.test.ts` pass
+    - `npm run typecheck` pass
+    - `npm run check:zk-artifact-checksums -- --json` pass

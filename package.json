@@ -15,6 +15,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "check:oracle-transparency-log": "node scripts/check-oracle-transparency-log.mjs",
+    "check:zk-artifact-checksums": "node scripts/check-zk-artifact-checksums.mjs",
     "export:solidity-verifier": "node scripts/export-solidity-verifier.mjs",
     "check:solidity-verifier": "node scripts/check-solidity-verifier.mjs",
     "test:live:oracle": "bash scripts/run-live-oracle-tests.sh",
