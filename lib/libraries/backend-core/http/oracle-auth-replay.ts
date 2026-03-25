@@ -27,6 +27,7 @@ export interface OracleAuthReplayAdapter {
 export interface InMemoryOracleAuthReplayAdapterOptions {
   cleanupIntervalMs?: number;
   maxEntries?: number;
+  startCleanupTimer?: boolean;
 }
 
 export class InMemoryOracleAuthReplayAdapter implements OracleAuthReplayAdapter {
@@ -39,7 +40,9 @@ export class InMemoryOracleAuthReplayAdapter implements OracleAuthReplayAdapter 
   constructor(options: InMemoryOracleAuthReplayAdapterOptions = {}) {
     this.cleanupIntervalMs = options.cleanupIntervalMs ?? 60_000;
     this.maxEntries = options.maxEntries ?? 5_000;
-    this.startCleanupTimer();
+    if (options.startCleanupTimer ?? true) {
+      this.startCleanupTimer();
+    }
   }
 
   get(key: string): OracleAuthReplayEntry | null {

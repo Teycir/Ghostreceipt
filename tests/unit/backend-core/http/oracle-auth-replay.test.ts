@@ -167,4 +167,15 @@ describe('OracleAuthReplayRegistry', () => {
       mode: 'first_seen',
     });
   });
+
+  it('supports no-timer adapter mode for runtime-safe reuse', () => {
+    const setIntervalSpy = jest.spyOn(global, 'setInterval');
+    const adapter = new InMemoryOracleAuthReplayAdapter({
+      startCleanupTimer: false,
+    });
+
+    expect(setIntervalSpy).not.toHaveBeenCalled();
+    adapter.dispose();
+    setIntervalSpy.mockRestore();
+  });
 });

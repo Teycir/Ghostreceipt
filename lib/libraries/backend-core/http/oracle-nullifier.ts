@@ -41,6 +41,7 @@ export interface NullifierRegistryAdapter {
 export interface InMemoryNullifierRegistryAdapterOptions {
   cleanupIntervalMs?: number;
   maxEntries?: number;
+  startCleanupTimer?: boolean;
 }
 
 export class InMemoryNullifierRegistryAdapter implements NullifierRegistryAdapter {
@@ -53,7 +54,9 @@ export class InMemoryNullifierRegistryAdapter implements NullifierRegistryAdapte
   constructor(options: InMemoryNullifierRegistryAdapterOptions = {}) {
     this.cleanupIntervalMs = options.cleanupIntervalMs ?? 60_000;
     this.maxEntries = options.maxEntries ?? 10_000;
-    this.startCleanupTimer();
+    if (options.startCleanupTimer ?? true) {
+      this.startCleanupTimer();
+    }
   }
 
   get(nullifier: string): NullifierRegistryEntry | null {

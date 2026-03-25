@@ -129,3 +129,32 @@ export type {
   SharePointerStoreResult,
   StoreSharePointerOptions,
 } from './share-pointer-storage';
+export {
+  handleOracleFetchTxPagesRequest,
+} from './pages/fetch-tx-pages';
+export {
+  handleOracleVerifySignaturePagesRequest,
+} from './pages/verify-signature-pages';
+export {
+  handleOracleCheckNullifierPagesRequest,
+} from './pages/check-nullifier-pages';
+export {
+  appendSetCookie,
+  attachCorsHeaders,
+  checkFunctionRouteRateLimits,
+  createFunctionRouteRateLimiters,
+  createRateLimitResponse,
+  jsonErrorResponse,
+  jsonResponse,
+  parseJsonBodyWithLimits,
+  parsePositiveIntEnv,
+  prepareRequestContext,
+  readCookieValue,
+  validateRequestBody,
+} from './pages/runtime-shared';
+export type {
+  CreateFunctionRouteRateLimitersOptions,
+  FunctionRouteRateLimitMessages,
+  FunctionRouteRateLimiters,
+  PagesFunctionContextLike,
+} from './pages/runtime-shared';

@@ -74,4 +74,15 @@ describe('oracle-nullifier', () => {
       reason: 'NULLIFIER_CLAIM_CONFLICT',
     });
   });
+
+  it('supports no-timer adapter mode for runtime-safe reuse', () => {
+    const setIntervalSpy = jest.spyOn(global, 'setInterval');
+    const adapter = new InMemoryNullifierRegistryAdapter({
+      startCleanupTimer: false,
+    });
+
+    expect(setIntervalSpy).not.toHaveBeenCalled();
+    adapter.dispose();
+    setIntervalSpy.mockRestore();
+  });
 });
