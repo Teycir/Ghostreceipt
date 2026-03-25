@@ -1,5 +1,6 @@
 import {
   createProviderCascadeForChain,
+  loadBlockCypherKeysFromEnv,
   loadEtherscanKeysFromEnv,
   loadHeliusKeysFromEnv,
 } from '@/lib/libraries/backend-core/http/fetch-tx';
@@ -29,6 +30,18 @@ describe('provider key env loaders', () => {
     expect(keys).toEqual(['h-1', 'h-2', 'h-6']);
   });
 
+  it('loads and deduplicates blockcypher tokens', () => {
+    const keys = loadBlockCypherKeysFromEnv({
+      BLOCKCYPHER_API_TOKEN: 'bc-1',
+      BLOCKCYPHER_API_TOKEN_1: 'bc-1',
+      BLOCKCYPHER_API_TOKEN_2: ' bc-2 ',
+      BLOCKCYPHER_API_TOKEN_3: '',
+      BLOCKCYPHER_API_KEY_1: 'bc-3',
+    } as unknown as NodeJS.ProcessEnv);
+
+    expect(keys).toEqual(['bc-1', 'bc-2', 'bc-3']);
+  });
+
   it('enforces api-only provider selection for ethereum and solana', () => {
     expect(() =>
       createProviderCascadeForChain('ethereum', { etherscanKeys: [] })
@@ -52,12 +65,14 @@ describe('provider key env loaders', () => {
     expect(solanaProviders).not.toContain('solana-public-rpc');
   });
 
-  it('uses free-tier public provider cascade for bitcoin', () => {
+  it('uses blockcypher as primary and mempool.space as last public fallback for bitcoin', () => {
     const bitcoinCascade = createProviderCascadeForChain('bitcoin');
     const bitcoinProviders = Object.keys(bitcoinCascade.getStats());
 
+    expect(bitcoinProviders[0]).toBe('blockcypher');
+    expect(bitcoinProviders[bitcoinProviders.length - 1]).toBe('mempool.space');
     expect(bitcoinProviders).toContain('mempool.space');
-    expect(bitcoinProviders).toContain('blockstream.info');
+    expect(bitcoinProviders).toContain('blockcypher');
     expect(bitcoinProviders).not.toContain('blockchair');
   });
 });

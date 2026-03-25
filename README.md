@@ -113,7 +113,7 @@ flowchart LR
 GhostReceipt uses four API types so the product stays reliable while keeping UX friction near zero:
 
 1. Public no-key data APIs (default path):
-- BTC reads from `mempool.space` (public, no API key required).
+- BTC reads from BlockCypher free-tier API (primary, key-rotated) with `mempool.space` public fallback.
 - ETH uses managed Etherscan API key cascade.
 - SOL uses managed Helius API key cascade.
 - Used to keep onboarding keyless and no-card friendly.
@@ -198,7 +198,7 @@ sequenceDiagram
 - ZK:
 - Circom 2 + snarkjs
 - Data:
-- BTC: mempool.space (public, no API key)
+- BTC: BlockCypher (free-tier API, primary) + mempool.space (public fallback)
 - ETH: Etherscan API (rolling managed key cascade)
 - SOL: Helius API (rolling managed key cascade)
 - Reliability:
@@ -240,7 +240,7 @@ Open `http://localhost:3000`.
 - No-user-API-key mode: users are not required to bring API keys.
 - Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
 - Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
-- Provider paths: BTC uses public mempool.space (no API key), ETH uses Etherscan API cascade, SOL uses Helius API cascade.
+- Provider paths: BTC uses BlockCypher primary + mempool.space fallback, ETH uses Etherscan API cascade, SOL uses Helius API cascade.
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)

@@ -1,9 +1,19 @@
 # Lessons Learned
 
+## 2026-03-25 - BTC Primary Order And Spike Controls Must Follow User Reliability Policy
+- If the user says a provider key pool must be primary (for example BlockCypher), enforce that in cascade priority/order, not just env loading.
+- When the same user asks for conservative spike behavior, avoid retry/key-spray amplification on provider `429`; fail over quickly to the public fallback path.
+- After reordering providers, immediately realign route/unit tests and documentation so they describe and verify the same runtime topology.
+
 ## 2026-03-25 - Do Not Assume Optional Paid BTC Fallback Is Acceptable For Zero-Budget Scope
 - If the user states a provider is not truly free-tier or they do not have that API key (for example Blockchair), remove it from the active default runtime path rather than treating it as acceptable fallback capacity.
 - Keep Bitcoin fallback topology aligned with real public/free endpoints in the live cascade and keep docs/env templates consistent with that runtime behavior.
 - When a user corrects pricing/access assumptions, immediately convert that correction into explicit roadmap and implementation updates (not just narrative acknowledgement).
+
+## 2026-03-25 - Verify Free-Tier Claims Before Replacing Providers
+- Do not swap in a provider based on assumption; first gather evidence from source docs (for example via Exa + provider pricing pages) that free-tier access is explicit.
+- If the user rejects a candidate as non-free-tier (for example blockstream), pivot immediately and re-align implementation, tests, and docs to the confirmed free-tier provider.
+- For provider changes, preserve strict fallback behavior and rerun targeted route/provider tests before sign-off.
 
 ## 2026-03-25 - Avoid Hardcoding Default Artifact Version In Tests
 - Tests for artifact-version fallback should not assert a literal date/version string that is expected to change during normal circuit artifact refreshes.

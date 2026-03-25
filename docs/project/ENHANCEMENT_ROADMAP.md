@@ -39,6 +39,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added Ethereum asset-mode support for stablecoin claims (`ETH` native + `USDC` ERC-20 via Etherscan) with API/schema validation and provider normalization.
 - [x] Added deterministic ZK artifact checksum automation command for release-readiness evidence (`npm run check:zk-artifact-checksums`).
 - [x] Added automated release-readiness command gate (`npm run check:release-readiness`) with API-only doc consistency checks.
+- [x] Switched BTC cascade to BlockCypher token-rotated primary with `mempool.space` as last public fallback, and kept conservative spike handling (no multi-key spray on BlockCypher `429`).
 
 ---
 

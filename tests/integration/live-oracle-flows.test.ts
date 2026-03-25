@@ -36,7 +36,7 @@ const EXA_REAL_TX_FIXTURES: Record<
     },
     {
       sourceUrl:
-        'https://blockstream.info/tx/140255d341f3f4b23aff928cbc2c3493ba9ff1cef408d0dffa4507174b50e61e',
+        'https://mempool.space/tx/140255d341f3f4b23aff928cbc2c3493ba9ff1cef408d0dffa4507174b50e61e',
       txHash: '140255d341f3f4b23aff928cbc2c3493ba9ff1cef408d0dffa4507174b50e61e',
     },
   ],

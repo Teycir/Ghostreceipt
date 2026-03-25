@@ -303,7 +303,7 @@ Align Bitcoin provider reliability with zero-budget constraints by removing paid
 
 ## Plan
 
-- [x] Replace Blockchair in active BTC cascade with a free public fallback provider (`blockstream.info` Esplora).
+- [x] Replace Blockchair in active BTC cascade with a free-tier API fallback provider (BlockCypher).
 - [x] Remove Blockchair API key wiring from oracle fetch route/runtime options.
 - [x] Update BTC provider/cascade tests for new fallback topology.
 - [x] Update docs/config templates to remove Blockchair key dependency messaging.
@@ -313,12 +313,38 @@ Align Bitcoin provider reliability with zero-budget constraints by removing paid
 
 - Status: Completed
 - Notes:
-  - Removed Blockchair from active BTC runtime cascade and replaced fallback with `blockstream.info` public Esplora provider.
-  - Added `BlockstreamProvider` implementation at `lib/providers/bitcoin/blockstream.ts`.
+  - Removed Blockchair from active BTC runtime cascade and replaced fallback with `blockcypher` free-tier API provider.
+  - Added `BlockCypherProvider` implementation at `lib/providers/bitcoin/blockcypher.ts`.
   - Removed `BLOCKCHAIR_API_KEY` wiring from `/api/oracle/fetch-tx` request flow and fetch options.
-  - Updated BTC cascade coverage to assert free-provider topology (`mempool.space` + `blockstream.info`).
+  - Updated BTC cascade coverage to assert free-provider topology (`mempool.space` + `blockcypher`).
   - Updated docs/config guidance to stop requiring Blockchair key setup in default flow.
   - Validation:
-    - `npm run test -- tests/unit/providers/blockstream.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/providers/provider-throttle.test.ts tests/unit/api/fetch-tx-route.test.ts` pass
+    - `npm run test -- tests/unit/providers/blockcypher.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/providers/provider-throttle.test.ts tests/unit/api/fetch-tx-route.test.ts` pass
     - `npm run typecheck` pass
     - `npm run check:release-readiness` pass
+
+## Objective (BTC BlockCypher-Primary + Conservative Spike Controls)
+
+Use the provided BlockCypher key pool as primary BTC source, keep public provider as last fallback, and ensure retry/throttle behavior remains conservative under volume spikes.
+
+## Plan
+
+- [x] Persist BlockCypher token pool in `.env.local` using numbered env vars.
+- [x] Add BlockCypher env loader + key-rotation wiring in BTC cascade creation.
+- [x] Switch BTC provider priority/order to BlockCypher primary and mempool.space fallback.
+- [x] Make BlockCypher retry behavior conservative on `429` (avoid key-spray amplification).
+- [x] Update/unit-test docs + route/provider tests for new order and conservative behavior.
+- [x] Run targeted test suite + typecheck and capture review evidence.
+
+## Review (BTC BlockCypher-Primary + Conservative Spike Controls)
+
+- Status: Completed
+- Notes:
+  - Persisted the user-provided BlockCypher key pool in local env with numbered token vars (`BLOCKCYPHER_API_TOKEN`, `_1.._4`) next to existing Etherscan/Helius keys.
+  - Added `loadBlockCypherKeysFromEnv()` and wired BTC cascade creation to pass key-rotation config into `BlockCypherProvider`.
+  - Enforced BlockCypher as BTC primary by provider priority/order (`blockcypher` priority `1`, `mempool.space` priority `2`), keeping mempool as last public fallback.
+  - Hardened conservative spike behavior by stopping intra-provider key spray on BlockCypher `429` and failing over to public fallback instead.
+  - Updated README/.env template/roadmap notes and unit-route/provider tests to match the new topology and behavior.
+  - Validation:
+    - `npm run test -- tests/unit/providers/blockcypher.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts tests/unit/providers/provider-throttle.test.ts` pass
+    - `npm run typecheck` pass

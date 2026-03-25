@@ -25,6 +25,7 @@ export interface FetchTxMappedError {
 
 export interface OracleFetchOptions {
   authTtlSeconds?: number;
+  blockCypherKeys?: string[];
   canonicalCacheTtlMs?: number;
   cascadeConfig?: CascadeConfig;
   ethereumAsset?: EthereumAsset;
@@ -152,6 +153,7 @@ async function fetchCanonicalTxData(
   txHash: string,
   options: Pick<
     OracleFetchOptions,
+    | 'blockCypherKeys'
     | 'canonicalCacheTtlMs'
     | 'cascadeConfig'
     | 'ethereumAsset'
@@ -361,18 +363,57 @@ export function loadHeliusKeysFromEnv(
   return Array.from(new Set(candidates));
 }
 
+export function loadBlockCypherKeysFromEnv(
+  env: NodeJS.ProcessEnv = process.env
+): string[] {
+  const candidates = [
+    env['BLOCKCYPHER_API_TOKEN'],
+    env['BLOCKCYPHER_API_TOKEN_1'],
+    env['BLOCKCYPHER_API_TOKEN_2'],
+    env['BLOCKCYPHER_API_TOKEN_3'],
+    env['BLOCKCYPHER_API_TOKEN_4'],
+    env['BLOCKCYPHER_API_TOKEN_5'],
+    env['BLOCKCYPHER_API_TOKEN_6'],
+    // Backward-compatible aliasing for teams that already use *_API_KEY naming.
+    env['BLOCKCYPHER_API_KEY'],
+    env['BLOCKCYPHER_API_KEY_1'],
+    env['BLOCKCYPHER_API_KEY_2'],
+    env['BLOCKCYPHER_API_KEY_3'],
+    env['BLOCKCYPHER_API_KEY_4'],
+    env['BLOCKCYPHER_API_KEY_5'],
+    env['BLOCKCYPHER_API_KEY_6'],
+  ]
+    .map((value) => value?.trim() ?? '')
+    .filter((value) => value.length > 0);
+
+  return Array.from(new Set(candidates));
+}
+
 export function createProviderCascadeForChain(
   chain: Chain,
   options: Pick<
     OracleFetchOptions,
-    'cascadeConfig' | 'ethereumAsset' | 'etherscanKeys' | 'heliusKeys'
+    | 'blockCypherKeys'
+    | 'cascadeConfig'
+    | 'ethereumAsset'
+    | 'etherscanKeys'
+    | 'heliusKeys'
   > = {}
 ): ProviderCascade {
   const cascadeConfig = options.cascadeConfig ?? DEFAULT_CASCADE_CONFIG;
   if (chain === 'bitcoin') {
+    const blockCypherKeys = options.blockCypherKeys ?? loadBlockCypherKeysFromEnv();
+    const blockCypherProvider =
+      blockCypherKeys.length > 0
+        ? new BlockCypherProvider({
+            keys: blockCypherKeys,
+            rotationStrategy: 'random',
+            shuffleOnStartup: true,
+          })
+        : new BlockCypherProvider();
     const providers: Provider[] = [
+      blockCypherProvider,
       new MempoolSpaceProvider(),
-      new BlockCypherProvider(),
     ];
 
     return new ProviderCascade(providers, cascadeConfig);
@@ -418,6 +459,7 @@ export async function fetchAndSignOracleTransaction(
 ): Promise<SignedOracleFetchResult> {
   const cascadeOptions: Pick<
     OracleFetchOptions,
+    | 'blockCypherKeys'
     | 'canonicalCacheTtlMs'
     | 'cascadeConfig'
     | 'ethereumAsset'
@@ -438,6 +480,9 @@ export async function fetchAndSignOracleTransaction(
   }
   if (options.heliusKeys !== undefined) {
     cascadeOptions.heliusKeys = options.heliusKeys;
+  }
+  if (options.blockCypherKeys !== undefined) {
+    cascadeOptions.blockCypherKeys = options.blockCypherKeys;
   }
 
   const canonicalResult = await fetchCanonicalTxData(chain, txHash, cascadeOptions);

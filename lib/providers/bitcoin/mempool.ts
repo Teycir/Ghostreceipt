@@ -57,7 +57,7 @@ export class MempoolSpaceProvider implements BitcoinProvider {
   readonly chain = 'bitcoin' as const;
   readonly config: ProviderConfig = {
     name: 'mempool.space',
-    priority: 1,
+    priority: 2,
     requiresApiKey: false,
     rateLimit: {
       requestsPerSecond: 200 / 60,

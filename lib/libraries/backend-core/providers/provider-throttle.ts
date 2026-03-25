@@ -2,8 +2,7 @@ type ProviderThrottleName =
   'etherscan'
   | 'helius'
   | 'mempool.space'
-  | 'blockchair'
-  | 'blockstream';
+  | 'blockcypher';
 
 export type ProviderThrottleContext = 'reliability' | 'balanced' | 'throughput' | 'off';
 
@@ -77,23 +76,15 @@ const PROVIDER_THROTTLE_SPECS: Record<ProviderThrottleName, ProviderThrottleSpec
     requestRateEnvVar: 'MEMPOOL_RATE_LIMIT_RPS',
     contextEnvVar: 'MEMPOOL_THROTTLE_CONTEXT',
   },
-  blockchair: {
-    scope: 'provider:blockchair',
-    // Source: https://blockchair.com/api/plans
-    // "Try ... without API key" free hard limit: 1,000 calls/day and 30 requests/minute.
-    // With API key paid plans can handle higher throughput; plans list soft limit 5 requests/sec.
-    documentedRequestsPerSecond: (hasApiKey) => (hasApiKey ? 5 : 30 / 60),
-    requestThrottleEnvVar: 'BLOCKCHAIR_REQUEST_THROTTLE_MS',
-    requestRateEnvVar: 'BLOCKCHAIR_RATE_LIMIT_RPS',
-    contextEnvVar: 'BLOCKCHAIR_THROTTLE_CONTEXT',
-  },
-  blockstream: {
-    scope: 'provider:blockstream',
-    // Esplora public endpoint; use conservative baseline for reliability under shared infra.
-    documentedRequestsPerSecond: () => 1,
-    requestThrottleEnvVar: 'BLOCKSTREAM_REQUEST_THROTTLE_MS',
-    requestRateEnvVar: 'BLOCKSTREAM_RATE_LIMIT_RPS',
-    contextEnvVar: 'BLOCKSTREAM_THROTTLE_CONTEXT',
+  blockcypher: {
+    scope: 'provider:blockcypher',
+    // Source: https://www.blockcypher.com/pricing.html
+    // Free tier: 3 requests/second, 100 requests/hour, 1,000 requests/day.
+    documentedRequestsPerSecond: () => 3,
+    requestThrottleEnvVar: 'BLOCKCYPHER_REQUEST_THROTTLE_MS',
+    requestRateEnvVar: 'BLOCKCYPHER_RATE_LIMIT_RPS',
+    keyAttemptDelayEnvVar: 'BLOCKCYPHER_KEY_ATTEMPT_DELAY_MS',
+    contextEnvVar: 'BLOCKCYPHER_THROTTLE_CONTEXT',
   },
 };
 

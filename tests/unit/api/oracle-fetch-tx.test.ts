@@ -1,5 +1,5 @@
 import { POST, __disposeOracleFetchRouteForTests } from '@/app/api/oracle/fetch-tx/route';
-import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
+import { BlockCypherProvider } from '@/lib/providers/bitcoin/blockcypher';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { NextRequest } from 'next/server';
@@ -152,7 +152,7 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
     });
 
     it('should accept valid Bitcoin request', async () => {
-      jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
+      jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockResolvedValue({
         chain: 'bitcoin',
         txHash: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
         valueAtomic: '1000',

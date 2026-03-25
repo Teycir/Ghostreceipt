@@ -305,8 +305,8 @@ describe('POST /api/oracle/fetch-tx', () => {
       blockHash: 'b'.repeat(64),
     };
 
-    const mempoolSpy = jest
-      .spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction')
+    const blockcypherSpy = jest
+      .spyOn(BlockCypherProvider.prototype, 'fetchTransaction')
       .mockResolvedValue(canonicalTx);
 
     const requestPayload = JSON.stringify({
@@ -346,7 +346,7 @@ describe('POST /api/oracle/fetch-tx', () => {
     expect(firstBody.data.messageHash).toBe(secondBody.data.messageHash);
     expect(firstBody.data.nonce).not.toBe(secondBody.data.nonce);
     expect(firstBody.data.oracleSignature).not.toBe(secondBody.data.oracleSignature);
-    expect(mempoolSpy).toHaveBeenCalledTimes(1);
+    expect(blockcypherSpy).toHaveBeenCalledTimes(1);
   });
 
   it('can reset canonical cache between requests for deterministic test isolation', async () => {
@@ -360,8 +360,8 @@ describe('POST /api/oracle/fetch-tx', () => {
       blockHash: 'b'.repeat(64),
     };
 
-    const mempoolSpy = jest
-      .spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction')
+    const blockcypherSpy = jest
+      .spyOn(BlockCypherProvider.prototype, 'fetchTransaction')
       .mockResolvedValue(canonicalTx);
 
     const requestPayload = JSON.stringify({
@@ -389,7 +389,7 @@ describe('POST /api/oracle/fetch-tx', () => {
 
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(200);
-    expect(mempoolSpy).toHaveBeenCalledTimes(2);
+    expect(blockcypherSpy).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes cached signer when ORACLE_PRIVATE_KEY changes', async () => {
@@ -444,7 +444,7 @@ describe('POST /api/oracle/fetch-tx', () => {
   });
 
   it('returns 409 when the same idempotency key is replayed by the same client', async () => {
-    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockResolvedValue({
       chain: 'bitcoin',
       txHash: 'a'.repeat(64),
       valueAtomic: '1000',
@@ -496,7 +496,7 @@ describe('POST /api/oracle/fetch-tx', () => {
 
   it('allows retry with same idempotency key after transient failure', async () => {
     let invocationCount = 0;
-    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockImplementation(async () => {
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockImplementation(async () => {
       invocationCount += 1;
 
       // The route config uses maxRetries=3, so first request can attempt up to 4 times.
@@ -514,7 +514,7 @@ describe('POST /api/oracle/fetch-tx', () => {
         blockHash: 'b'.repeat(64),
       };
     });
-    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockRejectedValue(
+    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockRejectedValue(
       new Error('Provider timeout')
     );
 
@@ -554,7 +554,7 @@ describe('POST /api/oracle/fetch-tx', () => {
   });
 
   it('allows same idempotency key for different anonymous sessions', async () => {
-    jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue({
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockResolvedValue({
       chain: 'bitcoin',
       txHash: 'a'.repeat(64),
       valueAtomic: '1000',

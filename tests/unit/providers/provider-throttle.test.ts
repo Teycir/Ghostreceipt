@@ -52,38 +52,32 @@ describe('provider-throttle policy', () => {
     expect(policy.keyAttemptDelayMs).toBe(25);
   });
 
-  it('uses blockchair keyless hard-limit baseline and faster keyed baseline', () => {
+  it('uses documented blockcypher free-tier baseline', () => {
     const env = {
       NODE_ENV: 'test',
       ORACLE_PROVIDER_THROTTLE_CONTEXT: 'throughput',
     } as NodeJS.ProcessEnv;
 
-    const keylessPolicy = resolveProviderThrottlePolicy('blockchair', {
-      hasApiKey: false,
+    const policy = resolveProviderThrottlePolicy('blockcypher', {
       env,
     });
-    const keyedPolicy = resolveProviderThrottlePolicy('blockchair', {
+
+    expect(policy.documentedRequestsPerSecond).toBe(3);
+    expect(policy.requestThrottleMs).toBe(367);
+  });
+
+  it('defaults blockcypher to conservative reliability pacing', () => {
+    const env = {
+      NODE_ENV: 'test',
+    } as NodeJS.ProcessEnv;
+
+    const policy = resolveProviderThrottlePolicy('blockcypher', {
       hasApiKey: true,
       env,
     });
 
-    expect(keylessPolicy.documentedRequestsPerSecond).toBe(0.5);
-    expect(keylessPolicy.requestThrottleMs).toBe(2200);
-    expect(keyedPolicy.documentedRequestsPerSecond).toBe(5);
-    expect(keyedPolicy.requestThrottleMs).toBe(220);
-  });
-
-  it('uses conservative blockstream public baseline', () => {
-    const env = {
-      NODE_ENV: 'test',
-      ORACLE_PROVIDER_THROTTLE_CONTEXT: 'throughput',
-    } as NodeJS.ProcessEnv;
-
-    const policy = resolveProviderThrottlePolicy('blockstream', {
-      env,
-    });
-
-    expect(policy.documentedRequestsPerSecond).toBe(1);
-    expect(policy.requestThrottleMs).toBe(1100);
+    expect(policy.context).toBe('reliability');
+    expect(policy.effectiveRequestsPerSecond).toBe(1.5);
+    expect(policy.requestThrottleMs).toBe(734);
   });
 });
