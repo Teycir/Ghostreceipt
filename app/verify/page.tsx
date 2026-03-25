@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { UnifiedPageShell } from '@/components/unified-page-shell';
 import { Button } from '@/components/ui/button';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { ValidationStrengthBadge } from '@/components/ui/validation-strength-badge';
 import { verifySharedReceiptProof, type ReceiptVerificationResult } from '@/lib/verify/receipt-verifier';
 
 interface VerifyPageChromeProps {
@@ -120,9 +122,27 @@ function VerifyContent(): React.JSX.Element {
 
             {result.valid && (
               <div className="space-y-3 mt-6">
+                {(result.oracleValidationStatus || result.oracleValidationLabel) && (
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/8">
+                    <div className="text-xs text-white/40 mb-2">
+                      Validation Strength
+                    </div>
+                    <ValidationStrengthBadge
+                      status={result.oracleValidationStatus}
+                      label={result.oracleValidationLabel}
+                    />
+                  </div>
+                )}
+
                 <div className="p-3 bg-white/5 rounded-lg border border-white/8">
                   <div className="text-xs text-white/40 mb-1 flex items-center justify-between gap-2">
-                    Minimum Amount (atomic units)
+                    <span className="inline-flex items-center gap-1.5">
+                      Minimum Amount (atomic units)
+                      <InfoTooltip
+                        label="What does this prove?"
+                        content="This receipt proves the payment met or exceeded the claimed minimum amount."
+                      />
+                    </span>
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${disclosureTone(
                         result.claimedAmountDisclosure
@@ -138,7 +158,13 @@ function VerifyContent(): React.JSX.Element {
 
                 <div className="p-3 bg-white/5 rounded-lg border border-white/8">
                   <div className="text-xs text-white/40 mb-1 flex items-center justify-between gap-2">
-                    Minimum Date
+                    <span className="inline-flex items-center gap-1.5">
+                      Minimum Date
+                      <InfoTooltip
+                        label="Why is this hidden?"
+                        content="Hidden values still verify cryptographically, without revealing sensitive exact details."
+                      />
+                    </span>
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${disclosureTone(
                         result.minDateDisclosure
@@ -199,6 +225,14 @@ function VerifyContent(): React.JSX.Element {
     </VerifyPageChrome>
   );
 }
+
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Verify Payment Proof',
+  description:
+    'Verify cryptographic payment receipts and validate zero-knowledge proofs instantly. Check payment proof authenticity without revealing wallet addresses.',
+};
 
 export default function VerifyPage(): React.JSX.Element {
   return (

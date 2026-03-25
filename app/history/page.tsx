@@ -75,6 +75,14 @@ function chainPillLabel(chain: Chain, ethereumAsset?: EthereumAsset): string {
   return 'Solana';
 }
 
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Receipt History',
+  description:
+    'View and manage your generated payment proof history. Access previously created zero-knowledge receipts for Bitcoin, Ethereum, and Solana transactions.',
+};
+
 export default function HistoryPage(): React.JSX.Element {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [entries, setEntries] = useState<ReceiptHistoryEntry[]>([]);
