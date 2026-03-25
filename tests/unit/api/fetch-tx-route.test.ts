@@ -59,6 +59,19 @@ describe('mapErrorToResponse', () => {
       status: 422,
     });
   });
+
+  it('maps bitcoin consensus failures to PROVIDER_ERROR response', () => {
+    const mapped = mapErrorToResponse(
+      new Error('Bitcoin consensus mismatch between blockcypher and mempool.space: valueAtomic differs')
+    );
+
+    expect(mapped).toEqual({
+      code: 'PROVIDER_ERROR',
+      message:
+        'Bitcoin consensus mismatch between blockcypher and mempool.space: valueAtomic differs',
+      status: 502,
+    });
+  });
 });
 
 describe('POST /api/oracle/fetch-tx', () => {

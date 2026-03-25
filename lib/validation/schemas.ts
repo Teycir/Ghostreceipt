@@ -131,6 +131,12 @@ export const OracleNullifierSchema = z
   .string()
   .regex(/^[a-f0-9]{64}$/i, 'Invalid oracle nullifier format');
 
+export const OracleValidationStatusSchema = z.enum([
+  'consensus_verified',
+  'single_source_fallback',
+  'single_source_only',
+]);
+
 /**
  * Oracle signed payload
  * Signature is bound to the full auth envelope (messageHash + nonce + timestamps + key id).
@@ -140,6 +146,8 @@ export const OraclePayloadSchema = CanonicalTxDataSchema.extend({
   nullifier: OracleNullifierSchema,
   oracleSignature: OracleSignatureHexSchema,
   oraclePubKeyId: OraclePubKeyIdSchema,
+  oracleValidationStatus: OracleValidationStatusSchema.optional(),
+  oracleValidationLabel: z.string().min(1).max(200).optional(),
   nonce: OracleNonceSchema,
   signedAt: z.number().int().positive(),
   expiresAt: z.number().int().positive(),

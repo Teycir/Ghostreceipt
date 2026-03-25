@@ -49,6 +49,7 @@ export interface ProofResult {
   ethereumAsset: EthereumAsset;
   claimedAmount: string;
   minDate: string;
+  oracleValidationLabel?: string;
   receiptLabel?: string;
   receiptCategory?: string;
   timings?: GeneratorTimingTelemetry;

@@ -114,6 +114,7 @@ GhostReceipt uses four API types so the product stays reliable while keeping UX 
 
 1. Public no-key data APIs (default path):
 - BTC reads from BlockCypher free-tier API (primary, key-rotated) with `mempool.space` public fallback.
+- BTC signing is dual-source hardened by default (`ORACLE_BTC_CONSENSUS_MODE=strict`): canonical BTC fields must agree across BlockCypher and mempool before oracle signing.
 - ETH uses managed Etherscan API key cascade.
 - SOL uses managed Helius API key cascade.
 - Used to keep onboarding keyless and no-card friendly.
@@ -241,6 +242,7 @@ Open `http://localhost:3000`.
 - Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
 - Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
 - Provider paths: BTC uses BlockCypher primary + mempool.space fallback, ETH uses Etherscan API cascade, SOL uses Helius API cascade.
+- BTC hardening mode: `ORACLE_BTC_CONSENSUS_MODE=strict` (default) enforces fail-closed dual-source consensus before signature issuance.
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)

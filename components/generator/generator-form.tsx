@@ -338,6 +338,9 @@ export function GeneratorForm(): React.JSX.Element {
           ethereumAsset={proofResult.ethereumAsset}
           claimedAmount={proofResult.claimedAmount}
           minDate={proofResult.minDate}
+          {...(proofResult.oracleValidationLabel
+            ? { oracleValidationLabel: proofResult.oracleValidationLabel }
+            : {})}
           {...(proofResult.receiptLabel ? { receiptLabel: proofResult.receiptLabel } : {})}
           {...(proofResult.receiptCategory ? { receiptCategory: proofResult.receiptCategory } : {})}
           {...(proofResult.timings ? { timings: proofResult.timings } : {})}

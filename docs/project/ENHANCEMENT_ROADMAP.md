@@ -41,6 +41,8 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added automated release-readiness command gate (`npm run check:release-readiness`) with API-only doc consistency checks.
 - [x] Switched BTC cascade to BlockCypher token-rotated primary with `mempool.space` as last public fallback, and kept conservative spike handling (no multi-key spray on BlockCypher `429`).
 - [x] Added dedicated live BTC BlockCypher E2E integration test (`npm run test:live:btc:blockcypher`) covering oracle fetch/signature + witness + Groth16 proof + verify-signature.
+- [x] Upgraded consensus policy to no-UX best-effort mode: attempt dual-source validation on BTC/ETH/SOL, fall back to single-source when peer source is unavailable, and emit passive validation labels in oracle payload/UI.
+- [x] Added dedicated live real-data consensus integration suite (`npm run test:live:consensus`) asserting best-effort consensus labels and full oracle+zk+verify flow for BTC/ETH/SOL.
 
 ---
 

@@ -10,7 +10,9 @@ import {
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { BlockCypherProvider } from '@/lib/providers/bitcoin/blockcypher';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
+import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
+import { SolanaPublicRpcProvider } from '@/lib/providers/solana/public-rpc';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
 import { ProviderCascade } from '../providers/cascade';
@@ -25,6 +27,9 @@ export interface FetchTxMappedError {
 
 export interface OracleFetchOptions {
   authTtlSeconds?: number;
+  bitcoinConsensusMode?: ConsensusMode;
+  ethereumConsensusMode?: ConsensusMode;
+  solanaConsensusMode?: ConsensusMode;
   blockCypherKeys?: string[];
   canonicalCacheTtlMs?: number;
   cascadeConfig?: CascadeConfig;
@@ -52,12 +57,23 @@ const DEFAULT_CASCADE_CONFIG: CascadeConfig = {
 const DEFAULT_ORACLE_AUTH_TTL_SECONDS = 5 * 60;
 const DEFAULT_CANONICAL_TX_CACHE_TTL_MS = 15_000;
 const MAX_CANONICAL_TX_CACHE_ENTRIES = 1_000;
+const DEFAULT_PRODUCTION_CONSENSUS_MODE: ConsensusMode = 'best_effort';
+
+type ConsensusMode = 'strict' | 'best_effort' | 'off';
+type OracleValidationStatus = NonNullable<OraclePayload['oracleValidationStatus']>;
+
+interface ConsensusValidationResult {
+  status: OracleValidationStatus;
+  label: string;
+}
 
 interface CanonicalTxCacheEntry {
   data: CanonicalTxData;
   expiresAtMs: number;
   fetchedAt: number;
   provider: string;
+  validationLabel: string;
+  validationStatus: OracleValidationStatus;
 }
 
 interface CanonicalTxFetchResult {
@@ -65,6 +81,8 @@ interface CanonicalTxFetchResult {
   data: CanonicalTxData;
   fetchedAt: number;
   provider: string;
+  validationLabel: string;
+  validationStatus: OracleValidationStatus;
 }
 
 const canonicalTxCache = new Map<string, CanonicalTxCacheEntry>();
@@ -100,14 +118,74 @@ function resolveCanonicalCacheTtlMs(options: OracleFetchOptions): number {
   );
 }
 
+function normalizeConsensusMode(rawMode: string | undefined): ConsensusMode | null {
+  if (!rawMode) {
+    return null;
+  }
+
+  const normalized = rawMode.trim().toLowerCase();
+  if (normalized === 'strict') {
+    return 'strict';
+  }
+  if (normalized === 'off') {
+    return 'off';
+  }
+  if (normalized === 'best_effort' || normalized === 'best-effort') {
+    return 'best_effort';
+  }
+
+  return null;
+}
+
+function resolveConsensusModeForChain(
+  chain: Chain,
+  options: Pick<
+    OracleFetchOptions,
+    'bitcoinConsensusMode' | 'ethereumConsensusMode' | 'solanaConsensusMode'
+  >,
+  env: NodeJS.ProcessEnv = process.env
+): ConsensusMode {
+  const optionMode =
+    chain === 'bitcoin'
+      ? options.bitcoinConsensusMode
+      : chain === 'ethereum'
+        ? options.ethereumConsensusMode
+        : options.solanaConsensusMode;
+  if (optionMode) {
+    return optionMode;
+  }
+
+  const chainEnvVar =
+    chain === 'bitcoin'
+      ? 'ORACLE_BTC_CONSENSUS_MODE'
+      : chain === 'ethereum'
+        ? 'ORACLE_ETH_CONSENSUS_MODE'
+        : 'ORACLE_SOL_CONSENSUS_MODE';
+
+  const chainSpecificMode = normalizeConsensusMode(env[chainEnvVar]);
+  if (chainSpecificMode) {
+    return chainSpecificMode;
+  }
+
+  const globalMode = normalizeConsensusMode(env['ORACLE_CONSENSUS_MODE']);
+  if (globalMode) {
+    return globalMode;
+  }
+
+  // Keep unit tests fast by default while enabling reliability-first behavior in non-test runtimes.
+  return env['NODE_ENV'] === 'test' ? 'off' : DEFAULT_PRODUCTION_CONSENSUS_MODE;
+}
+
 function buildCanonicalTxCacheKey(
   chain: Chain,
   txHash: string,
-  ethereumAsset: EthereumAsset
+  ethereumAsset: EthereumAsset,
+  consensusMode: ConsensusMode
 ): string {
   const normalizedHash = chain === 'solana' ? txHash : txHash.toLowerCase();
   const assetKey = chain === 'ethereum' ? `:${ethereumAsset}` : '';
-  return `${chain}:${normalizedHash}${assetKey}`;
+  const consensusKey = `:consensus=${consensusMode}`;
+  return `${chain}:${normalizedHash}${assetKey}${consensusKey}`;
 }
 
 function readCanonicalTxCache(
@@ -129,6 +207,8 @@ function readCanonicalTxCache(
     data: entry.data,
     fetchedAt: entry.fetchedAt,
     provider: entry.provider,
+    validationLabel: entry.validationLabel,
+    validationStatus: entry.validationStatus,
   };
 }
 
@@ -153,6 +233,9 @@ async function fetchCanonicalTxData(
   txHash: string,
   options: Pick<
     OracleFetchOptions,
+    | 'bitcoinConsensusMode'
+    | 'ethereumConsensusMode'
+    | 'solanaConsensusMode'
     | 'blockCypherKeys'
     | 'canonicalCacheTtlMs'
     | 'cascadeConfig'
@@ -162,8 +245,14 @@ async function fetchCanonicalTxData(
   >
 ): Promise<CanonicalTxFetchResult> {
   const cacheTtlMs = resolveCanonicalCacheTtlMs(options);
+  const consensusMode = resolveConsensusModeForChain(chain, options);
   const ethereumAsset = options.ethereumAsset ?? 'native';
-  const cacheKey = buildCanonicalTxCacheKey(chain, txHash, ethereumAsset);
+  const cacheKey = buildCanonicalTxCacheKey(
+    chain,
+    txHash,
+    ethereumAsset,
+    consensusMode
+  );
 
   if (cacheTtlMs > 0) {
     const cachedResult = readCanonicalTxCache(cacheKey, Date.now());
@@ -186,11 +275,22 @@ async function fetchCanonicalTxData(
     }
 
     const parsedCanonicalData = canonicalDataResult.data;
+    const consensusValidation = await validateConsensusForCanonicalData(
+      chain,
+      txHash,
+      parsedCanonicalData,
+      result.provider,
+      consensusMode,
+      options
+    );
+
     const canonicalResult: CanonicalTxFetchResult = {
       cached: result.cached,
       data: parsedCanonicalData,
       fetchedAt: result.fetchedAt,
       provider: result.provider,
+      validationLabel: consensusValidation.label,
+      validationStatus: consensusValidation.status,
     };
 
     if (cacheTtlMs > 0) {
@@ -199,6 +299,8 @@ async function fetchCanonicalTxData(
         expiresAtMs: Date.now() + cacheTtlMs,
         fetchedAt: result.fetchedAt,
         provider: result.provider,
+        validationLabel: consensusValidation.label,
+        validationStatus: consensusValidation.status,
       });
     }
 
@@ -212,6 +314,206 @@ async function fetchCanonicalTxData(
   } finally {
     inFlightCanonicalTxFetches.delete(cacheKey);
   }
+}
+
+function createBlockCypherProvider(options: Pick<OracleFetchOptions, 'blockCypherKeys'>): BlockCypherProvider {
+  const blockCypherKeys = options.blockCypherKeys ?? loadBlockCypherKeysFromEnv();
+  if (blockCypherKeys.length === 0) {
+    return new BlockCypherProvider();
+  }
+
+  return new BlockCypherProvider({
+    keys: blockCypherKeys,
+    rotationStrategy: 'random',
+    shuffleOnStartup: true,
+  });
+}
+
+function createEtherscanProvider(
+  options: Pick<OracleFetchOptions, 'etherscanKeys' | 'ethereumAsset'>
+): EtherscanProvider {
+  const etherscanKeys = options.etherscanKeys ?? loadEtherscanKeysFromEnv();
+  if (etherscanKeys.length === 0) {
+    throw new Error('No Etherscan API keys configured for Ethereum requests');
+  }
+
+  return new EtherscanProvider({
+    keys: etherscanKeys,
+    rotationStrategy: 'random',
+    shuffleOnStartup: true,
+  }, options.ethereumAsset ?? 'native');
+}
+
+function createHeliusProvider(options: Pick<OracleFetchOptions, 'heliusKeys'>): HeliusProvider {
+  const heliusKeys = options.heliusKeys ?? loadHeliusKeysFromEnv();
+  if (heliusKeys.length === 0) {
+    throw new Error('No Helius API keys configured for Solana requests');
+  }
+
+  return new HeliusProvider({
+    keys: heliusKeys,
+    rotationStrategy: 'random',
+    shuffleOnStartup: true,
+  });
+}
+
+function createConsensusVerificationProvider(
+  chain: Chain,
+  primaryProvider: string,
+  options: Pick<
+    OracleFetchOptions,
+    'blockCypherKeys' | 'etherscanKeys' | 'heliusKeys' | 'ethereumAsset'
+  >
+): Provider {
+  if (chain === 'bitcoin') {
+    return primaryProvider === 'blockcypher'
+      ? new MempoolSpaceProvider()
+      : createBlockCypherProvider(options);
+  }
+
+  if (chain === 'ethereum') {
+    return primaryProvider === 'etherscan'
+      ? new EthereumPublicRpcProvider(options.ethereumAsset ?? 'native')
+      : createEtherscanProvider(options);
+  }
+
+  return primaryProvider === 'helius'
+    ? new SolanaPublicRpcProvider()
+    : createHeliusProvider(options);
+}
+
+function formatChainConsensusPrefix(chain: Chain): string {
+  if (chain === 'bitcoin') {
+    return 'Bitcoin';
+  }
+  if (chain === 'ethereum') {
+    return 'Ethereum';
+  }
+  return 'Solana';
+}
+
+function normalizeChainHash(chain: Chain, txHash: string): string {
+  return chain === 'solana' ? txHash : txHash.toLowerCase();
+}
+
+function normalizeChainBlockHash(chain: Chain, blockHash: string): string {
+  return chain === 'solana' ? blockHash : blockHash.toLowerCase();
+}
+
+function findCanonicalConsensusMismatch(
+  primary: CanonicalTxData,
+  verification: CanonicalTxData
+): string | null {
+  if (primary.chain !== verification.chain) {
+    return `chain differs (${primary.chain} vs ${verification.chain})`;
+  }
+
+  if (
+    normalizeChainHash(primary.chain, primary.txHash) !==
+      normalizeChainHash(verification.chain, verification.txHash)
+  ) {
+    return 'txHash differs';
+  }
+
+  if (primary.valueAtomic !== verification.valueAtomic) {
+    return `valueAtomic differs (${primary.valueAtomic} vs ${verification.valueAtomic})`;
+  }
+
+  if (
+    primary.blockHash &&
+    verification.blockHash &&
+    normalizeChainBlockHash(primary.chain, primary.blockHash) !==
+      normalizeChainBlockHash(verification.chain, verification.blockHash)
+  ) {
+    return 'blockHash differs';
+  }
+
+  if (
+    typeof primary.blockNumber === 'number' &&
+    typeof verification.blockNumber === 'number' &&
+    primary.blockNumber !== verification.blockNumber
+  ) {
+    return `blockNumber differs (${primary.blockNumber} vs ${verification.blockNumber})`;
+  }
+
+  return null;
+}
+
+async function validateConsensusForCanonicalData(
+  chain: Chain,
+  txHash: string,
+  primaryData: CanonicalTxData,
+  primaryProvider: string,
+  consensusMode: ConsensusMode,
+  options: Pick<
+    OracleFetchOptions,
+    'blockCypherKeys' | 'etherscanKeys' | 'heliusKeys' | 'ethereumAsset'
+  >
+): Promise<ConsensusValidationResult> {
+  if (consensusMode === 'off') {
+    return {
+      status: 'single_source_only',
+      label: `Single-source validation (${primaryProvider})`,
+    };
+  }
+
+  if (primaryData.chain !== chain) {
+    throw new Error(
+      `${formatChainConsensusPrefix(chain)} consensus validation received mismatched canonical chain`
+    );
+  }
+
+  const chainPrefix = formatChainConsensusPrefix(chain);
+  const verificationProvider = createConsensusVerificationProvider(
+    chain,
+    primaryProvider,
+    options
+  );
+
+  let verificationData: CanonicalTxData;
+  try {
+    verificationData = await verificationProvider.fetchTransaction(txHash);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (consensusMode === 'strict') {
+      throw new Error(
+        `${chainPrefix} consensus unavailable: ${verificationProvider.name} verification failed (${reason})`
+      );
+    }
+    return {
+      status: 'single_source_fallback',
+      label:
+        `Single-source fallback (${primaryProvider}); ` +
+        `consensus source unavailable (${verificationProvider.name})`,
+    };
+  }
+
+  const parsedVerification = CanonicalTxDataSchema.safeParse(verificationData);
+  if (!parsedVerification.success) {
+    if (consensusMode === 'strict') {
+      throw new Error(
+        `${chainPrefix} consensus unavailable: ${verificationProvider.name} returned invalid canonical data`
+      );
+    }
+    return {
+      status: 'single_source_fallback',
+      label:
+        `Single-source fallback (${primaryProvider}); ` +
+        `consensus source returned invalid data (${verificationProvider.name})`,
+    };
+  }
+
+  const mismatchReason = findCanonicalConsensusMismatch(primaryData, parsedVerification.data);
+  if (mismatchReason) {
+    throw new Error(
+      `${chainPrefix} consensus mismatch between ${primaryProvider} and ${verificationProvider.name}: ${mismatchReason}`
+    );
+  }
+
+  return {
+    status: 'consensus_verified',
+    label: `Dual-source consensus verified (${primaryProvider} + ${verificationProvider.name})`,
+  };
 }
 
 export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
@@ -316,6 +618,17 @@ export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
     };
   }
 
+  if (
+    normalizedMessage.includes('consensus mismatch') ||
+    normalizedMessage.includes('consensus unavailable')
+  ) {
+    return {
+      code: 'PROVIDER_ERROR',
+      message,
+      status: 502,
+    };
+  }
+
   if (normalizedMessage.includes('provider')) {
     return {
       code: 'PROVIDER_ERROR',
@@ -393,6 +706,9 @@ export function createProviderCascadeForChain(
   chain: Chain,
   options: Pick<
     OracleFetchOptions,
+    | 'bitcoinConsensusMode'
+    | 'ethereumConsensusMode'
+    | 'solanaConsensusMode'
     | 'blockCypherKeys'
     | 'cascadeConfig'
     | 'ethereumAsset'
@@ -402,15 +718,7 @@ export function createProviderCascadeForChain(
 ): ProviderCascade {
   const cascadeConfig = options.cascadeConfig ?? DEFAULT_CASCADE_CONFIG;
   if (chain === 'bitcoin') {
-    const blockCypherKeys = options.blockCypherKeys ?? loadBlockCypherKeysFromEnv();
-    const blockCypherProvider =
-      blockCypherKeys.length > 0
-        ? new BlockCypherProvider({
-            keys: blockCypherKeys,
-            rotationStrategy: 'random',
-            shuffleOnStartup: true,
-          })
-        : new BlockCypherProvider();
+    const blockCypherProvider = createBlockCypherProvider(options);
     const providers: Provider[] = [
       blockCypherProvider,
       new MempoolSpaceProvider(),
@@ -420,33 +728,15 @@ export function createProviderCascadeForChain(
   }
 
   if (chain === 'solana') {
-    const heliusKeys = options.heliusKeys ?? loadHeliusKeysFromEnv();
-    if (heliusKeys.length === 0) {
-      throw new Error('No Helius API keys configured for Solana requests');
-    }
-
     const providers: Provider[] = [
-      new HeliusProvider({
-        keys: heliusKeys,
-        rotationStrategy: 'random',
-        shuffleOnStartup: true,
-      }),
+      createHeliusProvider(options),
     ];
 
     return new ProviderCascade(providers, cascadeConfig);
   }
 
-  const etherscanKeys = options.etherscanKeys ?? loadEtherscanKeysFromEnv();
-  if (etherscanKeys.length === 0) {
-    throw new Error('No Etherscan API keys configured for Ethereum requests');
-  }
-
   const providers: Provider[] = [
-    new EtherscanProvider({
-      keys: etherscanKeys,
-      rotationStrategy: 'random',
-      shuffleOnStartup: true,
-    }, options.ethereumAsset ?? 'native'),
+    createEtherscanProvider(options),
   ];
 
   return new ProviderCascade(providers, cascadeConfig);
@@ -459,6 +749,9 @@ export async function fetchAndSignOracleTransaction(
 ): Promise<SignedOracleFetchResult> {
   const cascadeOptions: Pick<
     OracleFetchOptions,
+    | 'bitcoinConsensusMode'
+    | 'ethereumConsensusMode'
+    | 'solanaConsensusMode'
     | 'blockCypherKeys'
     | 'canonicalCacheTtlMs'
     | 'cascadeConfig'
@@ -468,6 +761,15 @@ export async function fetchAndSignOracleTransaction(
   > = {};
   if (options.canonicalCacheTtlMs !== undefined) {
     cascadeOptions.canonicalCacheTtlMs = options.canonicalCacheTtlMs;
+  }
+  if (options.bitcoinConsensusMode !== undefined) {
+    cascadeOptions.bitcoinConsensusMode = options.bitcoinConsensusMode;
+  }
+  if (options.ethereumConsensusMode !== undefined) {
+    cascadeOptions.ethereumConsensusMode = options.ethereumConsensusMode;
+  }
+  if (options.solanaConsensusMode !== undefined) {
+    cascadeOptions.solanaConsensusMode = options.solanaConsensusMode;
   }
   if (options.cascadeConfig !== undefined) {
     cascadeOptions.cascadeConfig = options.cascadeConfig;
@@ -516,6 +818,8 @@ export async function fetchAndSignOracleTransaction(
       ...authSignature.envelope,
       nullifier,
       oracleSignature: authSignature.oracleSignature,
+      oracleValidationStatus: canonicalResult.validationStatus,
+      oracleValidationLabel: canonicalResult.validationLabel,
     },
     fetchedAt: canonicalResult.fetchedAt,
     provider: canonicalResult.provider,

@@ -34,6 +34,28 @@ interface BlockCypherTxResponse {
 }
 
 const BLOCKCYPHER_METRICS_SCOPE = 'provider:blockcypher';
+const BLOCKCYPHER_KEY_ROTATION_ERROR_PATTERNS = [
+  'rate limit',
+  'too many requests',
+  '429',
+  '401',
+  '403',
+  'unauthorized',
+  'forbidden',
+  'invalid api key',
+  'invalid token',
+  'invalid api token',
+  'api token invalid',
+  'quota exceeded',
+  'daily request count exceeded',
+];
+
+function shouldContinueBlockCypherKeyRotation(error: Error): boolean {
+  const normalizedMessage = error.message.toLowerCase();
+  return BLOCKCYPHER_KEY_ROTATION_ERROR_PATTERNS.some((pattern) =>
+    normalizedMessage.includes(pattern)
+  );
+}
 
 /**
  * BlockCypher BTC provider.
@@ -52,8 +74,7 @@ export class BlockCypherProvider implements BitcoinProvider {
     },
   };
 
-  private readonly txBaseUrl = 'https://api.blockcypher.com/v1/btc/main/txs';
-  private readonly healthBaseUrl = 'https://api.blockcypher.com/v1/btc/main';
+  private baseUrl = 'https://api.blockcypher.com/v1/btc/main';
   private readonly keyCascade: ApiKeyCascade | null;
   private readonly throttlePolicy: ProviderThrottlePolicy;
 
@@ -103,6 +124,7 @@ export class BlockCypherProvider implements BitcoinProvider {
               normalizedMessage.includes('rate limit')
             );
           },
+          shouldContinueToNextKey: (error) => shouldContinueBlockCypherKeyRotation(error),
           onAttemptFailure: (error, context) => {
             secureWarn(
               `[${this.name}] Key ${context.keyIndex + 1} failed (${error.message}), trying next key`
@@ -217,7 +239,7 @@ export class BlockCypherProvider implements BitcoinProvider {
   }
 
   private buildTxUrl(txHash: string, apiToken: string | null): string {
-    const base = `${this.txBaseUrl}/${txHash}`;
+    const base = `${this.baseUrl}/txs/${txHash}`;
     if (!apiToken) {
       return base;
     }
@@ -226,11 +248,12 @@ export class BlockCypherProvider implements BitcoinProvider {
   }
 
   private buildHealthUrl(apiToken: string | null): string {
+    const base = this.baseUrl;
     if (!apiToken) {
-      return this.healthBaseUrl;
+      return base;
     }
 
-    return `${this.healthBaseUrl}?token=${encodeURIComponent(apiToken)}`;
+    return `${base}?token=${encodeURIComponent(apiToken)}`;
   }
 
   private assertAllowedUrl(url: string): void {

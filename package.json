@@ -20,6 +20,7 @@
     "export:solidity-verifier": "node scripts/export-solidity-verifier.mjs",
     "check:solidity-verifier": "node scripts/check-solidity-verifier.mjs",
     "test:live:oracle": "bash scripts/run-live-oracle-tests.sh",
+    "test:live:consensus": "LIVE_INTEGRATION=1 jest tests/integration/live-consensus-flows.test.ts --runInBand --ci --testTimeout=240000 --forceExit",
     "test:live:btc:blockcypher": "LIVE_INTEGRATION=1 jest tests/integration/live-bitcoin-blockcypher-e2e.test.ts --runInBand --ci --testTimeout=180000",
     "test:live:solana": "LIVE_INTEGRATION=1 jest tests/integration/live-solana-e2e.test.ts --runInBand --ci --testTimeout=180000",
     "test:stress:oracle": "STRESS_TEST=1 ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_MINUTE=300 ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_MINUTE=1200 ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_SECOND=30 ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_SECOND=600 ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_MINUTE=300 ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_MINUTE=1200 ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_SECOND=30 ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_SECOND=600 jest tests/integration/stress-oracle-volume.test.ts --runInBand --ci --testTimeout=180000",

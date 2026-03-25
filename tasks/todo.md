@@ -1,5 +1,96 @@
 # Task Plan - 2026-03-24
 
+## Objective (Prevent False API-Key Exhaustion On Fresh Key Pools)
+
+Treat key rotation as a key-specific recovery mechanism (rate-limit/auth/quota), not a generic response to upstream transport outages. Ensure unknown/5xx/fetch failures stop key rotation to avoid burning through healthy keys and emitting misleading "all keys exhausted" errors.
+
+## Plan
+
+- [x] Add a key-rotation decision hook to `ApiKeyCascade` so providers can classify whether a failure should advance to the next key.
+- [x] Wire provider-specific classification for BlockCypher/Etherscan/Helius to rotate only on key/rate-limit/auth/quota signals.
+- [x] Add/adjust provider and cascade unit tests for key-agnostic outage behavior (no key spray on HTTP 503).
+- [x] Run targeted provider/cascade tests and typecheck to validate behavior.
+
+## Review (Prevent False API-Key Exhaustion On Fresh Key Pools)
+
+- Status: Completed
+- Notes:
+  - Added `shouldContinueToNextKey` option in `ApiKeyCascade` to allow provider-specific key-rotation gating.
+  - Updated `blockcypher`, `etherscan`, and `helius` providers to rotate keys only for key-specific/rate-limit-like failures.
+  - Generic upstream outages (`HTTP 5xx`, transport-style unknown failures) now fail fast on the active key instead of exhausting the full key pool.
+  - Validation:
+    - `npm test -- tests/unit/providers/api-key-cascade.test.ts tests/unit/providers/blockcypher.test.ts tests/unit/providers/etherscan.test.ts tests/unit/providers/helius.test.ts --runInBand --ci` pass.
+    - `npm run typecheck` pass.
+
+## Objective (Live Real-Data Consensus Integration Coverage)
+
+Add full live integration coverage that validates consensus behavior with real data for BTC/ETH/SOL, including oracle fetch/signature flow, consensus labeling assertions, witness/proof verification, and signature verification.
+
+## Plan
+
+- [x] Add dedicated live integration test suite for consensus validation across BTC/ETH/SOL.
+- [x] Force consensus-on execution in live tests via strict chain consensus env flags.
+- [x] Assert consensus output fields (`oracleValidationStatus`, `oracleValidationLabel`) for real-data flows.
+- [x] Run full witness + Groth16 prove/verify + verify-signature within consensus live tests.
+- [x] Add a dedicated npm command for the new live consensus suite.
+- [x] Execute the live consensus test command and capture outcomes.
+
+## Review (Live Real-Data Consensus Integration Coverage)
+
+- Status: Completed
+- Notes:
+  - Added `tests/integration/live-consensus-flows.test.ts` with real BTC/ETH/SOL candidates and full flow assertions:
+    - `/api/oracle/fetch-tx` response schema parse,
+    - consensus label/status validation (`consensus_verified` or `single_source_fallback`, never `single_source_only`),
+    - oracle commitment recomputation,
+    - witness build/validate,
+    - Groth16 prove/verify,
+    - `/api/oracle/verify-signature` validation.
+  - Added `npm run test:live:consensus`.
+  - Updated `scripts/run-live-oracle-tests.sh` so `npm run test:live:oracle` runs both:
+    - `tests/integration/live-oracle-flows.test.ts`
+    - `tests/integration/live-consensus-flows.test.ts`
+  - Validation:
+    - `npm run typecheck` pass.
+    - `npm run test:live:consensus` pass.
+    - `npm run test:live:oracle` pass.
+
+## Objective (Best-Effort Multi-Chain Consensus + Zero-Friction Validation Label)
+
+Shift oracle consensus behavior to reliability-first operation:
+- attempt dual-source consensus on BTC/ETH/SOL,
+- fall back to single-source signing when peer consensus source is unavailable,
+- expose validation status as a read-only label in returned payload/UI (no extra user actions).
+
+## Plan
+
+- [x] Add cross-chain consensus mode support in backend fetch/sign flow with best-effort fallback on peer unavailability.
+- [x] Add public consensus verification providers for Ethereum and Solana.
+- [x] Add consensus validation label fields to oracle payload schema and return values.
+- [x] Render validation label in existing success receipt card (no new buttons/checkboxes/inputs).
+- [x] Add/adjust unit tests for consensus/fallback behavior and payload/schema compatibility.
+- [x] Update project docs to reflect new best-effort consensus policy and ETH/SOL consensus sources.
+- [x] Run targeted test suite and capture review notes.
+
+## Review (Best-Effort Multi-Chain Consensus + Zero-Friction Validation Label)
+
+- Status: Completed
+- Notes:
+  - Consensus logic is now multi-chain and reliability-first:
+    - BTC/ETH/SOL attempt peer consensus validation.
+    - Peer unavailability degrades to single-source signing in `best_effort`.
+    - Canonical mismatches still fail closed.
+  - Added public consensus verification providers:
+    - `lib/providers/ethereum/public-rpc.ts`
+    - `lib/providers/solana/public-rpc.ts`
+  - Added passive validation metadata to oracle payload:
+    - `oracleValidationStatus`
+    - `oracleValidationLabel`
+  - Generator success UI now renders validation as a standard read-only field (`Validation`) with no new controls or user actions.
+  - Validation:
+    - `npm run typecheck` pass.
+    - `npm run test -- tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/api/fetch-tx-route.test.ts` pass.
+
 ## Objective (Roadmap Continuation: USDC Stabilization + Documentation)
 
 Continue roadmap execution by closing documentation/tracking gaps for the newly added Ethereum USDC mode and adding dedicated regression coverage for unit formatting behavior.
@@ -381,3 +472,37 @@ Add a dedicated live BTC end-to-end integration test that validates the full ora
     - `npm run test:live:btc:blockcypher` pass (`[Cascade] Success with provider: blockcypher`)
   - Residual note:
     - Jest emitted a standard open-handles warning after completion (`Jest did not exit one second after the test run has completed`), but the test itself passed with real network/API flow.
+
+## Objective (No-UX BTC Oracle Trust Hardening: Dual-Source Fail-Closed)
+
+Harden BTC oracle trust without adding any user-facing steps by requiring dual-source canonical agreement before signing and failing closed on disagreement/provider verification gaps.
+
+## Plan
+
+- [x] Add strict BTC dual-source consensus gate in canonical fetch/sign flow (`blockcypher` + `mempool.space`).
+- [x] Fail closed when verification provider is unavailable or canonical values mismatch.
+- [x] Keep production default strict while preserving test ergonomics (`ORACLE_BTC_CONSENSUS_MODE` with test default `off`).
+- [x] Add focused unit tests for strict-pass, strict-mismatch, strict-unavailable, and off-mode behavior.
+- [x] Append roadmap/progress/docs with the hardening change and run validation.
+
+## Review (No-UX BTC Oracle Trust Hardening: Dual-Source Fail-Closed)
+
+- Status: Completed
+- Notes:
+  - Added strict BTC consensus gate in `fetch-tx` path: after BTC canonical fetch, oracle signing proceeds only when a second provider independently confirms immutable canonical fields.
+  - Hardened behavior is fail-closed:
+    - verification provider fetch failure => request rejected (`Bitcoin consensus unavailable`)
+    - canonical mismatch => request rejected (`Bitcoin consensus mismatch`)
+  - Added configurable mode:
+    - `ORACLE_BTC_CONSENSUS_MODE=strict|off`
+    - default is `strict` outside test env, `off` in `NODE_ENV=test` for deterministic unit-test isolation.
+  - Added dedicated unit coverage: `tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts`.
+  - Added error mapping for consensus failures to `PROVIDER_ERROR` (HTTP 502) and route-level unit assertion.
+  - Updated docs/config:
+    - `.env.example` includes `ORACLE_BTC_CONSENSUS_MODE=strict`
+    - README/API model and configuration updated with strict BTC consensus behavior
+    - enhancement roadmap/progress entries appended
+  - Validation:
+    - `npm run test -- tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/api/fetch-tx-route.test.ts`
+    - `npm run typecheck`
+    - `npm run test:live:btc:blockcypher` pass (`[Cascade] Success with provider: blockcypher`)

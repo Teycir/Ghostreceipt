@@ -8,6 +8,10 @@ export interface ApiKeyCascadeExecutionContext {
 export interface ApiKeyCascadeExecuteOptions {
   delayBetweenAttemptsMs?: number;
   isNonRetryableError?: (error: Error) => boolean;
+  shouldContinueToNextKey?: (
+    error: Error,
+    context: ApiKeyCascadeExecutionContext
+  ) => boolean;
   onAttemptFailure?: (error: Error, context: ApiKeyCascadeExecutionContext) => void;
 }
 
@@ -188,6 +192,7 @@ export class ApiKeyCascade {
     const {
       delayBetweenAttemptsMs = 50,
       isNonRetryableError,
+      shouldContinueToNextKey,
       onAttemptFailure,
     } = options;
     let lastError: Error | null = null;
@@ -230,12 +235,16 @@ export class ApiKeyCascade {
         keyMetrics.failures += 1;
         keyMetrics.lastFailureAtMs = nowMs;
 
-        onAttemptFailure?.(normalizedError, context);
-
         if (isNonRetryableError?.(normalizedError) === true) {
           this.metricsState.totalNonRetryableStops += 1;
           throw normalizedError;
         }
+
+        if (shouldContinueToNextKey && shouldContinueToNextKey(normalizedError, context) !== true) {
+          throw normalizedError;
+        }
+
+        onAttemptFailure?.(normalizedError, context);
       }
     }
 

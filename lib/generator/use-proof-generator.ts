@@ -248,6 +248,9 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         ethereumAsset:  values.ethereumAsset,
         claimedAmount:  values.claimedAmount,
         minDate:        values.minDate,
+        ...(data.data.oracleValidationLabel
+          ? { oracleValidationLabel: data.data.oracleValidationLabel }
+          : {}),
         ...(receiptMeta?.label ? { receiptLabel: receiptMeta.label } : {}),
         ...(receiptMeta?.category ? { receiptCategory: receiptMeta.category } : {}),
         timings:        telemetry,

@@ -53,7 +53,9 @@ npm run check:secrets # ✅ Detects secrets in .env.local
 - ✅ `POST /api/oracle/fetch-tx` endpoint
 - ✅ Input validation with Zod
 - ✅ BTC adapter (BlockCypher primary + mempool.space fallback path)
-- ✅ ETH adapter (Etherscan rolling key cascade + RPC last fallback)
+- ✅ Best-effort consensus validation gate across BTC/ETH/SOL (fallback-to-single on peer source unavailability, fail on canonical mismatch)
+- ✅ ETH adapter (Etherscan rolling key cascade + public RPC consensus peer)
+- ✅ Consensus validation label added to oracle payload/UI (no additional user actions)
 - ✅ Canonical response schema enforcement
 - ✅ Oracle signing flow (commitment + signature metadata)
 - ✅ Structured error taxonomy and route-level mapping
@@ -66,6 +68,7 @@ npm run check:secrets # ✅ Detects secrets in .env.local
 - ✅ Live non-mocked route verification:
   - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts` passes.
   - `npm run test:live:btc:blockcypher` passes with real BTC tx + BlockCypher provider usage.
+  - `npm run test:live:consensus` validates real-data best-effort consensus outcomes (`consensus_verified` or `single_source_fallback`) across BTC/ETH/SOL.
   - BTC path now attempts fallback provider on primary failure.
 - ✅ Cascade failover tuning:
   - Rate-limit errors now fail over immediately to next provider (no same-provider retry loop).

@@ -75,45 +75,25 @@ describe('BlockCypherProvider', () => {
     expect(result.blockNumber).toBeUndefined();
   });
 
-  it('rotates BlockCypher API tokens when a key returns transient provider errors', async () => {
+  it('does not rotate BlockCypher API tokens on key-agnostic provider outages', async () => {
     const provider = new BlockCypherProvider({
       keys: ['token-1', 'token-2'],
       rotationStrategy: 'round-robin',
       shuffleOnStartup: false,
     });
 
-    const fetchMock = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable',
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        json: async () => ({
-          hash: 'a'.repeat(64),
-          total: 3500,
-          confirmations: 9,
-          confirmed: '2024-01-01T00:00:00Z',
-          block_height: 840000,
-          block_hash: 'b'.repeat(64),
-        }),
-      } as Response);
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+    } as Response);
 
-    const result = await provider.fetchTransaction('a'.repeat(64));
-
-    expect(result.valueAtomic).toBe('3500');
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://api.blockcypher.com/v1/btc/main/txs/' + 'a'.repeat(64) + '?token=token-1',
-      expect.objectContaining({ method: 'GET' })
+    await expect(provider.fetchTransaction('a'.repeat(64))).rejects.toThrow(
+      'HTTP 503: Service Unavailable'
     );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api.blockcypher.com/v1/btc/main/txs/' + 'a'.repeat(64) + '?token=token-2',
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.blockcypher.com/v1/btc/main/txs/' + 'a'.repeat(64) + '?token=token-1',
       expect.objectContaining({ method: 'GET' })
     );
   });

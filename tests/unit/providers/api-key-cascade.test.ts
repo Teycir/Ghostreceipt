@@ -81,6 +81,31 @@ describe('ApiKeyCascade', () => {
     expect(usedKeys).toHaveLength(1);
   });
 
+  it('stops failover when key-rotation predicate indicates a key-agnostic error', async () => {
+    const cascade = new ApiKeyCascade({
+      keys: ['key-1', 'key-2', 'key-3'],
+      rotationStrategy: 'round-robin',
+      shuffleOnStartup: false,
+    });
+    const usedKeys: string[] = [];
+
+    await expect(
+      cascade.execute(
+        async (apiKey) => {
+          usedKeys.push(apiKey);
+          throw new Error('HTTP 503: Service unavailable');
+        },
+        {
+          delayBetweenAttemptsMs: 0,
+          shouldContinueToNextKey: (error) =>
+            error.message.toLowerCase().includes('rate limit'),
+        }
+      )
+    ).rejects.toThrow('HTTP 503: Service unavailable');
+
+    expect(usedKeys).toHaveLength(1);
+  });
+
   it('throws an exhausted error with the last failure as cause', async () => {
     const cascade = new ApiKeyCascade({
       keys: ['key-1', 'key-2'],

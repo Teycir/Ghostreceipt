@@ -1,5 +1,15 @@
 # Lessons Learned
 
+## 2026-03-25 - Fresh Key Exhaustion Often Means Misclassified Errors, Not Real Quota Burn
+- Do not rotate through all API keys for generic transport/upstream failures (`fetch failed`, `HTTP 5xx`, unknown provider outage); treat these as key-agnostic failures and stop key spray.
+- Reserve key rotation for key-specific signals only: auth/key errors, explicit quota/rate-limit errors (`401/403/429`, invalid key/token, quota exceeded).
+- Keep provider logs truthful: only emit "trying next key" when the classifier actually allows moving to the next key.
+
+## 2026-03-25 - UX Transparency Should Be Passive, Not Interactive, When User Requests Zero Friction
+- When the user asks for additional trust/validation visibility without friction, surface it as passive data labels in existing UI surfaces.
+- Do not add new buttons, toggles, checkboxes, or extra user actions for transparency metadata unless explicitly requested.
+- Keep the source-of-truth in backend payload fields first, then render them read-only in existing success/summary components.
+
 ## 2026-03-25 - BTC Primary Order And Spike Controls Must Follow User Reliability Policy
 - If the user says a provider key pool must be primary (for example BlockCypher), enforce that in cascade priority/order, not just env loading.
 - When the same user asks for conservative spike behavior, avoid retry/key-spray amplification on provider `429`; fail over quickly to the public fallback path.

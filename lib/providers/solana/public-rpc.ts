@@ -1,21 +1,9 @@
-import type {
-  ApiKeyConfig,
-  ProviderConfig,
-  SolanaProvider,
-} from '@ghostreceipt/backend-core/providers/types';
+import type { ProviderConfig, SolanaProvider } from '@ghostreceipt/backend-core/providers/types';
 import type { CanonicalTxData } from '@/lib/validation/schemas';
 import { SolanaTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
-import { secureError, secureWarn } from '@/lib/security/secure-logging';
-import {
-  ApiKeyCascade,
-  type ApiKeyCascadeMetricsSnapshot,
-} from '@/lib/libraries/backend-core/providers/api-key-cascade';
-import {
-  resetProviderThrottleStateForTests,
-  resolveProviderThrottlePolicy,
-  waitForProviderThrottleSlot,
-} from '@/lib/libraries/backend-core/providers/provider-throttle';
+import { secureError } from '@/lib/security/secure-logging';
+import { waitForProviderThrottleSlot } from '@/lib/libraries/backend-core/providers/provider-throttle';
 
 interface JsonRpcError {
   code?: number;
@@ -39,7 +27,7 @@ interface SolanaInstruction {
   };
 }
 
-interface HeliusTransactionResult {
+interface SolanaTransactionResult {
   slot?: number;
   blockTime?: number | null;
   transaction?: {
@@ -65,61 +53,46 @@ interface SignatureStatusesResult {
   value?: Array<SignatureStatusValue | null>;
 }
 
-const HELIUS_RPC_BASE_URL = 'https://mainnet.helius-rpc.com/';
-const HELIUS_METRICS_SCOPE = 'provider:helius';
-const HELIUS_KEY_ROTATION_ERROR_PATTERNS = [
-  'rate limit',
-  'too many requests',
-  '429',
-  '401',
-  '403',
-  'unauthorized',
-  'forbidden',
-  'invalid api key',
-  'api key invalid',
-  'missing api key',
-  'quota exceeded',
-  'credits exhausted',
-];
+const DEFAULT_SOLANA_PUBLIC_RPC_URL = 'https://api.mainnet-beta.solana.com';
+const DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS = 500;
+const RPC_SCOPE = 'provider:solana-public-rpc';
 
-function shouldContinueHeliusKeyRotation(error: Error): boolean {
-  const normalizedMessage = error.message.toLowerCase();
-  return HELIUS_KEY_ROTATION_ERROR_PATTERNS.some((pattern) =>
-    normalizedMessage.includes(pattern)
-  );
+function parseNonNegativeIntEnv(key: string, fallback: number): number {
+  const rawValue = process.env[key];
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+
+  return parsed;
 }
 
-export class HeliusProvider implements SolanaProvider {
-  readonly name = 'helius';
+export class SolanaPublicRpcProvider implements SolanaProvider {
+  readonly name = 'solana-public-rpc';
   readonly chain = 'solana' as const;
   readonly config: ProviderConfig = {
-    name: 'helius',
-    priority: 1,
-    requiresApiKey: true,
+    name: 'solana-public-rpc',
+    priority: 2,
+    requiresApiKey: false,
     rateLimit: {
-      requestsPerSecond: 10,
-      requestsPerDay: 100000,
+      requestsPerSecond: 2,
+      requestsPerDay: 172800,
     },
   };
 
-  private readonly keyCascade: ApiKeyCascade;
-  private readonly throttlePolicy = resolveProviderThrottlePolicy('helius', {
-    hasApiKey: true,
-  });
+  private readonly endpointUrl: string;
+  private readonly throttleMs: number;
 
-  constructor(apiKeyConfig: ApiKeyConfig) {
-    this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
-      metricsScope: HELIUS_METRICS_SCOPE,
-    });
-  }
-
-  static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {
-    return ApiKeyCascade.getMetricsSnapshot(HELIUS_METRICS_SCOPE);
-  }
-
-  static resetRuntimeMetricsForTests(): void {
-    ApiKeyCascade.resetMetricsForTests(HELIUS_METRICS_SCOPE);
-    resetProviderThrottleStateForTests(HELIUS_METRICS_SCOPE);
+  constructor() {
+    this.endpointUrl = process.env['SOLANA_PUBLIC_RPC_URL']?.trim() || DEFAULT_SOLANA_PUBLIC_RPC_URL;
+    this.throttleMs = parseNonNegativeIntEnv(
+      'SOLANA_PUBLIC_RPC_REQUEST_THROTTLE_MS',
+      DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS
+    );
   }
 
   async fetchTransaction(txHash: string, signal?: AbortSignal): Promise<CanonicalTxData> {
@@ -128,54 +101,7 @@ export class HeliusProvider implements SolanaProvider {
       throw new Error(`Invalid Solana transaction signature: ${txHash}`);
     }
 
-    if (this.keyCascade.size === 0) {
-      throw new Error('No Helius API keys configured');
-    }
-
-    try {
-      return await this.keyCascade.execute(
-        async (apiKey) => this.fetchWithKey(txHash, apiKey, signal),
-        {
-          delayBetweenAttemptsMs: this.throttlePolicy.keyAttemptDelayMs,
-          isNonRetryableError: (error) => {
-            const normalizedMessage = error.message.toLowerCase();
-            return (
-              normalizedMessage.includes('transaction not found') ||
-              normalizedMessage.includes('invalid solana transaction signature') ||
-              normalizedMessage.includes('unsupported solana transaction')
-            );
-          },
-          shouldContinueToNextKey: (error) => shouldContinueHeliusKeyRotation(error),
-          onAttemptFailure: (error, context) => {
-            secureWarn(
-              `[${this.name}] Key ${context.keyIndex + 1} failed (${error.message}), trying next key`
-            );
-          },
-        }
-      );
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Unknown error');
-      if (normalizedError.message.startsWith('All API keys exhausted')) {
-        secureError(`[${this.name}] API key pool exhausted`, HeliusProvider.getRuntimeMetrics());
-        const causeMessage =
-          normalizedError.cause instanceof Error
-            ? normalizedError.cause.message
-            : normalizedError.message;
-        throw new Error(`All Helius API keys exhausted. Last error: ${causeMessage}`, {
-          cause: normalizedError.cause instanceof Error ? normalizedError.cause : normalizedError,
-        });
-      }
-      throw normalizedError;
-    }
-  }
-
-  private async fetchWithKey(
-    txHash: string,
-    apiKey: string,
-    signal?: AbortSignal
-  ): Promise<CanonicalTxData> {
-    const txResult = await this.requestRpc<HeliusTransactionResult | null>(
-      apiKey,
+    const txResult = await this.requestRpc<SolanaTransactionResult | null>(
       'getTransaction',
       [
         txHash,
@@ -192,7 +118,7 @@ export class HeliusProvider implements SolanaProvider {
       throw new Error(`Transaction not found: ${txHash}`);
     }
 
-    const confirmations = await this.fetchConfirmations(txHash, apiKey, signal);
+    const confirmations = await this.fetchConfirmations(txHash, signal);
     const valueAtomic = this.extractNativeTransferLamports(txResult);
     const timestampUnix =
       typeof txResult.blockTime === 'number' && txResult.blockTime > 0
@@ -221,11 +147,9 @@ export class HeliusProvider implements SolanaProvider {
 
   private async fetchConfirmations(
     txHash: string,
-    apiKey: string,
     signal?: AbortSignal
   ): Promise<number> {
     const statusResult = await this.requestRpc<SignatureStatusesResult>(
-      apiKey,
       'getSignatureStatuses',
       [[txHash], { searchTransactionHistory: true }],
       signal
@@ -255,7 +179,7 @@ export class HeliusProvider implements SolanaProvider {
     return 0;
   }
 
-  private extractNativeTransferLamports(txResult: HeliusTransactionResult): string {
+  private extractNativeTransferLamports(txResult: SolanaTransactionResult): string {
     let totalLamports = 0n;
     const topLevel = txResult.transaction?.message?.instructions ?? [];
     const inner = txResult.meta?.innerInstructions ?? [];
@@ -295,26 +219,18 @@ export class HeliusProvider implements SolanaProvider {
   }
 
   private async requestRpc<T>(
-    apiKey: string,
     method: string,
     params: unknown[],
     signal?: AbortSignal
   ): Promise<T> {
-    const endpoint = new URL(HELIUS_RPC_BASE_URL);
-    endpoint.searchParams.set('api-key', apiKey);
-
-    const endpointString = endpoint.toString();
-    const urlValidation = validateUrl(endpointString);
+    const urlValidation = validateUrl(this.endpointUrl);
     if (!urlValidation.valid) {
       throw new Error(`Blocked provider URL: ${urlValidation.error ?? 'invalid URL'}`);
     }
 
-    await waitForProviderThrottleSlot(
-      this.throttlePolicy.scope,
-      this.throttlePolicy.requestThrottleMs
-    );
+    await waitForProviderThrottleSlot(RPC_SCOPE, this.throttleMs);
 
-    const response = await fetch(endpointString, {
+    const response = await fetch(this.endpointUrl, {
       method: 'POST',
       signal: signal ?? null,
       headers: {
@@ -340,7 +256,7 @@ export class HeliusProvider implements SolanaProvider {
     try {
       payload = (await response.json()) as JsonRpcResponse<T>;
     } catch {
-      throw new Error('Invalid JSON response from Helius');
+      throw new Error('Invalid JSON response from Solana public RPC');
     }
 
     if (payload.error && typeof payload.error === 'object') {
@@ -349,11 +265,11 @@ export class HeliusProvider implements SolanaProvider {
       if (errorMessage.toLowerCase().includes('rate limit')) {
         throw new Error('Rate limit exceeded');
       }
-      throw new Error(`Helius RPC error: ${errorMessage}`);
+      throw new Error(`Solana public RPC error: ${errorMessage}`);
     }
 
     if (!Object.prototype.hasOwnProperty.call(payload, 'result')) {
-      throw new Error('Malformed Helius RPC response');
+      throw new Error('Malformed Solana public RPC response');
     }
 
     return payload.result as T;
@@ -361,16 +277,7 @@ export class HeliusProvider implements SolanaProvider {
 
   async isHealthy(): Promise<boolean> {
     try {
-      const primaryKey = this.keyCascade.keys[0];
-      if (!primaryKey) {
-        return false;
-      }
-
-      await this.requestRpc<string>(
-        primaryKey,
-        'getHealth',
-        []
-      );
+      await this.requestRpc<string>('getHealth', []);
       return true;
     } catch (error) {
       secureError(`[${this.name}] Health check failed:`, error);

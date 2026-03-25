@@ -62,6 +62,28 @@ const HEX_QUANTITY_REGEX = /^0x[0-9a-f]+$/i;
 const ETHERSCAN_METRICS_SCOPE = 'provider:etherscan';
 const USDC_CONTRACT_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 const ERC20_TRANSFER_TOPIC0 = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const ETHERSCAN_KEY_ROTATION_ERROR_PATTERNS = [
+  'rate limit',
+  'too many requests',
+  '429',
+  '401',
+  '403',
+  'unauthorized',
+  'forbidden',
+  'invalid api key',
+  'missing/invalid api key',
+  'api key rate limit',
+  'max rate limit reached',
+  'quota exceeded',
+  'credits exhausted',
+];
+
+function shouldContinueEtherscanKeyRotation(error: Error): boolean {
+  const normalizedMessage = error.message.toLowerCase();
+  return ETHERSCAN_KEY_ROTATION_ERROR_PATTERNS.some((pattern) =>
+    normalizedMessage.includes(pattern)
+  );
+}
 
 /**
  * Etherscan provider with API key cascade
@@ -125,6 +147,7 @@ export class EtherscanProvider implements EthereumProvider {
               normalizedMessage.includes('invalid ethereum transaction hash')
             );
           },
+          shouldContinueToNextKey: (error) => shouldContinueEtherscanKeyRotation(error),
           onAttemptFailure: (error, context) => {
             secureWarn(
               `[${this.name}] Key ${context.keyIndex + 1} failed (${error.message}), trying next key`

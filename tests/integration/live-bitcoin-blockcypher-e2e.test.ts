@@ -133,9 +133,11 @@ describeLive('Live BTC BlockCypher E2E (Oracle + ZK)', () => {
 
   const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
   const originalOraclePublicKey = process.env['ORACLE_PUBLIC_KEY'];
+  const originalBitcoinConsensusMode = process.env['ORACLE_BTC_CONSENSUS_MODE'];
 
   beforeAll(() => {
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
+    process.env['ORACLE_BTC_CONSENSUS_MODE'] = 'strict';
     delete process.env['ORACLE_PUBLIC_KEY'];
 
     if (!hasBlockCypherTokensConfigured()) {
@@ -156,6 +158,12 @@ describeLive('Live BTC BlockCypher E2E (Oracle + ZK)', () => {
       delete process.env['ORACLE_PUBLIC_KEY'];
     } else {
       process.env['ORACLE_PUBLIC_KEY'] = originalOraclePublicKey;
+    }
+
+    if (originalBitcoinConsensusMode === undefined) {
+      delete process.env['ORACLE_BTC_CONSENSUS_MODE'];
+    } else {
+      process.env['ORACLE_BTC_CONSENSUS_MODE'] = originalBitcoinConsensusMode;
     }
 
     __disposeOracleFetchRouteForTests();

@@ -316,4 +316,25 @@ describe('EtherscanProvider', () => {
     expect(metrics?.keys[1]?.failures).toBe(1);
     expect(metrics?.keys[2]?.successes).toBe(1);
   });
+
+  it('does not rotate keys for key-agnostic upstream outages', async () => {
+    const provider = new EtherscanProvider({
+      keys: ['key-1', 'key-2'],
+      rotationStrategy: 'round-robin',
+      shuffleOnStartup: false,
+    });
+    const txHash = `0x${'f'.repeat(64)}`;
+
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+    } as Response);
+
+    await expect(provider.fetchTransaction(txHash)).rejects.toThrow(
+      'HTTP 503: Service Unavailable'
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toContain('apikey=key-1');
+  });
 });

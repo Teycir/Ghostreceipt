@@ -60,7 +60,7 @@ export function formatAtomicAmount(
   if (!amount || Number.isNaN(n) || n <= 0) return null;
 
   const human = n / config.divisor;
-  const formatted = human.toLocaleString(undefined, { maximumFractionDigits: 8 });
+  const formatted = human.toLocaleString('en-US', { maximumFractionDigits: 8 });
   return `≈ ${formatted} ${config.symbol}`;
 }
 
@@ -80,7 +80,7 @@ export function toHumanAmount(
   if (!amount || Number.isNaN(n) || n <= 0) return amount;
 
   const human = n / config.divisor;
-  const formatted = human.toLocaleString(undefined, { maximumFractionDigits: 8 });
+  const formatted = human.toLocaleString('en-US', { maximumFractionDigits: 8 });
   return `${formatted} ${config.symbol}`;
 }
 
@@ -105,5 +105,5 @@ export function amountPlaceholder(
   const config = resolveChainConfig(chain, ethereumAsset);
   if (!config) return 'Enter amount';
   const exampleAtomic = config.divisor;
-  return `e.g. ${exampleAtomic.toLocaleString()} (= 1 ${config.symbol})`;
+  return `e.g. ${exampleAtomic.toLocaleString('en-US')} (= 1 ${config.symbol})`;
 }

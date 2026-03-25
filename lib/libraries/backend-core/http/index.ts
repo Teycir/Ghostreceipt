@@ -2,6 +2,7 @@ export {
   __resetFetchTxCanonicalCacheForTests,
   createProviderCascadeForChain,
   fetchAndSignOracleTransaction,
+  loadBlockCypherKeysFromEnv,
   loadEtherscanKeysFromEnv,
   loadHeliusKeysFromEnv,
   mapFetchTxErrorToResponse,

@@ -20,6 +20,7 @@ interface ReceiptSuccessProps {
   ethereumAsset:  EthereumAsset;
   claimedAmount:  string;
   minDate:        string;
+  oracleValidationLabel?: string;
   receiptLabel?:  string;
   receiptCategory?: string;
   timings?:       GeneratorTimingTelemetry;
@@ -47,6 +48,7 @@ export function ReceiptSuccess({
   ethereumAsset,
   claimedAmount,
   minDate,
+  oracleValidationLabel,
   receiptLabel,
   receiptCategory,
   timings,
@@ -84,6 +86,9 @@ export function ReceiptSuccess({
     { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.15s' },
     { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.25s' },
     { label: 'Min Date', value: minDate,                                                  delay: '0.35s' },
+    ...(oracleValidationLabel
+      ? [{ label: 'Validation', value: oracleValidationLabel, delay: '0.45s' }]
+      : []),
     ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.45s' }] : []),
     ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.55s' }] : []),
   ] as const;
