@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-25 - Static Export Cannot Use Next Middleware Or next.config headers()
+- When `output: 'export'` is enabled, remove `middleware.ts`; it cannot execute in static-export mode and will emit build/runtime warnings.
+- Do not rely on `next.config.*` `headers()` for static export; serve security headers from hosting/static config (for this project: `public/_headers`).
+- Keep static-export warning cleanup as part of CI hardening so failures are not hidden behind unrelated TypeScript errors.
+
 ## 2026-03-25 - Client Failover Paths Must Emit Warning Signals Before Backup Retry
 - Do not silently continue to backup endpoint in client failover helpers; emit at least a warning with endpoint and failure reason/status.
 - Cover both failover triggers in tests: response-based failover (`404/405/5xx`) and thrown transport errors.

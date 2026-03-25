@@ -3,14 +3,32 @@ export interface JsonInputSanitizationOptions {
   maxNodes: number;
 }
 
-const UNSAFE_CONTROL_CHAR_REGEX = /[\u0000-\u001F\u007F]/u;
 const INVISIBLE_UNICODE_REGEX = /[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/u;
 const DANGEROUS_JSON_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function containsUnsafeControlChars(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    const isAsciiControl = (code >= 0x00 && code <= 0x1f) || code === 0x7f;
+    if (!isAsciiControl) {
+      continue;
+    }
+
+    // Allow tab/newline/carriage return for string values and keys.
+    if (code === 0x09 || code === 0x0a || code === 0x0d) {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
 
 function sanitizeStringValue(value: string): string {
   const sanitized = value.normalize('NFKC').trim();
 
-  if (UNSAFE_CONTROL_CHAR_REGEX.test(sanitized)) {
+  if (containsUnsafeControlChars(sanitized)) {
     throw new Error('JSON string contains unsafe control characters');
   }
 
@@ -30,7 +48,7 @@ function validateObjectKey(key: string): void {
     throw new Error('JSON key contains leading or trailing whitespace');
   }
 
-  if (UNSAFE_CONTROL_CHAR_REGEX.test(key)) {
+  if (containsUnsafeControlChars(key)) {
     throw new Error('JSON key contains unsafe control characters');
   }
 
@@ -78,11 +96,12 @@ export function sanitizeAndValidateJsonInput(
     }
 
     if (Array.isArray(current.value)) {
-      current.value.forEach((item, index) => {
+      const currentArray = current.value;
+      currentArray.forEach((item, index) => {
         stack.push({
           depth: current.depth + 1,
           setValue(nextValue: unknown): void {
-            current.value[index] = nextValue;
+            currentArray[index] = nextValue;
           },
           value: item,
         });
@@ -90,12 +109,13 @@ export function sanitizeAndValidateJsonInput(
       continue;
     }
 
-    Object.entries(current.value).forEach(([key, entryValue]) => {
+    const currentObject = current.value as Record<string, unknown>;
+    Object.entries(currentObject).forEach(([key, entryValue]) => {
       validateObjectKey(key);
       stack.push({
         depth: current.depth + 1,
         setValue(nextValue: unknown): void {
-          (current.value as Record<string, unknown>)[key] = nextValue;
+          currentObject[key] = nextValue;
         },
         value: entryValue,
       });
