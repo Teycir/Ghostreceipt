@@ -180,6 +180,8 @@ This project currently operates a centralized oracle signing key for canonical t
 
 ### Verification Endpoint Usage
 - The verifier path checks oracle-authenticated payloads via `POST /api/oracle/verify-signature`.
+- Client routing is primary-first (`/api/oracle/*`) with optional edge backup (`NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`) only on transport/platform failures.
+- Do not use backup retries for normal `4xx` responses (including `429`) to avoid policy bypass.
 - Oracle signatures are Ed25519 (`64` bytes, hex-encoded as `128` chars).
 - Ensure `oraclePubKeyId` in generated payloads maps to the active key ID after rotation.
 - Keep route-level rate limiting enabled for this endpoint to reduce probing/oracle abuse risk.
@@ -193,6 +195,10 @@ This project currently operates a centralized oracle signing key for canonical t
   - Cross-instance requests can bypass per-instance counters.
 - Production guidance:
   - Cloudflare target: keep edge route wall active now, then move in-app coordination to Durable Objects or KV-backed state.
+  - In-app rate-limit backend mode:
+    - `ORACLE_RATE_LIMIT_BACKEND=legacy` (default, safest baseline),
+    - `ORACLE_RATE_LIMIT_BACKEND=durable_prefer` (technical durable failures fallback to legacy),
+    - `ORACLE_RATE_LIMIT_BACKEND=durable_strict` (no fallback on technical failure).
   - Node target: use a shared external store (for example Redis) for distributed rate/replay controls.
 
 ### CSP Trade-offs

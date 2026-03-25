@@ -13,9 +13,10 @@
 
 ### Build Settings
 - **Build command**: `npm run build`
-- **Build output directory**: `.next`
+- **Build output directory**: `out`
 - **Root directory**: `/` (project root)
 - **Node version**: `20.9.0`
+- **Wrangler config**: root `wrangler.toml` with `pages_build_output_dir = "out"` and `compatibility_flags = ["nodejs_compat"]`
 
 ## Environment Variables
 
@@ -26,6 +27,9 @@ Set these in Cloudflare Pages dashboard:
 ```
 NEXT_PUBLIC_APP_URL=https://ghostreceipt.pages.dev
 NEXT_PUBLIC_APP_NAME=GhostReceipt
+# Optional edge backup base used by client failover logic.
+# Leave empty to disable backup failover.
+NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE=
 ```
 
 ### Production Environment Variables
@@ -40,6 +44,16 @@ HELIUS_API_KEY_2=<your_fallback_helius_key_2>
 TRUST_PROXY_HEADERS=true
 LOG_LEVEL=info
 DEBUG=false
+ORACLE_RATE_LIMIT_BACKEND=legacy
+```
+
+Optional (only for durable backend rollout tests):
+```
+ORACLE_RATE_LIMIT_BACKEND=durable_prefer
+ORACLE_RATE_LIMIT_DURABLE_URL=<durable_limiter_endpoint>
+ORACLE_RATE_LIMIT_DURABLE_TIMEOUT_MS=120
+ORACLE_RATE_LIMIT_DURABLE_BREAKER_FAILS=5
+ORACLE_RATE_LIMIT_DURABLE_BREAKER_COOLDOWN_MS=30000
 ```
 
 ### Preview Environment Variables (Optional)
@@ -64,7 +78,7 @@ DEBUG=true
 5. Configure build settings:
    - **Production branch**: `main`
    - **Build command**: `npm run build`
-   - **Build output directory**: `.next`
+   - **Build output directory**: `out`
    - **Root directory**: `/`
 
 ### 2. Set Environment Variables
@@ -86,10 +100,16 @@ DEBUG=true
 
 ## Cloudflare Pages Functions (API Routes)
 
-Next.js API routes in `app/api/` are automatically deployed as Cloudflare Pages Functions.
+With static export, oracle API endpoints are served from `functions/api/oracle/*` wrappers that delegate to canonical handlers in `app/api/oracle/*`.
+
+Client runtime policy remains primary-first:
+- Primary: `/api/oracle/*`
+- Optional backup: `${NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE}/*` (only on transport/platform failures)
 
 ### Supported Routes
 - `/api/oracle/fetch-tx` - Oracle transaction fetching endpoint
+- `/api/oracle/verify-signature` - Oracle signature verification endpoint
+- `/api/oracle/check-nullifier` - Nullifier conflict detection endpoint
 
 ### Function Configuration
 Functions run in Cloudflare's edge network with:
@@ -123,9 +143,11 @@ npx wrangler pages deployment tail
 - Check variable names match exactly (case-sensitive)
 
 ### API Routes Not Working
-- Verify routes are in `app/api/` directory
+- Verify wrappers exist in `functions/api/oracle/`
 - Check function logs in deployment details
 - Ensure environment variables are set
+- Ensure `wrangler.toml` includes `compatibility_flags = ["nodejs_compat"]` for function bundling
+- If using backup failover, ensure `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` points to a reachable deployment exposing `/fetch-tx`, `/verify-signature`, and `/check-nullifier`
 
 ### Static Assets Not Loading
 - Verify `public/` directory structure

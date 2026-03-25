@@ -15,6 +15,7 @@
 - [ ] Cloudflare account created
 - [ ] Wrangler CLI authenticated (`npx wrangler login`)
 - [ ] Project name decided (default: `ghostreceipt`)
+- [ ] Decide backup edge oracle base (`NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`) or keep disabled
 
 ## Initial Deployment
 
@@ -94,6 +95,10 @@ Set in: Repository → Settings → Secrets and variables → Actions
 - [ ] QR code generation works
 - [ ] Share links work
 - [ ] Static docs pages load
+- [ ] Primary oracle routes (`/api/oracle/*`) respond correctly
+- [ ] If backup enabled: edge backup base responds with matching contract
+- [ ] If backup enabled: simulated primary `503` fails over to backup
+- [ ] Verify primary `429` does not trigger backup failover
 
 ### Monitoring Setup
 - [ ] Cloudflare Analytics enabled
@@ -135,6 +140,7 @@ npx wrangler pages deployment rollback <DEPLOYMENT_ID> --project-name=ghostrecei
 
 - [Cloudflare Deployment Guide](./CLOUDFLARE_DEPLOYMENT.md)
 - [Cloudflare Edge Rate-Limit Rules](./runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
+- [Oracle Fail-Safe Architecture](./runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
 - [Security Runbook](./runbooks/SECURITY.md)
 - [Threat Model](./runbooks/THREAT_MODEL.md)
 - [Release Readiness](./project/RELEASE_READINESS_CHECKLIST.md)

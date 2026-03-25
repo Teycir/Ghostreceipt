@@ -31,7 +31,7 @@
       <h2>Step 2: Generate Proof</h2>
       <p>Click <code>Generate Receipt</code>. GhostReceipt will:</p>
       <ol>
-        <li>Fetch oracle-signed canonical chain data for the transaction hash.</li>
+        <li>Call the primary oracle route (<code>/api/oracle/*</code>) and fail over to configured edge backup only when the primary route is unavailable.</li>
         <li>Attempt peer-source consensus validation (mode-dependent) before signing.</li>
         <li>Build a local witness from your claim and signed payload.</li>
         <li>Generate the zero-knowledge proof in your browser.</li>

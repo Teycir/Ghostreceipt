@@ -71,7 +71,8 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 ### Spike-Safety Follow-up (P1, Free-Tier Guardrail)
 
 - [x] `R-P1-05` Add Cloudflare edge rate-limit wall for oracle routes (`/api/oracle/fetch-tx`, `/api/oracle/verify-signature`) with rollback-safe operational runbook.
-- [ ] `R-P1-06` Evaluate Durable Object global rate-limit coordination locally before production rollout (deferred pending confirmation).
+- [x] `R-P1-06` Implement stability-first dual backend modes for in-app rate limiting (`legacy`, `durable_prefer`, `durable_strict`) with technical-failure fallback policy.
+- [ ] `R-P1-07` Wire a production Durable Object endpoint and complete staged local/staging confirmation before production promotion.
 
 `R-P1-06` production policy (stability-first):
 - Default remains legacy in-app limiter until Durable Object path passes local and staging soak checks.

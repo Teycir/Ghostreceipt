@@ -116,6 +116,7 @@ Generate a cryptographic proof that's mathematically verifiable but reveals only
 
 **Technical Features (for developers):**
 - Zero-knowledge proofs generated in your browser
+- Client-first oracle transport with optional edge backup failover
 - Multi-provider data fetching with automatic backup
 - Dual-source consensus validation for extra security
 - Open source and self-hostable
@@ -144,7 +145,10 @@ Anyone can verify it's real
 ```mermaid
 flowchart LR
     U[User] --> G[Generator UI]
-    G --> O[Oracle API /fetch-tx]
+    G --> O1[Primary Oracle API /api/oracle/*]
+    O1 -->|Unavailable| O2[Edge Backup Oracle Base]
+    O1 --> O[Oracle Handler]
+    O2 --> O
     O --> P1[Primary Provider Cascade]
     O --> P2[Consensus Peer Provider]
     P1 --> N[Canonical Normalization]
@@ -166,13 +170,21 @@ flowchart LR
 sequenceDiagram
     participant User
     participant UI as Generator UI
-    participant Oracle as Oracle API
+    participant OraclePrimary as Oracle API (primary)
+    participant OracleBackup as Edge Oracle (backup)
+    participant Oracle as Oracle Handler
     participant Providers as Chain Providers
     participant ZK as Browser Prover
     participant Verify as Verify Page
 
     User->>UI: Enter chain + tx hash + claim
-    UI->>Oracle: POST /api/oracle/fetch-tx
+    UI->>OraclePrimary: POST /api/oracle/fetch-tx
+    alt Primary unavailable (network/404/405/5xx)
+      UI->>OracleBackup: POST <NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE>/fetch-tx
+      OracleBackup->>Oracle: Delegate request
+    else Primary available
+      OraclePrimary->>Oracle: Handle request
+    end
     Oracle->>Providers: Fetch primary canonical tx data
     Providers-->>Oracle: Primary canonical fields
     alt Consensus mode = strict/best_effort
@@ -201,6 +213,12 @@ sequenceDiagram
 ## API Model (Technical)
 
 GhostReceipt uses multiple data sources to ensure reliability:
+
+**Runtime route policy (fail-safe):**
+- Primary route: `/api/oracle/*`
+- Optional backup route: `<NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE>/*` (recommended edge deployment)
+- Backup is only used for transport/unavailable failures (network errors, `404/405`, or `5xx`)
+- Backup is intentionally not used for normal client errors (`4xx`, including `429`) to avoid bypassing protections
 
 **1. Public blockchain APIs (default, no keys needed):**
 - Bitcoin: BlockCypher (with API token rotation) + mempool.space fallback
@@ -329,6 +347,7 @@ Open `http://localhost:3000` in your browser.
 - Add your own API keys for higher rate limits
 - Configure consensus validation modes
 - Customize provider endpoints
+- Configure optional client failover backup route with `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`
 
 See `.env.example` for all available options.
 
@@ -366,6 +385,7 @@ See `.env.example` for all available options.
 - [Deployment guide](./docs/DEPLOYMENT_READY.md)
 - [Quick deploy](./docs/runbooks/QUICK_DEPLOY.md)
 - [Cloudflare edge rate-limit runbook](./docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
+- [Oracle fail-safe architecture runbook](./docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
 - [Security runbook](./docs/runbooks/SECURITY.md)
 - [Changelog](./CHANGELOG.md)
 

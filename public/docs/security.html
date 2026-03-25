@@ -21,6 +21,7 @@
       <h2>Architecture</h2>
       <ul>
         <li><strong>Client-side proof generation:</strong> All sensitive data stays in your browser</li>
+        <li><strong>Fail-safe oracle routing:</strong> Client uses primary <code>/api/oracle/*</code> and optional edge backup only for transport/platform outages</li>
         <li><strong>Oracle-signed data:</strong> Canonical transaction data is cryptographically signed by the oracle</li>
         <li><strong>Consensus modes:</strong> <code>best_effort</code>, <code>strict</code>, and <code>off</code> control peer-source validation behavior</li>
         <li><strong>Passive validation labels:</strong> Signature payloads include validation strength metadata with no added user action</li>
@@ -72,6 +73,7 @@
       <h2>Data Flow</h2>
       <ol>
         <li>User enters transaction hash and claim parameters</li>
+        <li>Client calls primary oracle route and only retries the configured edge backup route for unavailability failures</li>
         <li>Oracle fetches canonical blockchain data from the primary provider cascade</li>
         <li>Oracle attempts peer consensus validation (mode-dependent)</li>
         <li>Oracle signs canonical commitment data with Ed25519 and emits validation label metadata (<code>consensus_verified</code>, <code>single_source_fallback</code>, or <code>single_source_only</code>)</li>

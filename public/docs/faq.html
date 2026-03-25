@@ -63,6 +63,11 @@
       </div>
 
       <div class="faq-item">
+        <h2>How does fail-safe routing work?</h2>
+        <p>GhostReceipt calls <code>/api/oracle/*</code> first. If that route is unavailable (network failure, <code>404/405</code>, or <code>5xx</code>), it can retry against an optional edge backup base configured by the operator. Normal <code>4xx</code> responses (including rate limits) are returned directly and do not trigger backup retries.</p>
+      </div>
+
+      <div class="faq-item">
         <h2>What does a verified receipt prove today?</h2>
         <p>It proves your claim satisfies the circuit against oracle-signed canonical transaction facts. It does not remove trust in the current single oracle operator and upstream data providers.</p>
       </div>

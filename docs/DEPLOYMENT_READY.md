@@ -63,6 +63,7 @@ Your project is ready for production deployment to `ghostreceipt.pages.dev`
    ```
    NEXT_PUBLIC_APP_URL=https://ghostreceipt.pages.dev
    NEXT_PUBLIC_APP_NAME=GhostReceipt
+   NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE=
    ORACLE_PRIVATE_KEY=<generate with: openssl rand -hex 32>
    ETHERSCAN_API_KEY=<your_primary_key>
    ETHERSCAN_API_KEY_2=<your_fallback_key>
@@ -109,6 +110,7 @@ You MUST set these in Cloudflare Pages dashboard after deployment:
 | `ETHERSCAN_API_KEY_2` | ✓ | Get from: https://etherscan.io/myapikey |
 | `ETHERSCAN_API_KEY_3` | ✓ | Get from: https://etherscan.io/myapikey |
 | `TRUST_PROXY_HEADERS` | ✓ | Set to: `true` |
+| `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` | - | Optional backup base (`https://.../api/oracle`) |
 | `LOG_LEVEL` | - | Set to: `info` |
 | `DEBUG` | - | Set to: `false` |
 
@@ -199,6 +201,7 @@ npm run build
 - Verify routes are in `app/api/` directory
 - Check function logs in deployment details
 - Ensure environment variables are set
+- If backup failover is enabled, confirm `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` points to a reachable deployment
 
 ### Static Files Not Loading
 - Check `public/` directory structure

@@ -8,6 +8,7 @@ This directory contains Cloudflare Pages Functions that replace Next.js API rout
 functions/
 └── api/
     └── oracle/
+        ├── check-nullifier.ts # POST /api/oracle/check-nullifier
         ├── fetch-tx.ts       # POST /api/oracle/fetch-tx
         └── verify-signature.ts # POST /api/oracle/verify-signature
 ```
@@ -15,8 +16,14 @@ functions/
 ## How It Works
 
 Cloudflare Pages automatically serves files in `/functions` as serverless functions:
+- `functions/api/oracle/check-nullifier.ts` → `/api/oracle/check-nullifier`
 - `functions/api/oracle/fetch-tx.ts` → `/api/oracle/fetch-tx`
 - `functions/api/oracle/verify-signature.ts` → `/api/oracle/verify-signature`
+
+Fail-safe policy:
+- Client primary path is `/api/oracle/*`.
+- Optional edge backup can be configured with `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`.
+- Backup is only attempted for transport/platform failures (`network`, `404/405`, `5xx`), not normal `4xx` responses.
 
 ## Environment Variables
 
@@ -32,13 +39,13 @@ export async function onRequest(context) {
 
 ## Migration Status
 
-⚠️ **TODO**: These are placeholder implementations. Need to:
+Current Pages functions implement production oracle behavior directly for static-export deployments:
+1. thin route entrypoints under `functions/api/oracle/*`,
+2. shared modular logic in `lib/libraries/backend-core/http/pages/*`,
+3. route-level in-memory rate limits and replay/nullifier guards,
+4. Cloudflare `context.env` hydration via process env compatibility.
 
-1. Import oracle logic from `/lib/oracle`
-2. Import provider logic from `/lib/providers`
-3. Handle Ed25519 signing (may need WASM or native crypto)
-4. Implement rate limiting with KV or Durable Objects
-5. Add proper error handling per error-handling.md rules
+The App Router handlers in `app/api/oracle/*` remain the source of truth for Next server mode, while the reusable modules in `lib/libraries/backend-core/http/pages/*` provide static-mode runtime parity for Cloudflare Pages and other edge projects.
 
 ## Local Development
 

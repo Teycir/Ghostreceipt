@@ -118,6 +118,8 @@ This starts a local server at `http://localhost:8787`
 
 Set in `wrangler.toml` under `[vars]`:
 - `ENVIRONMENT`: "development" | "staging" | "production"
+- Optional client failover target:
+  - Set `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` in the web app deployment to this worker's oracle base URL (`https://<worker-host>/api/oracle`) if this worker is used as edge backup.
 
 Set as secrets (via `wrangler secret put`):
 - `ORACLE_PRIVATE_KEY`: Oracle signing key

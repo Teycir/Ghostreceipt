@@ -88,6 +88,7 @@ echo "fallback_helius_3" | npx wrangler pages secret put HELIUS_API_KEY_3 --proj
 ```bash
 # Set via wrangler.toml [vars] section or dashboard
 # NEXT_PUBLIC_APP_URL - Production URL (e.g., https://ghostreceipt.pages.dev)
+# NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE - Optional edge backup base (e.g., https://ghostreceipt-edge-backup.pages.dev/api/oracle)
 # TRUST_PROXY_HEADERS - Set to "true" for Cloudflare
 ```
 
@@ -191,6 +192,7 @@ npx wrangler pages deployment rollback <DEPLOYMENT_ID> --project-name=ghostrecei
 - Cloudflare Pages doesn't support Next.js API routes in static export
 - Use Cloudflare Functions in `/functions` directory instead
 - Or deploy API separately as Cloudflare Worker
+- If using client failover, ensure `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` points to a deployment exposing the same oracle contract
 
 ### CSP Violations
 

@@ -42,6 +42,7 @@
    ```
    NEXT_PUBLIC_APP_URL=https://ghostreceipt.pages.dev
    NEXT_PUBLIC_APP_NAME=GhostReceipt
+   NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE=
    ORACLE_PRIVATE_KEY=<your_key>
    ETHERSCAN_API_KEY=<your_key>
    ETHERSCAN_API_KEY_2=<your_key>
@@ -98,6 +99,7 @@ Set these in Cloudflare Pages dashboard:
 | `ETHERSCAN_API_KEY` | ✓ | Primary Etherscan API key |
 | `ETHERSCAN_API_KEY_2` | ✓ | Fallback Etherscan API key |
 | `ETHERSCAN_API_KEY_3` | ✓ | Fallback Etherscan API key |
+| `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` | - | Optional edge backup oracle base (`.../api/oracle`) |
 | `TRUST_PROXY_HEADERS` | ✓ | Set to `true` for Cloudflare |
 | `LOG_LEVEL` | - | `info` (production) or `debug` (preview) |
 | `DEBUG` | - | `false` (production) or `true` (preview) |
@@ -156,6 +158,7 @@ npm run build
 ```bash
 # Ensure routes are in app/api/ directory
 # Check function logs in deployment details
+# If using edge backup failover, verify NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE is reachable
 ```
 
 ## 📚 Full Documentation
