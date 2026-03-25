@@ -51,7 +51,7 @@ describe('Witness Builder', () => {
       });
     });
 
-    it('should reject unsupported chains for current circuit', () => {
+    it('should support solana witnesses with chain id 2', () => {
       const userClaim: UserClaim = {
         claimedAmount: '1',
         minDate: 1,
@@ -60,11 +60,22 @@ describe('Witness Builder', () => {
       const solanaPayload = {
         ...mockOraclePayload,
         chain: 'solana' as const,
+        txHash: '5JrFL9NNVNLV1PvnUbDd9BBCFZBgYACJSZHrKabKd21WR6DppEepK68CNFrM3Hi8FGHeKBXpGVVkUKeQhuvMXGJ1',
       };
 
-      expect(() => buildWitness(solanaPayload, userClaim)).toThrow(
-        'Unsupported chain for current receipt circuit'
-      );
+      const witness = buildWitness(solanaPayload, userClaim);
+      expect(witness.chainId).toBe('2');
+      expect(witness.txHash).toHaveLength(8);
+      expect(witness.txHash).toEqual([
+        '2365054211',
+        '1008636338',
+        '3696310958',
+        '360024852',
+        '1322324351',
+        '3811001355',
+        '2485985732',
+        '3081650654',
+      ]);
     });
   });
 
@@ -157,7 +168,7 @@ describe('Witness Builder', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContainEqual(
-        expect.stringContaining('Chain ID must be 0 (bitcoin) or 1 (ethereum)')
+        expect.stringContaining('Chain ID must be 0 (bitcoin), 1 (ethereum), or 2 (solana)')
       );
     });
   });

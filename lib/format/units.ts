@@ -9,11 +9,12 @@ import type { Chain, EthereumAsset } from '@/lib/generator/types';
 const SATS_PER_BTC = 1e8;
 const WEI_PER_ETH = 1e18;
 const BASE_UNITS_PER_USDC = 1e6;
+const LAMPORTS_PER_SOL = 1e9;
 
-const CHAIN_CONFIG: Record<Chain, { divisor: number; symbol: string; atomicUnit: string } | null> = {
+const CHAIN_CONFIG: Record<Chain, { divisor: number; symbol: string; atomicUnit: string }> = {
   bitcoin:  { divisor: SATS_PER_BTC, symbol: 'BTC',  atomicUnit: 'satoshis' },
   ethereum: { divisor: WEI_PER_ETH,  symbol: 'ETH',  atomicUnit: 'wei'      },
-  solana:   null, // Solana support planned; no conversion implemented yet
+  solana:   { divisor: LAMPORTS_PER_SOL, symbol: 'SOL', atomicUnit: 'lamports' },
 };
 
 function resolveEthereumConfig(ethereumAsset: EthereumAsset): { divisor: number; symbol: string; atomicUnit: string } {

@@ -44,6 +44,26 @@ describe('Generator Form Integration', () => {
         expect(Number.isNaN(Number(chunk))).toBe(false);
       });
     });
+
+    it('should build Solana witness chunks from base58 signature', () => {
+      const solanaPayload: OraclePayload = {
+        ...mockOraclePayload,
+        chain: 'solana',
+        txHash: '5JrFL9NNVNLV1PvnUbDd9BBCFZBgYACJSZHrKabKd21WR6DppEepK68CNFrM3Hi8FGHeKBXpGVVkUKeQhuvMXGJ1',
+      };
+
+      const witness = buildWitness(solanaPayload, {
+        claimedAmount: '1000',
+        minDate: 1000000,
+      });
+
+      expect(witness.chainId).toBe('2');
+      expect(witness.txHash).toHaveLength(8);
+      witness.txHash.forEach(chunk => {
+        expect(typeof chunk).toBe('string');
+        expect(Number.isNaN(Number(chunk))).toBe(false);
+      });
+    });
   });
 
   describe('validateWitness', () => {

@@ -52,7 +52,7 @@ The receipt circuit enforces:
 
 1. **Value Constraint**: `realValue >= claimedAmount`
 2. **Timestamp Constraint**: `realTimestamp >= minDate`
-3. **Chain Constraint**: `chainId` must be boolean (`0` bitcoin, `1` ethereum)
+3. **Chain Constraint**: `chainId` must be one of `0` (bitcoin), `1` (ethereum), `2` (solana)
 4. **Oracle Commitment Constraint**:
    `oracleCommitment == Poseidon(realValue, realTimestamp, Poseidon(txHash[8]), chainId)`
 
@@ -127,7 +127,7 @@ Validate:
 - `realValue >= claimedAmount`
 - `realTimestamp >= minDate`
 - `oracleCommitment > 0`
-- `chainId` is `0` or `1`
+- `chainId` is `0`, `1`, or `2`
 - `txHash` has exactly 8 chunks
 
 ## Production Considerations

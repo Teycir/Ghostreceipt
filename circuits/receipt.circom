@@ -31,7 +31,7 @@ template Receipt() {
     signal input realValue;
     signal input realTimestamp;
     signal input txHash[8]; // 256-bit hash as 8x32-bit chunks
-    signal input chainId; // 0 = bitcoin, 1 = ethereum
+    signal input chainId; // 0 = bitcoin, 1 = ethereum, 2 = solana
     
     // Constraint 1: realValue >= claimedAmount
     component valueCheck = GreaterEqThan(252); // 252-bit comparison
@@ -45,8 +45,20 @@ template Receipt() {
     timestampCheck.in[1] <== minDate;
     timestampCheck.out === 1;
     
-    // Constraint 3: Chain ID must be boolean (0/1)
-    chainId * (chainId - 1) === 0;
+    // Constraint 3: Chain ID must be one of {0,1,2}
+    component chainIsBitcoin = IsEqual();
+    chainIsBitcoin.in[0] <== chainId;
+    chainIsBitcoin.in[1] <== 0;
+
+    component chainIsEthereum = IsEqual();
+    chainIsEthereum.in[0] <== chainId;
+    chainIsEthereum.in[1] <== 1;
+
+    component chainIsSolana = IsEqual();
+    chainIsSolana.in[0] <== chainId;
+    chainIsSolana.in[1] <== 2;
+
+    chainIsBitcoin.out + chainIsEthereum.out + chainIsSolana.out === 1;
 
     // Constraint 4: Oracle commitment must match private tx facts.
     component txHashPoseidon = Poseidon(8);

@@ -4,13 +4,13 @@ This record is completed from the current local artifact set.
 
 ## Metadata
 
-- Date (UTC): `2026-03-22T00:36:50Z`
+- Date (UTC): `2026-03-25T01:15:00Z`
 - Operator: `teycir`
 - Environment: local workstation (`<repo-root>/GhostReceipt`)
 - Circuit file: `circuits/receipt.circom`
-- Circuit git commit: `524e27eef4d87aec19890d4d47a3c43979a4dde4`
+- Circuit git commit: `f3b541101d2a839157bf8ab26b07aff41248634e`
 - Circom version: `2.2.3`
-- snarkjs version: `0.7.6`
+- snarkjs version: `0.7.6` (`snarkjs@0.7.6`)
 
 ## Circuit Inputs/Shape
 
@@ -19,7 +19,7 @@ This record is completed from the current local artifact set.
 - Constraint summary:
   - `realValue >= claimedAmount`
   - `realTimestamp >= minDate`
-  - `chainId` boolean (`0|1`)
+  - `chainId` enum (`0|1|2`)
   - `oracleCommitment == Poseidon(realValue, realTimestamp, Poseidon(txHash[8]), chainId)`
 
 ## Phase 1 (Powers of Tau)
@@ -40,9 +40,9 @@ This record is completed from the current local artifact set.
 - Initial zkey: `public/zk/receipt_0000.zkey` (intermediate, removed after contribution)
 - Final zkey: `public/zk/receipt_final.zkey`
 - Final zkey SHA-256:
-  - `17dd9b629f0e36e559ec881c17130087d6cb246b06c70b67c6c80969d462766b`
+  - `a25b914a24b0350a232719d2673c01c8eced187f260154436cc8366fb17a68fe`
 - Verification key SHA-256:
-  - `badfb18626058cd9878bf9a9bc185340eac98427807de3c7749b093e1f4496c8`
+  - `070e1417683d844eaf6a65aef9436a8d4292f26bc10279a276fcd2fbd6547d09`
 - Verification command:
   - `snarkjs zkey verify public/zk/receipt.r1cs public/zk/pot14_final.ptau public/zk/receipt_final.zkey`
 - Verification result:
@@ -51,13 +51,13 @@ This record is completed from the current local artifact set.
 ## Output Artifacts
 
 - `public/zk/receipt.r1cs`
-  - `7683535cc05491854fb1be32055d7540318e2f141c3c3282c9e5e4f40d301b63`
+  - `3e996688b8a6e5803e273c626e6c69db5db0a87491e3be679f9cf0ba38cbeb4e`
 - `public/zk/receipt_js/receipt.wasm`
-  - `e82ffea4a215866540949e30b4b602684267a06b6a3985dd35f1a4102571176a`
+  - `6fd786dc9211b3e2f7c1889653b9620b19f90d030d49704adc2b902176acf97b`
 - `public/zk/receipt_final.zkey`
-  - `17dd9b629f0e36e559ec881c17130087d6cb246b06c70b67c6c80969d462766b`
+  - `a25b914a24b0350a232719d2673c01c8eced187f260154436cc8366fb17a68fe`
 - `public/zk/verification_key.json`
-  - `badfb18626058cd9878bf9a9bc185340eac98427807de3c7749b093e1f4496c8`
+  - `070e1417683d844eaf6a65aef9436a8d4292f26bc10279a276fcd2fbd6547d09`
 - `public/zk/Verifier.sol`
   - Not present in current tracked artifact set (optional output).
 

@@ -1,5 +1,20 @@
 # Lessons Learned
 
+## 2026-03-25 - Cloud Secrets And Local Live Tests Need Separate Env Hydration
+- Cloudflare Pages secrets do not automatically populate local Jest `process.env`; local live integration runs must source local env values explicitly.
+- In `NODE_ENV=test`, Next excludes `.env.local` by design, so live integration tests should include an explicit `.env.local` loader helper for local runs.
+- Keep secret verification output redacted when confirming key presence in tooling/logs.
+
+## 2026-03-25 - Real-Data Chain Requests Need Dedicated Per-Chain E2E Tests
+- When the user asks for real-data end-to-end validation on a specific chain (for example Solana), add a dedicated chain-specific live integration test rather than relying only on multi-chain umbrella suites.
+- Keep the live test explicitly gated by `LIVE_INTEGRATION=1`, require provider keys up front, and fail fast with a clear missing-key error.
+- Ensure the live path asserts full pipeline integrity: fetch/signature, commitment recomputation, witness validity, Groth16 prove/verify, and signature verification route.
+
+## 2026-03-25 - Backend-Ready Chains Must Not Stay UI-Disabled
+- If backend fetch/sign support is already shipped for a chain (for example Solana via Helius), do not leave the chain marked "coming soon" in the primary generator dropdown.
+- Before marking a chain operational, verify the full path: UI validation, witness mapping, circuit `chainId` constraint, and regenerated proving artifacts.
+- Keep chain-ID semantics synchronized across oracle commitment logic, witness builder, and circuit constraints to avoid proof-generation mismatches.
+
 ## 2026-03-25 - New Option Discovery Must Be In The Primary Dropdown
 - If a user expects a new option in an existing dropdown, avoid hiding it behind a second conditional selector on first rollout.
 - Prefer a single explicit primary dropdown entry (for example `Ethereum (USDC)`) when feature discoverability is the user's immediate goal.

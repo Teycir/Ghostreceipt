@@ -10,11 +10,15 @@ import {
 import { SuccessResponseSchema } from '@/lib/validation/schemas';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { buildWitness, validateWitness } from '@ghostreceipt/zk-core/witness';
+import { loadEnvLocalForLiveTests } from './helpers/load-env-local';
 import { groth16 } from 'snarkjs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const describeLive = process.env['LIVE_INTEGRATION'] === '1' ? describe : describe.skip;
+
+loadEnvLocalForLiveTests();
+
 type LiveChain = 'bitcoin' | 'ethereum' | 'solana';
 
 const EXA_REAL_TX_FIXTURES: Record<
@@ -393,7 +397,7 @@ describeLive('Live E2E Oracle Flow (BTC + ETH + SOL)', () => {
     await runFlowAcrossCandidates('ethereum', ethTxCandidates, { requireZkProof: true });
   });
 
-  it('completes the live Solana oracle flow using Exa-sourced transaction data', async () => {
-    await runFlowAcrossCandidates('solana', solTxCandidates, { requireZkProof: false });
+  it('completes the full live Solana oracle flow using Exa-sourced transaction data', async () => {
+    await runFlowAcrossCandidates('solana', solTxCandidates, { requireZkProof: true });
   });
 });

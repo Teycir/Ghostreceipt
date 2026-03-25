@@ -36,6 +36,8 @@ function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
     errors.txHash = 'Invalid Bitcoin transaction hash (64 hex characters)';
   } else if (values.chain === 'ethereum' && !/^0x[a-f0-9]{64}$/i.test(values.txHash)) {
     errors.txHash = 'Invalid Ethereum transaction hash (0x + 64 hex characters)';
+  } else if (values.chain === 'solana' && !/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(values.txHash)) {
+    errors.txHash = 'Invalid Solana transaction signature (base58, 64-88 chars)';
   }
 
   if (!values.claimedAmount.trim()) {

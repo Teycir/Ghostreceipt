@@ -149,3 +149,55 @@ Add full live integration coverage that exercises real BTC/ETH/Solana transactio
     - `npm run typecheck` pass
     - `npm run test -- tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/integration/live-oracle-flows.test.ts tests/integration/stress-oracle-volume.test.ts` pass (`live`/`stress` suites skipped without env flags)
     - `LIVE_INTEGRATION=1 npm run test -- tests/integration/live-oracle-flows.test.ts` passes with real BTC/ETH/SOL API data (`mempool.space`, `etherscan`, `helius`) when keys are provided.
+
+## Objective (Solana Proof Path Operational)
+
+Make Solana fully operational in the proof generation path (not only oracle fetch/sign), including generator UX enablement, witness/circuit compatibility, artifact regeneration, and validation updates.
+
+## Plan
+
+- [x] Enable Solana selection in generator chain dropdown and apply client-side Solana signature validation/placeholder behavior.
+- [x] Extend witness builder + witness validation to support Solana (`chainId = 2`) with tx-hash chunk derivation aligned to oracle commitment semantics.
+- [x] Update `circuits/receipt.circom` chain constraint to accept `0|1|2` and regenerate zk artifacts (`wasm`, `zkey`, `verification_key`).
+- [x] Update tests/docs/artifact versioning and run typecheck + targeted zk/generator tests.
+
+## Review (Solana Proof Path Operational)
+
+- Status: Completed
+- Notes:
+  - Enabled `Solana (SOL)` in the primary chain dropdown and added client-side base58 signature validation + placeholder messaging.
+  - Witness generation now supports Solana with `chainId=2` and deterministic `txHash[8]` chunk derivation from `sha256(base58Decode(signature))` to match oracle commitment semantics.
+  - Circuit chain constraint now accepts `0|1|2` via quadratic-safe `IsEqual` selector checks.
+  - Regenerated ZK artifacts in `public/zk` (`receipt.wasm`, `receipt_final.zkey`, `verification_key.json`, `Verifier.sol`).
+  - Updated runbooks/self-review/provenance notes and bumped `NEXT_PUBLIC_ZK_ARTIFACT_VERSION` default stamp to `2026-03-25`.
+  - Validation:
+    - `npm run compile:circuit` pass
+    - `npm run typecheck` pass
+    - `npm run test -- tests/unit/zk/witness.test.ts tests/unit/generator/witness-integration.test.ts tests/unit/format/units.test.ts tests/integration/proof-generation.test.ts` pass
+    - `npm run test -- tests/unit/zk/oracle-commitment.test.ts tests/unit/zk/prover-runtime.test.ts` pass
+
+## Objective (Live Solana E2E Integration Coverage)
+
+Add a dedicated real-data end-to-end Solana integration test that validates oracle fetch/signature + commitment binding + witness + Groth16 prove/verify in one isolated flow.
+
+## Plan
+
+- [x] Add `tests/integration/live-solana-e2e.test.ts` with live-gated execution (`LIVE_INTEGRATION=1`).
+- [x] Use real Solana transaction candidates (env override + curated fixtures) and assert full pipeline success.
+- [x] Run the dedicated live Solana integration test and capture result in review.
+
+## Review (Live Solana E2E Integration Coverage)
+
+- Status: Completed
+- Notes:
+  - Added dedicated live Solana E2E integration test at `tests/integration/live-solana-e2e.test.ts`.
+  - Added shared local env hydration helper for live tests: `tests/integration/helpers/load-env-local.ts` (loads `.env.local` into `process.env` for `NODE_ENV=test` runs).
+  - Flow covers: real `/api/oracle/fetch-tx` (Solana via Helius) -> commitment recomputation check -> witness build/validation -> Groth16 `fullProve` -> Groth16 verify -> `/api/oracle/verify-signature`.
+  - Candidate sourcing supports:
+    - env override: `LIVE_SOL_TX_SIGNATURE`
+    - curated real tx fixtures (Solscan mainnet signatures).
+  - Added helper script: `npm run test:live:solana`.
+  - Validation:
+    - `npm run typecheck` pass
+    - `npm run test -- tests/integration/live-solana-e2e.test.ts` pass (skipped by default without `LIVE_INTEGRATION=1`)
+    - `LIVE_INTEGRATION=1 npm run test -- tests/integration/live-solana-e2e.test.ts --runInBand` pass with local `.env.local` Helius keys.

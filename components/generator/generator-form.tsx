@@ -144,12 +144,12 @@ export function GeneratorForm(): React.JSX.Element {
           <option value="bitcoin">Bitcoin</option>
           <option value="ethereum">Ethereum (ETH)</option>
           <option value="ethereum-usdc">Ethereum (USDC)</option>
-          <option value="solana" disabled>Solana (SOL) — coming soon</option>
+          <option value="solana">Solana (SOL)</option>
         </Select>
 
         {/* ── Transaction hash ── */}
         <div>
-          <div className="mb-1 flex items-center justify-between">
+          <div className="flex items-center justify-between mb-1">
             <label htmlFor={`${formId}-txhash`} className="text-xs font-medium text-white/70">
               Transaction Hash
             </label>
@@ -166,7 +166,13 @@ export function GeneratorForm(): React.JSX.Element {
           <Input
             id={`${formId}-txhash`}
             type="text"
-            placeholder={values.chain === 'bitcoin' ? '64 hex characters' : '0x + 64 hex characters'}
+            placeholder={
+              values.chain === 'bitcoin'
+                ? '64 hex characters'
+                : values.chain === 'solana'
+                  ? 'Base58 signature (64-88 chars)'
+                  : '0x + 64 hex characters'
+            }
             value={values.txHash}
             onChange={handleTxHashChange}
             disabled={isProcessing}
@@ -179,7 +185,7 @@ export function GeneratorForm(): React.JSX.Element {
       {/* ── Claimed amount with live unit hint ── */}
       <div className="grid grid-cols-1 gap-2 min-[540px]:grid-cols-2">
         <div>
-          <div className="mb-1 flex items-center justify-between">
+          <div className="flex items-center justify-between mb-1">
             <label htmlFor={`${formId}-amount`} className="text-xs font-medium text-white/70">
             Claimed Amount{' '}
               <span className="font-normal text-white/35">({atomicUnitLabel(values.chain, values.ethereumAsset)})</span>
@@ -219,7 +225,7 @@ export function GeneratorForm(): React.JSX.Element {
         />
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-black/10 px-2 py-2">
+      <div className="px-2 py-2 border rounded-lg border-white/10 bg-black/10">
         <p className="text-xs font-medium text-white/75">Selective disclosure</p>
         <p className="mt-1 text-[11px] text-white/45">
           Choose which claim fields are visible in the shared receipt.
@@ -274,7 +280,7 @@ export function GeneratorForm(): React.JSX.Element {
         </div>
 
         {optionalExpanded && (
-          <div id={`${formId}-optional-fields`} className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+          <div id={`${formId}-optional-fields`} className="grid grid-cols-1 gap-2 mt-2 md:grid-cols-2">
             <Input
               id={`${formId}-label`}
               label="Receipt Label"

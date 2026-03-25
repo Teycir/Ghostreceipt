@@ -11,7 +11,7 @@ The proof enforces all of the following:
 1. The hidden transaction value is at least the claimed value.
 2. The hidden transaction timestamp is at least the claimed minimum date.
 3. The hidden tx facts are bound to a public oracle commitment value.
-4. The hidden chain selector is constrained to `bitcoin` or `ethereum` (`0|1`).
+4. The hidden chain selector is constrained to `bitcoin`, `ethereum`, or `solana` (`0|1|2`).
 
 ## Constraint-to-Claim Mapping
 
@@ -34,7 +34,7 @@ The proof enforces all of the following:
 - Security therefore depends on both:
   - circuit constraints being correct, and
   - oracle key/process integrity.
-- The chain boolean check prevents malformed cross-chain encoding in witness inputs.
+- The chain enum check prevents malformed cross-chain encoding in witness inputs.
 
 ## Non-Goals / Known Limitations
 

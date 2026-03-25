@@ -1,4 +1,4 @@
-const DEFAULT_ZK_ARTIFACT_VERSION = '2026-03-24';
+const DEFAULT_ZK_ARTIFACT_VERSION = '2026-03-25';
 const VERSION_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 const PRELOAD_CACHE_KEY_PREFIX = 'zk-artifacts-preload:';
 
