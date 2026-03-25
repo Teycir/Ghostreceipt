@@ -101,6 +101,7 @@ Generate a cryptographic proof that's mathematically verifiable but reveals only
 
 **For Everyone:**
 - 🚀 **Fast**: Generate proof in under 60 seconds
+- 📊 **Measured average (integration test)**: `~181ms` end-to-end (`~171ms` proving) from `npm run test:perf:proof` (`measuredIterations=2`, `warmup=1`)
 - 🔒 **Private**: Your wallet addresses stay hidden
 - 📱 **Mobile-friendly**: Works on phones and tablets
 - 🔗 **Easy sharing**: Get a link or QR code to share your proof
