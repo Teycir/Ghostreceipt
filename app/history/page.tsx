@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { UnifiedPageShell } from '@/components/unified-page-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import {
   deleteReceiptHistoryEntry,
   filterReceiptHistoryEntries,
   getReceiptHistoryStorageStatus,
+  importReceiptHistoryJson,
   listReceiptHistoryCategories,
   listReceiptHistoryEntries,
   markReceiptHistoryEntryOpened,
@@ -75,6 +76,7 @@ function chainPillLabel(chain: Chain, ethereumAsset?: EthereumAsset): string {
 }
 
 export default function HistoryPage(): React.JSX.Element {
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [entries, setEntries] = useState<ReceiptHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -151,6 +153,38 @@ export default function HistoryPage(): React.JSX.Element {
     globalThis.URL.revokeObjectURL(blobUrl);
     setStatusMessage(`Exported ${entries.length} receipt${entries.length === 1 ? '' : 's'} to JSON.`);
   }, [entries]);
+
+  const handleOpenImportPicker = useCallback((): void => {
+    importInputRef.current?.click();
+  }, []);
+
+  const handleImportFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) {
+      return;
+    }
+
+    try {
+      const payload = await file.text();
+      const result = await importReceiptHistoryJson(payload);
+      await loadEntries();
+
+      const statusParts = [
+        `Imported ${result.importedCount} receipt${result.importedCount === 1 ? '' : 's'}.`,
+      ];
+      if (result.skippedCount > 0) {
+        statusParts.push(`Skipped ${result.skippedCount} duplicate${result.skippedCount === 1 ? '' : 's'}.`);
+      }
+      if (result.invalidCount > 0) {
+        statusParts.push(`Ignored ${result.invalidCount} invalid entr${result.invalidCount === 1 ? 'y' : 'ies'}.`);
+      }
+      setStatusMessage(statusParts.join(' '));
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Failed to import local history JSON.';
+      setStatusMessage(message);
+    }
+  }, [loadEntries]);
 
   const handleCopyVerifyUrl = useCallback(async (proof: string): Promise<void> => {
     const verifyUrl = buildVerifyUrl(proof);
@@ -251,6 +285,18 @@ export default function HistoryPage(): React.JSX.Element {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="sr-only"
+                onChange={(event) => {
+                  void handleImportFile(event);
+                }}
+              />
+              <Button type="button" variant="secondary" onClick={handleOpenImportPicker}>
+                Import JSON
+              </Button>
               <Button type="button" variant="secondary" onClick={handleExport}>
                 Export JSON
               </Button>

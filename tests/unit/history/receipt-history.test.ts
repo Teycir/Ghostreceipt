@@ -3,6 +3,7 @@ import {
   filterReceiptHistoryEntries,
   getReceiptHistoryStorageStatus,
   listReceiptHistoryCategories,
+  previewReceiptHistoryImport,
   serializeReceiptHistoryExport,
 } from '@/lib/history/receipt-history';
 
@@ -169,5 +170,64 @@ describe('receipt history storage', () => {
       configurable: true,
       value: originalNavigator,
     });
+  });
+
+  it('previews import payload with duplicate and invalid entry accounting', () => {
+    const payload = JSON.stringify({
+      exportedAt: '2026-03-25T00:00:00.000Z',
+      schemaVersion: 1,
+      entries: [
+        {
+          id: 'first',
+          proof: 'proof_new',
+          chain: 'bitcoin',
+          claimedAmount: '5',
+          minDate: '2026-03-03',
+          createdAt: '2026-03-03T00:00:00.000Z',
+        },
+        {
+          id: 'existing',
+          proof: 'proof_existing',
+          chain: 'bitcoin',
+          claimedAmount: '6',
+          minDate: '2026-03-04',
+          createdAt: '2026-03-04T00:00:00.000Z',
+        },
+        {
+          id: 'broken',
+          proof: '',
+        },
+        {
+          id: 'duplicate',
+          proof: 'proof_new',
+          chain: 'ethereum',
+          ethereumAsset: 'native',
+          claimedAmount: '9',
+          minDate: '2026-03-05',
+          createdAt: '2026-03-05T00:00:00.000Z',
+        },
+      ],
+    });
+
+    const preview = previewReceiptHistoryImport(payload, new Set(['proof_existing']));
+    expect(preview.totalCount).toBe(4);
+    expect(preview.entriesToImport).toHaveLength(1);
+    expect(preview.entriesToImport[0]?.proof).toBe('proof_new');
+    expect(preview.skippedCount).toBe(2);
+    expect(preview.invalidCount).toBe(1);
+  });
+
+  it('rejects unsupported import schema versions', () => {
+    const payload = JSON.stringify({
+      exportedAt: '2026-03-25T00:00:00.000Z',
+      schemaVersion: 99,
+      entries: [],
+    });
+
+    expect(() => previewReceiptHistoryImport(payload)).toThrow('is not supported');
+  });
+
+  it('rejects malformed import JSON', () => {
+    expect(() => previewReceiptHistoryImport('{this is not json]')).toThrow('not valid JSON');
   });
 });

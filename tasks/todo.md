@@ -673,3 +673,59 @@ Align user-facing documentation with current consensus behavior across BTC/ETH/S
   - Validation:
     - `npm run check:release-readiness` pass
     - `npm run lint` pass
+
+## Objective (Local History JSON Import + Merge)
+
+Add a low-friction import path for exported local history JSON so users can restore or migrate receipts across browser profiles/devices without any backend sync.
+
+## Plan
+
+- [x] Add import parsing + validation helpers in `lib/history/receipt-history.ts` with schema-version checks.
+- [x] Add dedupe-aware import execution (skip existing proof payloads, ignore invalid entries, import valid unique entries).
+- [x] Wire `/history` UI with `Import JSON` action and status summary (`imported / skipped / invalid`).
+- [x] Add unit tests in `tests/unit/history/receipt-history.test.ts` for import parsing/version/duplicate behavior.
+- [x] Run targeted tests and typecheck.
+
+## Review (Local History JSON Import + Merge)
+
+- Status: Completed
+- Notes:
+  - Added import preview + execution APIs in `lib/history/receipt-history.ts`:
+    - `previewReceiptHistoryImport(payload, existingProofs)` validates JSON envelope/schema and classifies entries.
+    - `importReceiptHistoryJson(payload)` imports only valid, unique proof entries and returns summary counts.
+  - Added `/history` UI import flow in `app/history/page.tsx`:
+    - `Import JSON` button opens a hidden file picker.
+    - Selected JSON is parsed/imported, list reloads, and user gets `imported / skipped / invalid` status message.
+  - Added import-focused unit tests in `tests/unit/history/receipt-history.test.ts` for:
+    - duplicate + invalid accounting,
+    - unsupported schema rejection,
+    - malformed JSON rejection.
+  - Validation:
+    - `npm test -- tests/unit/history/receipt-history.test.ts --runInBand --ci` pass.
+    - `npm run typecheck` pass.
+
+## Objective (E2E Coverage: Local History JSON Import)
+
+Add a Playwright regression test for the `/history` JSON import flow to verify users can restore exported receipts from file input and see imported data immediately.
+
+## Plan
+
+- [x] Add deterministic e2e fixture JSON for import in `tests/e2e/fixtures/`.
+- [x] Add a focused Playwright spec that imports the fixture on `/history`.
+- [x] Assert import summary message and imported receipt card fields are rendered.
+- [x] Run the targeted Playwright spec and typecheck.
+
+## Review (E2E Coverage: Local History JSON Import)
+
+- Status: Completed
+- Notes:
+  - Added e2e import fixture: `tests/e2e/fixtures/history-import-sample.json`
+    - includes one valid entry and one intentionally invalid entry to verify import accounting.
+  - Added Playwright regression spec: `tests/e2e/history-import.spec.ts`
+    - navigates to `/history`,
+    - imports fixture via file input,
+    - asserts status summary (`Imported 1 receipt. Ignored 1 invalid entry.`),
+    - asserts imported receipt fields (`label`, `category`, `proof`, `amount`) are rendered.
+  - Validation:
+    - `npm run test:e2e -- tests/e2e/history-import.spec.ts` pass.
+    - `npm run typecheck` pass.

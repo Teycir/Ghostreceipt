@@ -1,0 +1,21 @@
+{
+  "exportedAt": "2026-03-25T20:00:00.000Z",
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "e2e-import-valid-001",
+      "proof": "proof_e2e_import_receipt_001",
+      "chain": "bitcoin",
+      "claimedAmount": "42000000",
+      "minDate": "2026-03-22",
+      "receiptLabel": "E2E Imported Receipt",
+      "receiptCategory": "Testing",
+      "createdAt": "2026-03-25T19:30:00.000Z"
+    },
+    {
+      "id": "e2e-import-invalid-001",
+      "proof": "",
+      "chain": "bitcoin"
+    }
+  ]
+}

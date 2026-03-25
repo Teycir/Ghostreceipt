@@ -56,6 +56,20 @@ export interface ReceiptHistoryStorageStatus {
   usageBytes: number | null;
 }
 
+export interface ReceiptHistoryImportResult {
+  importedCount: number;
+  skippedCount: number;
+  invalidCount: number;
+  totalCount: number;
+}
+
+export interface ReceiptHistoryImportPreview {
+  entriesToImport: ReceiptHistoryEntry[];
+  skippedCount: number;
+  invalidCount: number;
+  totalCount: number;
+}
+
 function getIndexedDbFactory(): IDBFactory | null {
   const maybeIndexedDb = (globalThis as { indexedDB?: IDBFactory }).indexedDB;
   return maybeIndexedDb ?? null;
@@ -484,9 +498,96 @@ export function serializeReceiptHistoryExport(
   return JSON.stringify(toReceiptHistoryExport(entries, exportedAt), null, 2);
 }
 
+function parseImportEnvelope(payload: string): { schemaVersion: number; entries: unknown[] } {
+  let parsedPayload: unknown;
+  try {
+    parsedPayload = JSON.parse(payload);
+  } catch {
+    throw new Error('History import file is not valid JSON');
+  }
+
+  if (typeof parsedPayload !== 'object' || parsedPayload === null || Array.isArray(parsedPayload)) {
+    throw new Error('History import file must be a JSON object');
+  }
+
+  const maybePayload = parsedPayload as Partial<ReceiptHistoryExport>;
+  if (typeof maybePayload.schemaVersion !== 'number') {
+    throw new Error('History import file is missing schemaVersion');
+  }
+  if (!Array.isArray(maybePayload.entries)) {
+    throw new Error('History import file is missing entries');
+  }
+
+  return {
+    schemaVersion: maybePayload.schemaVersion,
+    entries: maybePayload.entries,
+  };
+}
+
+export function previewReceiptHistoryImport(
+  payload: string,
+  existingProofs: ReadonlySet<string> = new Set()
+): ReceiptHistoryImportPreview {
+  const envelope = parseImportEnvelope(payload);
+  if (envelope.schemaVersion !== RECEIPT_HISTORY_EXPORT_VERSION) {
+    throw new Error(
+      `History import schema version ${envelope.schemaVersion.toString()} is not supported`
+    );
+  }
+
+  const seenProofs = new Set(existingProofs);
+  const entriesToImport: ReceiptHistoryEntry[] = [];
+  let skippedCount = 0;
+  let invalidCount = 0;
+
+  for (const rawEntry of envelope.entries) {
+    const parsedEntry = parseEntry(rawEntry);
+    if (!parsedEntry) {
+      invalidCount += 1;
+      continue;
+    }
+    if (seenProofs.has(parsedEntry.proof)) {
+      skippedCount += 1;
+      continue;
+    }
+    seenProofs.add(parsedEntry.proof);
+    entriesToImport.push(parsedEntry);
+  }
+
+  return {
+    entriesToImport,
+    skippedCount,
+    invalidCount,
+    totalCount: envelope.entries.length,
+  };
+}
+
 export async function exportReceiptHistoryJson(exportedAt: Date = new Date()): Promise<string> {
   const entries = await listReceiptHistoryEntries();
   return serializeReceiptHistoryExport(entries, exportedAt);
+}
+
+export async function importReceiptHistoryJson(payload: string): Promise<ReceiptHistoryImportResult> {
+  const existingEntries = await listEntriesIndexedDb();
+  const preview = previewReceiptHistoryImport(
+    payload,
+    new Set(existingEntries.map((entry) => entry.proof))
+  );
+
+  for (const entry of preview.entriesToImport) {
+    const entryToStore: ReceiptHistoryEntry = {
+      ...entry,
+      id: generateEntryId(),
+    };
+    await putEntryIndexedDb(entryToStore);
+  }
+
+  return {
+    importedCount: preview.entriesToImport.length,
+    skippedCount: preview.skippedCount,
+    invalidCount: preview.invalidCount,
+    totalCount: preview.totalCount,
+  };
 }
 
 export async function getReceiptHistoryStorageStatus(): Promise<ReceiptHistoryStorageStatus> {
