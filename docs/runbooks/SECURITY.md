@@ -183,6 +183,7 @@ This project currently operates a centralized oracle signing key for canonical t
 - Oracle signatures are Ed25519 (`64` bytes, hex-encoded as `128` chars).
 - Ensure `oraclePubKeyId` in generated payloads maps to the active key ID after rotation.
 - Keep route-level rate limiting enabled for this endpoint to reduce probing/oracle abuse risk.
+- Add Cloudflare edge rate-limit rules as an outer wall (runbook: `docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md`).
 
 ### Runtime Storage Limits (Important)
 - Current replay protection and API rate limit stores are in-memory maps.
@@ -191,7 +192,7 @@ This project currently operates a centralized oracle signing key for canonical t
   - Limits can reset on cold starts.
   - Cross-instance requests can bypass per-instance counters.
 - Production guidance:
-  - Cloudflare target: move these protections to Durable Objects or KV-backed coordination.
+  - Cloudflare target: keep edge route wall active now, then move in-app coordination to Durable Objects or KV-backed state.
   - Node target: use a shared external store (for example Redis) for distributed rate/replay controls.
 
 ### CSP Trade-offs

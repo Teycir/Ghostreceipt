@@ -164,6 +164,13 @@ Security headers are configured in `next.config.mjs`:
 - Rotate keys regularly
 - Use different keys for production/preview
 
+### Edge Rate-Limit Wall (Recommended)
+- Add route-level edge rate-limit rules for:
+  - `POST /api/oracle/fetch-tx`
+  - `POST /api/oracle/verify-signature`
+- Roll out in `Managed Challenge` mode first, then promote to `Block`.
+- Runbook: [CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md](./CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
+
 ## Cost
 
 Cloudflare Pages Free Tier:

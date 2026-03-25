@@ -85,6 +85,7 @@ Set in: Repository → Settings → Secrets and variables → Actions
 - [ ] CSP not blocking required resources
 - [ ] CORS configured correctly for API routes
 - [ ] Rate limiting tested
+- [ ] Cloudflare edge rate-limit rules active for `/api/oracle/fetch-tx` and `/api/oracle/verify-signature`
 
 ### Functionality Testing
 - [ ] BTC receipt generation works
@@ -133,6 +134,7 @@ npx wrangler pages deployment rollback <DEPLOYMENT_ID> --project-name=ghostrecei
 ## Resources
 
 - [Cloudflare Deployment Guide](./CLOUDFLARE_DEPLOYMENT.md)
+- [Cloudflare Edge Rate-Limit Rules](./runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - [Security Runbook](./runbooks/SECURITY.md)
 - [Threat Model](./runbooks/THREAT_MODEL.md)
 - [Release Readiness](./project/RELEASE_READINESS_CHECKLIST.md)

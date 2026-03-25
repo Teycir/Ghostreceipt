@@ -1,5 +1,38 @@
 # Task Plan - 2026-03-25
 
+## Objective (Spike-Safety Step 1: Cloudflare Edge Route Wall)
+
+Implement only item `1` from the safety batch with rollback-safe operations and no extra API spend:
+- add an edge-layer rate-limit runbook for oracle routes,
+- wire it into deployment docs/README,
+- keep item `2` (Durable Object global limiter) explicitly deferred for local validation.
+
+## Plan
+
+- [x] Add a dedicated Cloudflare edge rate-limit runbook with explicit thresholds, rollout, verification, and rollback steps.
+- [x] Update deployment checklists/runbooks to make edge rule setup part of standard release flow.
+- [x] Update roadmap to mark item `1` done and item `2` deferred for local confirmation.
+- [x] Add a concise README pointer for operators.
+- [x] Document execution summary and assumptions in this task file.
+
+## Review (Spike-Safety Step 1: Cloudflare Edge Route Wall)
+
+- Status: Completed
+- Notes:
+  - Added runbook: `docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md`.
+  - Updated deployment docs to include edge wall setup:
+    - `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md`
+    - `docs/DEPLOYMENT_CHECKLIST.md`
+  - Updated roadmap queue with explicit status:
+    - `R-P1-05` (edge route wall) marked complete,
+    - `R-P1-06` (Durable Object global limiter) kept deferred for local confirmation.
+  - Added README operator pointer to the new runbook.
+- Assumptions:
+  - Item `1` = Cloudflare edge route-level rate limiting.
+  - Item `2` = Durable Object coordinated global limiter to validate locally later.
+- Validation:
+  - Docs-only change; no runtime code path was modified.
+
 ## Objective (Low-Cost Premium UX Batch: Share + Errors + Shortcuts + Referral)
 
 Ship the next free-plan-safe UX improvements with strong visual consistency:

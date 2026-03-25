@@ -365,6 +365,7 @@ See `.env.example` for all available options.
 - [Documentation hub](./docs/README.md)
 - [Deployment guide](./docs/DEPLOYMENT_READY.md)
 - [Quick deploy](./docs/runbooks/QUICK_DEPLOY.md)
+- [Cloudflare edge rate-limit runbook](./docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - [Security runbook](./docs/runbooks/SECURITY.md)
 - [Changelog](./CHANGELOG.md)
 

@@ -1,5 +1,15 @@
 # Lessons Learned
 
+## 2026-03-25 - Stability Must Gate Infra Upgrades Even When Performance Looks Better
+- When deciding between new infra complexity and performance gains, choose the path with the safest rollback and lowest latent risk by default.
+- Keep new distributed rate-limit backends deferred until local + staging behavior is proven under failure scenarios.
+- Preserve edge-level protections as the permanent outer wall while experimenting with inner backend changes.
+
+## 2026-03-25 - When User Splits A Batch, Ship Only The Chosen Slice
+- If the user says "do 1 now, test 2 later," treat that as a hard scope boundary and only implement item 1 end-to-end.
+- Explicitly mark item 2 as deferred in roadmap/todo so there is no ambiguity on delivery status.
+- Prefer rollback-safe operational changes (runbooks/checklists/toggles) before introducing new runtime complexity.
+
 ## 2026-03-25 - Preserve SEO Metadata By Keeping It In Server Page Wrappers
 - If a user requests SEO metadata on App Router pages, do not remove metadata; move it to a server `page.tsx` wrapper when the page needs client interactivity.
 - Never export `metadata` from files marked with `'use client'`; split into `*-client.tsx` + server wrapper to keep both SEO and runtime compatibility.

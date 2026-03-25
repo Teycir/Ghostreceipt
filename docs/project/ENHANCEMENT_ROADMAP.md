@@ -15,6 +15,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - No forced user API keys; BYOK stays optional.
 - Keep default flow local-first and free-tier safe.
 - Keep UX improvements API-budget neutral by default: no hidden auto-submit polling or retry loops that increase provider call volume.
+- Stability before speed: do not promote new infra paths to production unless rollback behavior is proven and operationally simple.
 - Keep proof UX target as a hard SLO: `p95 < 60s`, `p50 < 25s`.
 - Keep all tests in `tests/` only.
 
@@ -66,6 +67,16 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Publish proof-system decision artifact (`Groth16` stay vs `PLONK/Fflonk` path) with rationale and migration notes.
 - [x] Add explicit per-feature latency budgets and require before/after metric deltas in roadmap review notes.
 - [x] Add regression coverage around canonical payload parsing and verify path stability.
+
+### Spike-Safety Follow-up (P1, Free-Tier Guardrail)
+
+- [x] `R-P1-05` Add Cloudflare edge rate-limit wall for oracle routes (`/api/oracle/fetch-tx`, `/api/oracle/verify-signature`) with rollback-safe operational runbook.
+- [ ] `R-P1-06` Evaluate Durable Object global rate-limit coordination locally before production rollout (deferred pending confirmation).
+
+`R-P1-06` production policy (stability-first):
+- Default remains legacy in-app limiter until Durable Object path passes local and staging soak checks.
+- Any Durable Object technical failure must fail over to legacy path only when mode is explicitly `durable_prefer`.
+- Keep edge route wall active regardless of in-app limiter backend mode.
 
 ### Product Slice (P2)
 
