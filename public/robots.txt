@@ -3,6 +3,15 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /_next/
+Disallow: /zk/
+
+# AI crawlers
+User-agent: GPTBot
+Crawl-delay: 10
+
+User-agent: CCBot
+Crawl-delay: 10
 
 # Sitemaps
 Sitemap: https://ghostreceipt.pages.dev/sitemap.xml
