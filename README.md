@@ -105,6 +105,7 @@ Generate a cryptographic proof that's mathematically verifiable but reveals only
 - 📱 **Mobile-friendly**: Works on phones and tablets
 - 🔗 **Easy sharing**: Get a link or QR code to share your proof
 - ✅ **Verifiable**: Anyone can check the proof is real
+- 🧭 **Trust clarity**: Validation-strength badges and inline explainers on generation and verification pages
 - 🆓 **Free**: No signup, no credit card, no API keys needed
 
 **Supported Cryptocurrencies:**
