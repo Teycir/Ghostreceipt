@@ -76,6 +76,23 @@ function normalizeReceiptMetadata(values: GeneratorFormValues): ReceiptMetadata 
   };
 }
 
+function mergeShareReceiptMetadata(
+  baseMetadata: ReceiptMetadata | undefined,
+  oraclePayload: OraclePayload
+): ReceiptMetadata | undefined {
+  const merged: ReceiptMetadata = {
+    ...(baseMetadata ?? {}),
+    ...(oraclePayload.oracleValidationStatus
+      ? { oracleValidationStatus: oraclePayload.oracleValidationStatus }
+      : {}),
+    ...(oraclePayload.oracleValidationLabel
+      ? { oracleValidationLabel: oraclePayload.oracleValidationLabel }
+      : {}),
+  };
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
 // ── Hook return type ─────────────────────────────────────────────────────────
 export interface UseProofGeneratorReturn {
   /** Current machine state */
@@ -217,7 +234,10 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       setProcessingHint('');
 
       const packageStart = nowMs();
-      const receiptMeta = normalizeReceiptMetadata(values);
+      const receiptMeta = mergeShareReceiptMetadata(
+        normalizeReceiptMetadata(values),
+        data.data
+      );
       const shareableProof = await prover.exportProof(proofOutput, {
         expiresAt:       data.data.expiresAt,
         messageHash:     data.data.messageHash,
@@ -243,6 +263,9 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         claimedAmountDisclosure: values.discloseAmount ? 'disclosed' : 'hidden',
         minDate:        values.minDate,
         minDateDisclosure: values.discloseMinDate ? 'disclosed' : 'hidden',
+        ...(data.data.oracleValidationStatus
+          ? { oracleValidationStatus: data.data.oracleValidationStatus }
+          : {}),
         ...(data.data.oracleValidationLabel
           ? { oracleValidationLabel: data.data.oracleValidationLabel }
           : {}),

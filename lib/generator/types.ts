@@ -42,6 +42,11 @@ export interface GeneratorTimingTelemetry {
   witnessMs: number;
 }
 
+export type OracleValidationStatus =
+  | 'consensus_verified'
+  | 'single_source_fallback'
+  | 'single_source_only';
+
 /** The shareable proof output kept in state after success */
 export interface ProofResult {
   proof: string;
@@ -51,6 +56,7 @@ export interface ProofResult {
   claimedAmountDisclosure: 'disclosed' | 'hidden';
   minDate: string;
   minDateDisclosure: 'disclosed' | 'hidden';
+  oracleValidationStatus?: OracleValidationStatus;
   oracleValidationLabel?: string;
   receiptLabel?: string;
   receiptCategory?: string;
