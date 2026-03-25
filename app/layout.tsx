@@ -102,6 +102,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased">
+        <div className="premium-grain" aria-hidden="true" />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

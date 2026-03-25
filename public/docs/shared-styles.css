@@ -1,0 +1,431 @@
+/* ══════════════════════════════════════════════════════════
+   GhostReceipt — Shared Documentation Page Styles
+   Ultra-premium dark theme for all HTML doc pages.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  25%  { background-position: 100% 50%; }
+  50%  { background-position: 50% 100%; }
+  75%  { background-position: 0% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes haze {
+  0%, 100% { opacity: 0.3; transform: scale(1) translate(0, 0) rotate(0deg); }
+  25%      { opacity: 0.5; transform: scale(1.2) translate(10%, -10%) rotate(5deg); }
+  50%      { opacity: 0.4; transform: scale(0.9) translate(-10%, 10%) rotate(-5deg); }
+  75%      { opacity: 0.5; transform: scale(1.1) translate(5%, -5%) rotate(3deg); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Reset & base ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: #e0ecff;
+}
+
+::-moz-selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: #e0ecff;
+}
+
+/* ── Premium scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.10) rgba(255,255,255,0.03); }
+
+/* ── Body — animated dark background ── */
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(
+    135deg,
+    #04060f 0%, #080c1a 20%, #060814 40%,
+    #080d1c 60%, #050810 80%, #020307 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 30s ease-in-out infinite;
+  color: #e8eeff;
+  overflow-x: hidden;
+  min-height: 100vh;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ambient radial glows */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 80%, rgba(59, 130, 246, 0.09) 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.05) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(37, 99, 235, 0.1) 0%, transparent 30%),
+    radial-gradient(circle at 70% 60%, rgba(99, 102, 241, 0.08) 0%, transparent 35%),
+    radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.07) 0%, transparent 40%);
+  filter: blur(80px);
+  animation: haze 40s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Noise grain overlay ── */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.022;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Page layout ── */
+.doc-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 6rem;
+  animation: fadeInUp 0.5s ease both;
+}
+
+@media (max-width: 640px) {
+  .doc-page {
+    padding: 1.25rem 1rem 6rem;
+  }
+}
+
+/* ── Back link ── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 2rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.back-link:hover {
+  border-color: rgba(34, 211, 238, 0.55);
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.08);
+  transform: translateX(-2px);
+}
+
+/* ── Glass card container ── */
+.doc-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  margin-bottom: 1.5rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.doc-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(96, 165, 250, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 640px) {
+  .doc-card {
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+  }
+}
+
+/* ── Typography ── */
+h1 {
+  color: #fff;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 24px rgba(96, 165, 250, 0.15);
+}
+
+h2 {
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+h2::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 1em;
+  background: linear-gradient(180deg, #3b82f6, #22d3ee);
+  border-radius: 2px;
+  margin-right: 0.625rem;
+  vertical-align: middle;
+}
+
+p {
+  color: rgba(224, 232, 255, 0.75);
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+/* ── Links ── */
+a:not(.back-link):not(.footer-link):not(.footer-social) {
+  color: #60a5fa;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+a:not(.back-link):not(.footer-link):not(.footer-social):hover {
+  color: #93c5fd;
+  border-bottom-color: rgba(96, 165, 250, 0.4);
+}
+
+/* ── Lists ── */
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+  color: rgba(224, 232, 255, 0.7);
+}
+
+li {
+  margin-bottom: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+li strong {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Code ── */
+code {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.375rem;
+  font-size: 0.85em;
+  font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+  color: #93c5fd;
+}
+
+pre {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+  color: rgba(224, 232, 255, 0.8);
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* ── Callout boxes ── */
+.warning {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-left: 3px solid rgba(239, 68, 68, 0.6);
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  color: rgba(252, 165, 165, 0.9);
+}
+
+.tip {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-left: 3px solid rgba(59, 130, 246, 0.6);
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  color: rgba(147, 197, 253, 0.9);
+}
+
+/* ── FAQ items ── */
+.faq-item {
+  margin-bottom: 0;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-item h2 {
+  margin-top: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* ── Premium divider ── */
+.premium-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(96, 165, 250, 0.12) 50%,
+    rgba(255, 255, 255, 0.08) 80%,
+    transparent 100%
+  );
+  border: none;
+  margin: 2rem 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FOOTER — frosted glass, matching React app footer
+   ══════════════════════════════════════════════════════════ */
+.doc-footer {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 100;
+  background: linear-gradient(
+    to top,
+    rgba(4, 6, 15, 0.97),
+    rgba(4, 6, 15, 0.7) 60%,
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0.625rem 1.25rem;
+}
+
+.doc-footer-inner {
+  max-width: 64rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@media (min-width: 640px) {
+  .doc-footer-inner {
+    justify-content: space-between;
+    font-size: 0.75rem;
+    padding: 0 0.75rem;
+  }
+}
+
+.footer-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .footer-links {
+    gap: 1rem;
+  }
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.footer-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.footer-sep {
+  color: rgba(255, 255, 255, 0.15);
+  user-select: none;
+}
+
+.footer-socials {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.2s ease;
+}
+
+.footer-social:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.footer-social svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}

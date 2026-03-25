@@ -4,152 +4,115 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How to Use - GhostReceipt</title>
-  <style>
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      25% { background-position: 100% 50%; }
-      50% { background-position: 50% 100%; }
-      75% { background-position: 0% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    @keyframes haze {
-      0%, 100% { opacity: 0.3; transform: scale(1) translate(0, 0) rotate(0deg); }
-      25% { opacity: 0.5; transform: scale(1.2) translate(10%, -10%) rotate(5deg); }
-      50% { opacity: 0.4; transform: scale(0.9) translate(-10%, 10%) rotate(-5deg); }
-      75% { opacity: 0.5; transform: scale(1.1) translate(5%, -5%) rotate(3deg); }
-    }
-
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem;
-      background: linear-gradient(
-        135deg,
-        #04060f 0%,
-        #080c1a 20%,
-        #060814 40%,
-        #080d1c 60%,
-        #050810 80%,
-        #020307 100%
-      );
-      background-size: 400% 400%;
-      animation: gradientShift 30s ease-in-out infinite;
-      color: #f0f4ff;
-      overflow-x: hidden;
-      min-height: 100vh;
-      position: relative;
-    }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse at 15% 20%, rgba(37, 99, 235, 0.12) 0%, transparent 55%),
-        radial-gradient(ellipse at 85% 80%, rgba(59, 130, 246, 0.09) 0%, transparent 55%),
-        radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.05) 0%, transparent 65%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    body::after {
-      content: "";
-      position: fixed;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background:
-        radial-gradient(circle at 30% 40%, rgba(37, 99, 235, 0.1) 0%, transparent 30%),
-        radial-gradient(circle at 70% 60%, rgba(99, 102, 241, 0.08) 0%, transparent 35%),
-        radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.07) 0%, transparent 40%);
-      filter: blur(80px);
-      animation: haze 40s ease-in-out infinite;
-      pointer-events: none;
-      z-index: 0;
-    }
-    body > * {
-      position: relative;
-      z-index: 1;
-    }
-    h1 { color: #fff; margin-bottom: 0.5rem; }
-    h2 { color: #fff; margin-top: 2rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
-    a { color: #3b82f6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: #1a1a1a; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
-    .back-link { display: inline-block; margin-bottom: 2rem; }
-    .tip { background: #142a4f; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; }
-  </style>
+  <link rel="stylesheet" href="/docs/shared-styles.css">
 </head>
 <body>
-  <a href="/" class="back-link">← Back to GhostReceipt</a>
+  <div class="grain-overlay" aria-hidden="true"></div>
 
-  <h1>How to Use GhostReceipt</h1>
-  <p>Generate a privacy-preserving payment receipt and share a verifiable proof link.</p>
+  <div class="doc-page">
+    <a href="/" class="back-link">← Back to GhostReceipt</a>
 
-  <h2>Step 1: Enter Transaction Details</h2>
-  <ul>
-    <li><strong>Chain:</strong> Choose <code>Bitcoin</code>, <code>Ethereum (ETH)</code>, <code>Ethereum (USDC)</code>, or <code>Solana (SOL)</code>.</li>
-    <li><strong>Transaction Hash:</strong> Paste the on-chain transaction identifier.</li>
-    <li><strong>Claimed Amount:</strong> Enter your minimum claim threshold (satoshis for BTC, wei for ETH, lamports for SOL, or USDC atomic units for USDC).</li>
-    <li><strong>Minimum Date:</strong> Set the earliest acceptable transaction date.</li>
-  </ul>
+    <h1>How to Use GhostReceipt</h1>
+    <p>Generate a privacy-preserving payment receipt and share a verifiable proof link.</p>
 
-  <h2>Step 2: Generate Proof</h2>
-  <p>Click <code>Generate Receipt</code>. GhostReceipt will:</p>
-  <ol>
-    <li>Fetch oracle-signed canonical chain data for the transaction hash.</li>
-    <li>Attempt peer-source consensus validation (mode-dependent) before signing.</li>
-    <li>Build a local witness from your claim and signed payload.</li>
-    <li>Generate the zero-knowledge proof in your browser.</li>
-  </ol>
+    <div class="doc-card">
+      <h2>Step 1: Enter Transaction Details</h2>
+      <ul>
+        <li><strong>Chain:</strong> Choose <code>Bitcoin</code>, <code>Ethereum (ETH)</code>, <code>Ethereum (USDC)</code>, or <code>Solana (SOL)</code>.</li>
+        <li><strong>Transaction Hash:</strong> Paste the on-chain transaction identifier.</li>
+        <li><strong>Claimed Amount:</strong> Enter your minimum claim threshold (satoshis for BTC, wei for ETH, lamports for SOL, or USDC atomic units for USDC).</li>
+        <li><strong>Minimum Date:</strong> Set the earliest acceptable transaction date.</li>
+      </ul>
+    </div>
 
-  <div class="tip">
-    <strong>Tip:</strong> On modern devices, the full flow is usually under 60 seconds.
+    <div class="doc-card">
+      <h2>Step 2: Generate Proof</h2>
+      <p>Click <code>Generate Receipt</code>. GhostReceipt will:</p>
+      <ol>
+        <li>Fetch oracle-signed canonical chain data for the transaction hash.</li>
+        <li>Attempt peer-source consensus validation (mode-dependent) before signing.</li>
+        <li>Build a local witness from your claim and signed payload.</li>
+        <li>Generate the zero-knowledge proof in your browser.</li>
+      </ol>
+
+      <div class="tip">
+        <strong>Tip:</strong> On modern devices, the full flow is usually under 60 seconds.
+      </div>
+    </div>
+
+    <div class="doc-card">
+      <h2>Step 3: Share Receipt</h2>
+      <p>After successful generation, you can:</p>
+      <ul>
+        <li><strong>Copy URL:</strong> Share a verification link directly.</li>
+        <li><strong>Native Share:</strong> Open your device share sheet (when available).</li>
+        <li><strong>Social Share:</strong> Post to X, Reddit, or LinkedIn.</li>
+        <li><strong>QR Export:</strong> Download and share a QR code.</li>
+      </ul>
+    </div>
+
+    <div class="doc-card">
+      <h2>Validation Label (No Extra Action)</h2>
+      <p>GhostReceipt includes a passive validation label in the generated payload/UI:</p>
+      <ul>
+        <li><code>consensus_verified</code>: dual-source check matched before signing.</li>
+        <li><code>single_source_fallback</code>: peer source was unavailable and best-effort mode continued with primary data.</li>
+        <li><code>single_source_only</code>: consensus checks were disabled (<code>off</code>) or no peer path was configured.</li>
+      </ul>
+    </div>
+
+    <div class="doc-card">
+      <h2>What Verification Confirms</h2>
+      <ul>
+        <li>Claimed amount threshold is satisfied.</li>
+        <li>Claimed minimum date threshold is satisfied.</li>
+        <li>Proof and signature validations pass cryptographic checks.</li>
+      </ul>
+
+      <hr class="premium-divider">
+
+      <h2>What Stays Private</h2>
+      <ul>
+        <li>Sender and receiver wallet details are not exposed in receipt claims.</li>
+        <li>Exact raw transaction details are not required for the verifier to validate claims.</li>
+        <li>Sensitive witness inputs remain client-side during proof generation.</li>
+      </ul>
+    </div>
+
+    <div class="doc-card">
+      <h2>Troubleshooting</h2>
+      <ul>
+        <li><strong>Invalid hash format:</strong> BTC expects 64 hex chars, ETH expects <code>0x</code> + 64 hex chars, SOL expects base58 signature (64-88 chars).</li>
+        <li><strong>Consensus failure:</strong> in <code>strict</code> mode, peer mismatch/unavailability rejects signing. Retry later or switch to <code>best_effort</code> if your policy allows it.</li>
+        <li><strong>Proof failure:</strong> Re-check that claim amount/date are consistent with the on-chain transaction.</li>
+        <li><strong>Clipboard errors:</strong> Allow browser clipboard permissions and retry.</li>
+      </ul>
+    </div>
   </div>
 
-  <h2>Step 3: Share Receipt</h2>
-  <p>After successful generation, you can:</p>
-  <ul>
-    <li><strong>Copy URL:</strong> Share a verification link directly.</li>
-    <li><strong>Native Share:</strong> Open your device share sheet (when available).</li>
-    <li><strong>Social Share:</strong> Post to X, Reddit, or LinkedIn.</li>
-    <li><strong>QR Export:</strong> Download and share a QR code.</li>
-  </ul>
-
-  <h2>Validation Label (No Extra Action)</h2>
-  <p>GhostReceipt includes a passive validation label in the generated payload/UI:</p>
-  <ul>
-    <li><code>consensus_verified</code>: dual-source check matched before signing.</li>
-    <li><code>single_source_fallback</code>: peer source was unavailable and best-effort mode continued with primary data.</li>
-    <li><code>single_source_only</code>: consensus checks were disabled (<code>off</code>) or no peer path was configured.</li>
-  </ul>
-
-  <h2>What Verification Confirms</h2>
-  <ul>
-    <li>Claimed amount threshold is satisfied.</li>
-    <li>Claimed minimum date threshold is satisfied.</li>
-    <li>Proof and signature validations pass cryptographic checks.</li>
-  </ul>
-
-  <h2>What Stays Private</h2>
-  <ul>
-    <li>Sender and receiver wallet details are not exposed in receipt claims.</li>
-    <li>Exact raw transaction details are not required for the verifier to validate claims.</li>
-    <li>Sensitive witness inputs remain client-side during proof generation.</li>
-  </ul>
-
-  <h2>Troubleshooting</h2>
-  <ul>
-    <li><strong>Invalid hash format:</strong> BTC expects 64 hex chars, ETH expects <code>0x</code> + 64 hex chars, SOL expects base58 signature (64-88 chars).</li>
-    <li><strong>Consensus failure:</strong> in <code>strict</code> mode, peer mismatch/unavailability rejects signing. Retry later or switch to <code>best_effort</code> if your policy allows it.</li>
-    <li><strong>Proof failure:</strong> Re-check that claim amount/date are consistent with the on-chain transaction.</li>
-    <li><strong>Clipboard errors:</strong> Allow browser clipboard permissions and retry.</li>
-  </ul>
-
-  <footer style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #333; color: #888; font-size: 0.9em;">
-    <p>GhostReceipt - Zero-knowledge payment proofs | <a href="/">Home</a> | <a href="/docs/faq.html">FAQ</a> | <a href="/docs/security.html">Security</a> | <a href="https://github.com/Teycir/Ghostreceipt#readme" target="_blank" rel="noopener noreferrer">Source Code</a></p>
+  <footer class="doc-footer">
+    <div class="doc-footer-inner">
+      <div class="footer-links">
+        <a href="/history" class="footer-link">History</a><span class="footer-sep">•</span>
+        <a href="/docs/how-to-use.html" class="footer-link">How to Use</a><span class="footer-sep">•</span>
+        <a href="/docs/faq.html" class="footer-link">FAQ</a><span class="footer-sep">•</span>
+        <a href="/docs/security.html" class="footer-link">Security</a><span class="footer-sep">•</span>
+        <a href="/docs/license.html" class="footer-link">License</a><span class="footer-sep">•</span>
+        <a href="https://github.com/Teycir/Ghostreceipt#readme" target="_blank" rel="noopener noreferrer" class="footer-link">Source Code</a><span class="footer-sep">•</span>
+        <a href="https://teycirbensoltane.tn" target="_blank" rel="noopener noreferrer" class="footer-link">Made by Teycir</a>
+      </div>
+      <div class="footer-socials">
+        <a href="https://twitter.com/intent/tweet?text=Check%20out%20GhostReceipt%20-%20privacy-first%20verifiable%20crypto%20receipt%20links.&url=https%3A%2F%2Fghostreceipt.pages.dev&hashtags=Privacy,Crypto,ZeroKnowledge" target="_blank" rel="noopener noreferrer" aria-label="Share on X" class="footer-social">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633Z"/></svg>
+        </a>
+        <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fghostreceipt.pages.dev&title=GhostReceipt%20-%20Privacy-First%20Verifiable%20Receipts" target="_blank" rel="noopener noreferrer" aria-label="Share on Reddit" class="footer-social">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M6.167 8a.831.831 0 0 0-.83.83c0 .459.372.84.83.831a.831.831 0 0 0 0-1.661zm1.843 3.647c.315 0 1.403-.038 1.976-.611a.232.232 0 0 0 0-.306.213.213 0 0 0-.306 0c-.353.363-1.126.487-1.67.487-.545 0-1.308-.124-1.671-.487a.213.213 0 0 0-.306 0 .213.213 0 0 0 0 .306c.564.563 1.652.61 1.977.61zm.992-2.807c0 .458.373.83.831.83.458 0 .83-.381.83-.83a.831.831 0 0 0-1.66 0z"/><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.828-1.165c-.315 0-.602.124-.812.325-.801-.573-1.9-.945-3.121-.993l.534-2.501 1.738.372a.83.83 0 1 0 .83-.869.83.83 0 0 0-.744.468l-1.938-.41a.203.203 0 0 0-.153.028.186.186 0 0 0-.086.134l-.592 2.788c-1.24.038-2.358.41-3.17.992-.21-.2-.496-.324-.81-.324a1.163 1.163 0 0 0-.478 2.224c-.02.115-.029.23-.029.353 0 1.795 2.091 3.256 4.669 3.256 2.577 0 4.668-1.451 4.668-3.256 0-.114-.01-.238-.029-.353.401-.181.688-.592.688-1.069 0-.65-.525-1.165-1.165-1.165z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fghostreceipt.pages.dev" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn" class="footer-social">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>
+        </a>
+      </div>
+    </div>
   </footer>
 </body>
 </html>
