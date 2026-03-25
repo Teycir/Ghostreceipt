@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-25 - Preserve SEO Metadata By Keeping It In Server Page Wrappers
+- If a user requests SEO metadata on App Router pages, do not remove metadata; move it to a server `page.tsx` wrapper when the page needs client interactivity.
+- Never export `metadata` from files marked with `'use client'`; split into `*-client.tsx` + server wrapper to keep both SEO and runtime compatibility.
+- Validate with `next build` (outside sandbox if needed) because `tsc` alone does not catch this App Router constraint.
+
 ## 2026-03-25 - Preserve User-Provided Real Local Test Data Unless Explicitly Asked
 - If the user provides real live-test values (for example `ORACLE_PRIVATE_KEY`, live tx hashes/signatures), keep them intact in local runtime files such as `.env.local`.
 - Do not remove or redact user-provided real local test data unless the user explicitly requests removal/rotation.
