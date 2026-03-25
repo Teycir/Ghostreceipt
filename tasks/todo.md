@@ -644,5 +644,32 @@ Resolve current lint/test/release-check failures while preserving user-provided 
 
 - [x] Identify current failing gate(s) and isolate root cause.
 - [x] Apply minimal code/test fixes only (no secret/data deletion from local env files).
-- [ ] Re-run quality checks (secrets/readiness/typecheck/lint/tests) and verify green.
+- [x] Re-run quality checks (secrets/readiness/typecheck/lint/tests) and verify green.
 - [ ] Commit and push only after gates are confirmed green.
+
+## Objective (Docs Alignment: README + Diagrams + Mechanism + HTML Pages)
+
+Align user-facing documentation with current consensus behavior across BTC/ETH/SOL and passive validation labels, covering README diagrams/mechanism text and static HTML docs pages.
+
+## Plan
+
+- [x] Review README architecture/API/trust/flow sections for stale strict-BTC-only language.
+- [x] Update README diagrams and mechanism documentation to reflect multi-chain consensus modes and validation labels.
+- [x] Update static docs pages (`faq`, `how-to-use`, `security`) with the same mechanism language and zero-friction validation-label explanation.
+- [x] Run a quick validation pass and record completion notes.
+
+## Review (Docs Alignment: README + Diagrams + Mechanism + HTML Pages)
+
+- Status: Completed
+- Notes:
+  - Updated `README.md`:
+    - Added explicit `Mechanism` section.
+    - Updated architecture + logic-flow mermaid diagrams for multi-chain consensus behavior.
+    - Aligned API/config/FAQ wording with consensus modes and passive validation labels.
+  - Updated static docs pages:
+    - `public/docs/how-to-use.html` (consensus step + validation label explanation + strict-mode troubleshooting note)
+    - `public/docs/faq.html` (validation labels FAQ entry)
+    - `public/docs/security.html` (consensus modes + passive label + updated data flow)
+  - Validation:
+    - `npm run check:release-readiness` pass
+    - `npm run lint` pass

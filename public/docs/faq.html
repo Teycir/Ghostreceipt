@@ -103,7 +103,7 @@
 
   <div class="faq-item">
     <h2>Can this run without a credit card?</h2>
-    <p>Yes. Local setup and baseline flow are designed for no-card operation using public blockchain data providers.</p>
+    <p>Yes. Local setup and baseline flow are designed for no-card operation using free-tier/public provider paths.</p>
   </div>
 
   <div class="faq-item">
@@ -134,6 +134,16 @@
   <div class="faq-item">
     <h2>What does a verified receipt prove today?</h2>
     <p>It proves your claim satisfies the circuit against oracle-signed canonical transaction facts. It does not remove trust in the current single oracle operator and upstream data providers.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>What do validation labels mean?</h2>
+    <p>GhostReceipt shows validation strength as passive metadata, with no extra clicks required:</p>
+    <ul>
+      <li><code>consensus_verified</code>: primary and peer providers agreed before signing.</li>
+      <li><code>single_source_fallback</code>: peer was unavailable, and best-effort mode allowed signing with the primary source.</li>
+      <li><code>single_source_only</code>: consensus checks were off or no peer path was configured.</li>
+    </ul>
   </div>
 
   <div class="faq-item">

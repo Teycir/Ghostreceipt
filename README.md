@@ -50,6 +50,7 @@ Status:
 - [Use Cases](#use-cases)
 - [Architecture](#architecture)
 - [API Model](#api-model)
+- [Mechanism](#mechanism)
 - [Oracle Trust Model](#oracle-trust-model)
 - [Logic Flow](#logic-flow)
 - [Tech Stack](#tech-stack)
@@ -80,6 +81,7 @@ GhostReceipt solves this by combining:
 
 ## Key Features
 - Multi-provider tx fetch with automatic cascade failover
+- Consensus-aware validation labels (`consensus_verified`, `single_source_fallback`, `single_source_only`)
 - Optional BYOK (advanced), never required for core user flow
 - Deterministic proof generation and verification pipeline
 - Shareable receipt links + QR export
@@ -97,13 +99,17 @@ GhostReceipt solves this by combining:
 ```mermaid
 flowchart LR
     U[User] --> G[Generator UI]
-    G --> O[Oracle API]
-    O --> P1[Provider A]
-    O --> P2[Provider B]
-    O --> P3[Provider C]
-    O --> S[Oracle Signature]
+    G --> O[Oracle API /fetch-tx]
+    O --> P1[Primary Provider Cascade]
+    O --> P2[Consensus Peer Provider]
+    P1 --> N[Canonical Normalization]
+    P2 --> N
+    N --> D{Consensus Mode}
+    D --> S[Oracle Signature]
+    D --> L[Validation Label]
+    S --> G
+    L --> G
     G --> ZK[Browser ZK Engine]
-    S --> ZK
     ZK --> R[Receipt Payload]
     R --> V[Verifier Page]
     V --> OUT[Verified or Counterfeit State]
@@ -113,10 +119,10 @@ flowchart LR
 GhostReceipt uses four API types so the product stays reliable while keeping UX friction near zero:
 
 1. Public no-key data APIs (default path):
-- BTC reads from BlockCypher free-tier API (primary, key-rotated) with `mempool.space` public fallback.
-- BTC signing is dual-source hardened by default (`ORACLE_BTC_CONSENSUS_MODE=strict`): canonical BTC fields must agree across BlockCypher and mempool before oracle signing.
+- BTC uses BlockCypher (primary, key-rotated) with `mempool.space` as a public fallback.
 - ETH uses managed Etherscan API key cascade.
 - SOL uses managed Helius API key cascade.
+- Consensus peer checks can use ordered public endpoint lists (for example ETH/SOL public RPC peers, BTC mempool peer).
 - Used to keep onboarding keyless and no-card friendly.
 
 2. Managed keyed provider APIs (server-side preferred path):
@@ -132,7 +138,21 @@ GhostReceipt uses four API types so the product stays reliable while keeping UX 
 4. Optional BYOK APIs (advanced mode only):
 - Users may add their own provider keys for higher throughput.
 - BYOK is optional and never required for receipt generation or verification.
-- Provider integrations remain API-only in production runtime (no public-RPC fallback path).
+- Primary signing path remains API-first; public RPC usage is limited to peer consensus validation/fallback logic.
+
+## Mechanism
+GhostReceipt signs only after canonical transaction handling completes for the selected chain:
+
+1. Fetch canonical tx facts from the primary provider cascade.
+2. If consensus mode is enabled, query a secondary peer provider for the same transaction.
+3. Compare immutable canonical fields before signature issuance.
+4. Return signed payload plus passive validation metadata:
+- `consensus_verified`: primary and peer agree.
+- `single_source_fallback`: peer was unavailable, but `best_effort` mode allowed signing with primary.
+- `single_source_only`: consensus check is disabled (`off`) or no peer path exists.
+5. If consensus mode is `strict`, peer unavailability or canonical mismatch fails closed (no signature returned).
+
+Default production behavior is `best_effort` per chain (`ORACLE_BTC_CONSENSUS_MODE`, `ORACLE_ETH_CONSENSUS_MODE`, `ORACLE_SOL_CONSENSUS_MODE`), which keeps UX friction-free while surfacing validation strength directly in the payload/UI label.
 
 ## Oracle Trust Model
 GhostReceipt currently uses a single first-party oracle signing key as the trust anchor for canonical transaction facts.
@@ -157,7 +177,7 @@ Current trust assumptions:
 - The oracle signing key is kept server-side only (`ORACLE_PRIVATE_KEY`) and never exposed to the client.
 - Oracle signatures use Ed25519 over the canonical oracle commitment (`messageHash`).
 - Receipt verification checks both ZK validity and oracle signature integrity.
-- Oracle trust is centralized today; if the oracle is offline, new receipt generation is degraded.
+- Oracle trust is centralized today; if the oracle is offline, new receipt generation is unavailable.
 - If oracle key compromise is suspected, treat new payloads as untrusted until rotation/recovery procedures complete.
 
 Operational controls:
@@ -177,9 +197,21 @@ sequenceDiagram
 
     User->>UI: Enter chain + tx hash + claim
     UI->>Oracle: POST /api/oracle/fetch-tx
-    Oracle->>Providers: Fetch canonical tx data
-    Providers-->>Oracle: Value + timestamp + confirmations
-    Oracle-->>UI: Signed canonical payload
+    Oracle->>Providers: Fetch primary canonical tx data
+    Providers-->>Oracle: Primary canonical fields
+    alt Consensus mode = strict/best_effort
+      Oracle->>Providers: Fetch peer canonical data
+      Providers-->>Oracle: Peer canonical fields or unavailable
+      alt Peer matches primary
+        Oracle-->>UI: Signed payload + consensus_verified label
+      else Peer unavailable and mode=best_effort
+        Oracle-->>UI: Signed payload + single_source_fallback label
+      else Peer mismatch or strict unavailable
+        Oracle-->>UI: Error (fail closed, no signature)
+      end
+    else Consensus mode = off
+      Oracle-->>UI: Signed payload + single_source_only label
+    end
     UI->>ZK: Build witness + generate proof
     ZK-->>UI: proof + publicSignals
     UI-->>User: Share link/QR payload
@@ -241,8 +273,8 @@ Open `http://localhost:3000`.
 - No-user-API-key mode: users are not required to bring API keys.
 - Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
 - Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
-- Provider paths: BTC uses BlockCypher primary + mempool.space fallback, ETH uses Etherscan API cascade, SOL uses Helius API cascade.
-- BTC hardening mode: `ORACLE_BTC_CONSENSUS_MODE=strict` (default) enforces fail-closed dual-source consensus before signature issuance.
+- Provider paths: BTC uses BlockCypher primary + mempool.space fallback, ETH uses Etherscan API cascade (+ public RPC consensus peer), SOL uses Helius API cascade (+ public RPC consensus peer).
+- Consensus controls: `ORACLE_BTC_CONSENSUS_MODE`, `ORACLE_ETH_CONSENSUS_MODE`, `ORACLE_SOL_CONSENSUS_MODE` (`best_effort`, `strict`, `off`; defaults in `.env.example`).
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)
@@ -280,6 +312,12 @@ Only proof-related public claims and redacted receipt output, not raw sensitive 
 
 ### What does a verified receipt prove today?
 It proves your claim satisfies the circuit against oracle-signed canonical tx facts. It does not remove trust in the current single oracle/operator and provider data sources.
+
+### What does the validation label mean?
+It tells you how strongly transaction data was validated before signing:
+- `consensus_verified`: dual-source agreement succeeded.
+- `single_source_fallback`: peer source was unavailable, signing continued in `best_effort`.
+- `single_source_only`: consensus check was intentionally off or no peer was configured.
 
 ### What BTC value does `valueAtomic` represent?
 For BTC, `valueAtomic` is currently tx-level total output value (`sum(vout)` / `output_total`), not recipient-specific net received value. In multi-output transactions, this can exceed what any single recipient received.

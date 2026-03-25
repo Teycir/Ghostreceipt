@@ -91,7 +91,9 @@
   <h2>Architecture</h2>
   <ul>
     <li><strong>Client-side proof generation:</strong> All sensitive data stays in your browser</li>
-    <li><strong>Oracle-signed data:</strong> Transaction data is cryptographically signed by the oracle</li>
+    <li><strong>Oracle-signed data:</strong> Canonical transaction data is cryptographically signed by the oracle</li>
+    <li><strong>Consensus modes:</strong> <code>best_effort</code>, <code>strict</code>, and <code>off</code> control peer-source validation behavior</li>
+    <li><strong>Passive validation labels:</strong> Signature payloads include validation strength metadata with no added user action</li>
     <li><strong>Zero-knowledge proofs:</strong> Groth16 zk-SNARKs prove claims without revealing data</li>
     <li><strong>No data storage:</strong> GhostReceipt does not store your transaction details</li>
   </ul>
@@ -132,8 +134,9 @@
   <h2>Data Flow</h2>
   <ol>
     <li>User enters transaction hash and claim parameters</li>
-    <li>Oracle fetches canonical blockchain data</li>
-    <li>Oracle signs canonical commitment data with Ed25519</li>
+    <li>Oracle fetches canonical blockchain data from the primary provider cascade</li>
+    <li>Oracle attempts peer consensus validation (mode-dependent)</li>
+    <li>Oracle signs canonical commitment data with Ed25519 and emits validation label metadata (<code>consensus_verified</code>, <code>single_source_fallback</code>, or <code>single_source_only</code>)</li>
     <li>Browser builds witness from oracle payload + user claim</li>
     <li>Browser generates zero-knowledge proof locally</li>
     <li>Shareable receipt contains only proof + public signals</li>
