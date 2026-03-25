@@ -11,6 +11,7 @@ import {
   type NullifierStorageLike,
 } from '@/lib/zk/nullifier';
 import type { ShareableProofPayload, ProofGenerator } from '@/lib/zk/prover';
+import type { OracleValidationStatus } from '@/lib/generator/types';
 
 export interface OracleSignatureVerificationResult {
   valid: boolean;
@@ -24,6 +25,8 @@ export interface ReceiptVerificationResult {
   minDate: string;
   minDateDisclosure?: ReceiptClaimDisclosureState;
   signalContract?: ReceiptSignalContract;
+  oracleValidationLabel?: string;
+  oracleValidationStatus?: OracleValidationStatus;
   receiptCategory?: string;
   receiptLabel?: string;
   error?: string;
@@ -261,6 +264,12 @@ export async function verifySharedReceiptProof(
       minDate: decodedSignals.minDateIsoUtc ?? 'Hidden',
       minDateDisclosure: decodedSignals.minDateDisclosure,
       signalContract: decodedSignals.contract,
+      ...(proofData.receiptMeta?.oracleValidationStatus
+        ? { oracleValidationStatus: proofData.receiptMeta.oracleValidationStatus }
+        : {}),
+      ...(proofData.receiptMeta?.oracleValidationLabel
+        ? { oracleValidationLabel: proofData.receiptMeta.oracleValidationLabel }
+        : {}),
       ...(proofData.receiptMeta?.category
         ? { receiptCategory: proofData.receiptMeta.category }
         : {}),

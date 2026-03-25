@@ -113,6 +113,46 @@ describe('verifySharedReceiptProof', () => {
     });
   });
 
+  it('includes validation-strength metadata when present in receipt meta payload', async () => {
+    const messageHash = 'oracle-selective-meta';
+    const nullifier = await deriveNullifierFromMessageHash(messageHash);
+    const claimDigest = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 0,
+      minDateUnix: 1700000000,
+    });
+    const payload = buildProofPayload(
+      [messageHash, '0', '0', '0', claimDigest],
+      messageHash,
+      nullifier
+    );
+    payload.proofPublicSignals = ['123450000', '1700000000', messageHash];
+    payload.receiptMeta = {
+      oracleValidationStatus: 'single_source_fallback',
+      oracleValidationLabel: 'Single-source fallback (primary); consensus source unavailable',
+    };
+
+    const result = await verifySharedReceiptProof('mock-proof', {
+      createProofGenerator: () => ({
+        importProof: () => payload,
+        verifyProof: async () => ({ valid: true }),
+      }),
+      signatureVerifier,
+      storage: new InMemoryStorage(),
+    });
+
+    expect(result).toEqual({
+      valid: true,
+      claimedAmount: 'Hidden',
+      claimedAmountDisclosure: 'hidden',
+      minDate: 'Hidden',
+      minDateDisclosure: 'hidden',
+      signalContract: 'selective-disclosure-v1',
+      oracleValidationStatus: 'single_source_fallback',
+      oracleValidationLabel: 'Single-source fallback (primary); consensus source unavailable',
+    });
+  });
+
   it('fails selective payloads when claim digest does not match proven claims', async () => {
     const messageHash = 'oracle-selective-digest';
     const nullifier = await deriveNullifierFromMessageHash(messageHash);
