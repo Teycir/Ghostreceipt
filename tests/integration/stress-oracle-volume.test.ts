@@ -10,6 +10,7 @@ import {
 } from '@/app/api/oracle/verify-signature/route';
 import { SuccessResponseSchema } from '@/lib/validation/schemas';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
+import { BlockCypherProvider } from '@/lib/providers/bitcoin/blockcypher';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 
 const describeStress = process.env['STRESS_TEST'] === '1' ? describe : describe.skip;
@@ -119,6 +120,18 @@ describeStress('Oracle stress test (100 users/hour equivalent + concurrency)', (
     __disposeOracleVerifyRouteForTests();
 
     jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockImplementation(async (txHash) => {
+      return {
+        chain: 'bitcoin',
+        txHash,
+        valueAtomic: '100000',
+        timestampUnix: 1700000000,
+        confirmations: 6,
+        blockNumber: 850000,
+        blockHash: 'b'.repeat(64),
+      };
+    });
+
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockImplementation(async (txHash) => {
       return {
         chain: 'bitcoin',
         txHash,

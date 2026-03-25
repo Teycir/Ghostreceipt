@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-25 - Preserve User-Provided Real Local Test Data Unless Explicitly Asked
+- If the user provides real live-test values (for example `ORACLE_PRIVATE_KEY`, live tx hashes/signatures), keep them intact in local runtime files such as `.env.local`.
+- Do not remove or redact user-provided real local test data unless the user explicitly requests removal/rotation.
+- If redaction is required for tracked docs/CI safety, only redact documentation copies and preserve the real values in local env runtime config.
+
 ## 2026-03-25 - Add Endpoint Lists Inside Providers When User Forbids Cascade Refactors
 - If user says “do not touch what works” in cascade ordering, keep `ProviderCascade` topology unchanged and add fallback lists inside the public-provider implementation instead.
 - Endpoint failover order must be deterministic (env list order), not random, and backward-compatible with existing single-URL env vars.

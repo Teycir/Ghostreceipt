@@ -9,7 +9,7 @@ describe('Provider SSRF enforcement', () => {
 
   it('blocks mempool provider requests when base URL resolves to private network', async () => {
     const provider = new MempoolSpaceProvider();
-    (provider as unknown as { baseUrl: string }).baseUrl = 'https://127.0.0.1/api';
+    (provider as unknown as { baseUrls: string[] }).baseUrls = ['https://127.0.0.1/api'];
 
     const fetchSpy = jest.spyOn(global, 'fetch');
 

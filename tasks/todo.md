@@ -47,7 +47,7 @@ Use the user-provided oracle private key and Exa-derived live transaction inputs
 - Status: Completed
 - Notes:
   - Added user key + Exa-derived live tx inputs in `.env.local`:
-    - `ORACLE_PRIVATE_KEY=05e80e1b4829c78e4f1839f678741a7a06d33235197bd57df36e722c952942fe`
+    - `ORACLE_PRIVATE_KEY=<redacted-local-secret>`
     - `LIVE_BTC_TX_HASH=d07422d13247b8f59bddd9ea53f8ccbd0f6a14e6f666eb3dde703c7db4fd1f58`
     - `LIVE_ETH_TX_HASH=0x07f38e681d32e36213e575b25a5f6367ac2fee9eb3c3976d9651ec0786c8ca42`
     - `LIVE_ETH_USDC_TX_HASH=0x49f81b3603bda9461ce92925666c215442ed48f53e62ea8b066f3e46d828213c`
@@ -635,3 +635,14 @@ Harden BTC oracle trust without adding any user-facing steps by requiring dual-s
     - `npm run test -- tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/api/fetch-tx-route.test.ts`
     - `npm run typecheck`
     - `npm run test:live:btc:blockcypher` pass (`[Cascade] Success with provider: blockcypher`)
+
+## Objective (Stabilize Current Error Gates Without Touching Real Local Test Data)
+
+Resolve current lint/test/release-check failures while preserving user-provided real local env test data as-is.
+
+## Plan
+
+- [x] Identify current failing gate(s) and isolate root cause.
+- [x] Apply minimal code/test fixes only (no secret/data deletion from local env files).
+- [ ] Re-run quality checks (secrets/readiness/typecheck/lint/tests) and verify green.
+- [ ] Commit and push only after gates are confirmed green.

@@ -1,3 +1,5 @@
+/* global require, process */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 

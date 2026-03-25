@@ -2,9 +2,10 @@
 
 import { spawnSync } from 'node:child_process';
 
-import readinessChecks from '../lib/release/readiness-checks.js';
-
-const { formatReleaseReadinessDocReport, runReleaseReadinessDocChecks } = readinessChecks;
+import {
+  formatReleaseReadinessDocReport,
+  runReleaseReadinessDocChecks,
+} from '../lib/release/readiness-checks.js';
 
 const args = new Set(process.argv.slice(2));
 const allowedArgs = new Set(['--json', '--docs-only']);

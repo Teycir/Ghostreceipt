@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import artifactChecksumUtils from '../lib/zk/artifact-checksums.js';
-
-const { collectZkArtifactChecksums, formatZkArtifactChecksumReport } = artifactChecksumUtils;
+import {
+  collectZkArtifactChecksums,
+  formatZkArtifactChecksumReport,
+} from '../lib/zk/artifact-checksums.js';
 
 const args = new Set(process.argv.slice(2));
 const allowedArgs = new Set(['--json', '--required-only']);

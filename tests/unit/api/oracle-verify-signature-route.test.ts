@@ -421,7 +421,7 @@ describe('POST /api/oracle/verify-signature', () => {
   it('verifies signatures using ORACLE_PUBLIC_KEY without private key', async () => {
     const privateKey = '1'.repeat(64);
     const signer = new OracleSigner(privateKey);
-    const payload = buildSignedAuthPayload(signer);
+    const payload = buildSignedAuthPayload(signer, { nonce: '7'.repeat(32) });
     process.env['ORACLE_PUBLIC_KEY'] = OracleSigner.derivePublicKeyHex(privateKey);
     delete process.env['ORACLE_PRIVATE_KEY'];
 
@@ -447,10 +447,11 @@ describe('POST /api/oracle/verify-signature', () => {
     const signerB = new OracleSigner(keyB);
     const payloadA = buildSignedAuthPayload(signerA, {
       messageHash: '12345678901234567890',
+      nonce: '9'.repeat(32),
     });
     const payloadB = buildSignedAuthPayload(signerB, {
       messageHash: '22345678901234567890',
-      nonce: 'b'.repeat(32),
+      nonce: '8'.repeat(32),
       signedAt: nowUnix + 1,
       expiresAt: nowUnix + 301,
     });
