@@ -1,5 +1,400 @@
 # Task Plan - 2026-03-25
 
+## Objective (Input Sanitization Hardening)
+
+Strengthen JSON request sanitization for both Next API routes and Cloudflare Pages wrappers with shared, deterministic behavior.
+
+## Plan
+
+- [ ] Add a shared JSON input sanitizer utility for key validation and string sanitization/rejection rules.
+- [ ] Integrate sanitizer into `parseSecureJson` and `parseJsonBodyWithLimits`.
+- [ ] Expose sanitizer parse errors through route envelope mapping.
+- [ ] Add unit tests for sanitizer behavior and parser integration.
+- [ ] Run targeted tests + typecheck and capture review notes.
+
+## Objective (Investigate x5 Matrix Warning Noise)
+
+Identify why warning volume spikes during large repeat matrix runs and reduce avoidable noise without hiding real failures.
+
+## Plan
+
+- [x] Reproduce warnings with reduced matrix run and inspect exact warning lines.
+- [x] Isolate repeated warning source in matrix harness.
+- [x] Patch harness to avoid repeated warnings for permanently unsupported datasets.
+- [x] Re-run matrix sample and verify warning reduction.
+
+## Review (Investigate x5 Matrix Warning Noise)
+
+- Status: Completed
+- Root cause:
+  - `tests/integration/live-legacy-vs-edge-speed-matrix.test.ts` was retrying the same known unsupported SOL fixture across repeats (`4FKj...`), generating repeated cascade warnings + repeated skip warnings.
+- Fix:
+  - Added dataset-level skip tracking in the matrix test:
+    - `loggedSkipDatasetKeys` to log skip warning once per dataset.
+    - `permanentlySkippedDatasetKeys` to stop retrying a dataset after confirmed unsupported-native-SOL failure.
+- Validation:
+  - Reproduced baseline warning classes with live matrix sample (`repeats=2`).
+  - Re-ran after patch and confirmed:
+    - only one matrix skip warning for the unsupported dataset,
+    - unsupported dataset no longer retried across repeats.
+  - `npm run typecheck` pass.
+
+## Objective (Observability Follow-Up: Oracle Client Failover)
+
+Address silent failover suppression by adding warning logs in client failover path and test coverage.
+
+## Plan
+
+- [x] Add warning logging when fallback is triggered by HTTP response failover.
+- [x] Add warning logging when fallback is triggered by thrown network/transport errors.
+- [x] Extend unit tests to assert failover warnings are emitted.
+- [x] Update fail-safe runbook with performance/disable guidance and observability signals.
+
+## Review (Observability Follow-Up: Oracle Client Failover)
+
+- Status: Completed
+- Notes:
+  - `lib/oracle/client.ts` now warns before backup retry in both:
+    - response failover path (`404/405/5xx`)
+    - thrown transport error path.
+  - `tests/unit/oracle/client.test.ts` now verifies warning emission for:
+    - primary `503` fallback,
+    - primary network error fallback.
+  - `docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md` now includes:
+    - performance implications,
+    - explicit disable behavior,
+    - suggested observability signals.
+- Validation:
+  - `npm test -- tests/unit/oracle/client.test.ts --runInBand --ci` pass.
+
+## Objective (Operationalize Step 1 + Step 2)
+
+Execute the approved next steps:
+1) make backup-base configuration explicit in deploy scripts,
+2) run a repeatable failover drill and capture result.
+
+## Plan
+
+- [x] Add a dedicated failover drill command.
+- [x] Update deployment helper scripts to include `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`.
+- [x] Execute drill command and document pass/fail result.
+
+## Review (Operationalize Step 1 + Step 2)
+
+- Status: Completed
+- Changes:
+  - Added command:
+    - `npm run test:drill:oracle-failover`
+    - Script file: `scripts/run-oracle-failover-drill.sh`
+  - Updated deploy helper scripts to mention backup-base setup:
+    - `scripts/deploy-check.sh`
+    - `scripts/setup-cloudflare.sh`
+    - `scripts/sync-secrets.sh`
+  - Added quick drill command to fail-safe runbook:
+    - `docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md`
+- Validation:
+  - `npm run test:drill:oracle-failover` pass.
+  - Drill output confirms policy paths:
+    - primary success path,
+    - fallback on `503`,
+    - fallback on network error,
+    - no fallback on `429`.
+
+## Objective (Fail-Safe Architecture: Client Primary, Edge Backup)
+
+Implement a clean fail-safe oracle routing architecture where the client keeps `/api/oracle/*` as primary and uses edge as optional backup, then align README/how-to/HTML/deployment docs with the same policy.
+
+## Plan
+
+- [x] Add a shared client oracle transport helper with explicit fallback policy.
+- [x] Wire generator and verifier API calls to the shared helper.
+- [x] Add unit tests covering fallback and non-fallback behavior.
+- [x] Update README + docs + public HTML pages to document client-primary/edge-backup behavior.
+- [x] Run targeted tests and capture verification notes.
+
+## Review (Fail-Safe Architecture: Client Primary, Edge Backup)
+
+- Status: Completed
+- Notes:
+  - Added shared helper: `lib/oracle/client.ts`.
+  - Added optional env config: `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` (`.env.example`).
+  - Fallback policy now centralized:
+    - primary route: `/api/oracle/*`
+    - optional backup base: `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`
+    - fallback triggers only on transport/platform failures (`network`, `404/405`, `5xx`)
+    - no fallback on normal `4xx` (including `429`)
+  - Generator/verifier paths now use shared transport:
+    - `lib/generator/use-proof-generator.ts`
+    - `lib/verify/receipt-verifier.ts`
+  - Added unit coverage:
+    - `tests/unit/oracle/client.test.ts`
+  - Documentation updates completed across:
+    - `README.md`
+    - `docs/README.md`
+    - `docs/DEPLOYMENT_CHECKLIST.md`
+    - `docs/DEPLOYMENT_READY.md`
+    - `docs/CLOUDFLARE_DEPLOYMENT.md`
+    - `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md`
+    - `docs/runbooks/CLOUDFLARE_DEPLOYMENT.md`
+    - `docs/runbooks/QUICK_DEPLOY.md`
+    - `docs/runbooks/SECURITY.md`
+    - `docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md` (new)
+    - `functions/README.md`
+    - `public/docs/how-to-use.html`
+    - `public/docs/faq.html`
+    - `public/docs/security.html`
+- Validation:
+  - `npm test -- tests/unit/oracle/client.test.ts tests/unit/verify/receipt-verifier.test.ts --runInBand --ci` pass.
+  - `npm run typecheck` pass.
+  - Also resolved the previously observed matrix typing issue by splitting `configuredScenarios` and filtered `scenarios` assignment in `tests/integration/live-legacy-vs-edge-speed-matrix.test.ts`.
+
+## Objective (Live Confirmation: Multi-Crypto + Multi-Dataset Legacy vs Edge)
+
+Confirm legacy-vs-edge speed behavior on additional chains and multiple real transaction datasets.
+
+## Plan
+
+- [x] Add a gated live matrix benchmark covering BTC, ETH(native), ETH(USDC), and SOL where datasets are available.
+- [x] Use multiple real tx hashes per chain where possible and compare legacy vs edge on identical inputs.
+- [x] Execute the matrix benchmark in live mode and collect per-scenario timings.
+- [x] Document conclusions in this task file.
+
+## Review (Live Confirmation: Multi-Crypto + Multi-Dataset Legacy vs Edge)
+
+- Status: Completed
+- Notes:
+  - Added matrix benchmark suite: `tests/integration/live-legacy-vs-edge-speed-matrix.test.ts`.
+  - Added command: `npm run test:live:speed:matrix`.
+  - Matrix compared legacy vs edge on real datasets across:
+    - `bitcoin-native` (3 datasets),
+    - `ethereum-native` (3 datasets),
+    - `ethereum-usdc` (1 dataset),
+    - `solana-native` (2 datasets completed, 1 dataset skipped).
+  - One Solana fixture was skipped because it is not a native SOL transfer (`PROVIDER_ERROR`), which is expected for this fetch path.
+- Validation:
+  - `npm run test:live:speed:matrix` pass.
+  - `SPEED_COMPARE_MATRIX_REPEATS_PER_TX=3 npm run test:live:speed:matrix` pass.
+  - `SPEED_COMPARE_MATRIX=1 SPEED_COMPARE_MATRIX_REPEATS_PER_TX=15 SPEED_COMPARE_MATRIX_TEST_TIMEOUT_MS=1800000 npx jest tests/integration/live-legacy-vs-edge-speed-matrix.test.ts --runInBand --ci --testTimeout=1800000 --forceExit` pass.
+  - Global result (`samplesPerMode=9`):
+    - Legacy mean total: `3226ms`
+    - Edge mean total: `4167ms`
+    - Delta (edge vs legacy): `+29.17%`
+  - Expanded-sample result (`samplesPerMode=27`, `repeatsPerTx=3`):
+    - Legacy mean total: `3433ms`
+    - Edge mean total: `3194ms`
+    - Delta (edge vs legacy): `-6.96%`
+  - 5x expanded result (`samplesPerMode=135`, `repeatsPerTx=15`):
+    - Legacy mean total: `3237ms`
+    - Edge mean total: `3471ms`
+    - Delta (edge vs legacy): `+7.23%`
+  - Per-scenario deltas (edge vs legacy):
+    - `bitcoin-native`:
+      - baseline run: `-20.57%` (edge faster)
+      - expanded-sample run: `-5.95%` (edge faster)
+    - `ethereum-native`:
+      - baseline run: `+45.87%` (edge slower)
+      - expanded-sample run: `-2.64%` (edge faster)
+    - `ethereum-usdc`:
+      - baseline run: `+1.70%` (near parity, edge slightly slower)
+      - expanded-sample run: `-20.91%` (edge faster)
+    - `solana-native`:
+      - baseline run: `+71.02%` (edge slower)
+      - expanded-sample run: `+1.17%` (near parity, edge slightly slower)
+      - 5x expanded run: `+31.09%` (edge slower)
+  - Data quality note:
+    - Solana fixture `4FKj...` is not a native SOL transfer for this route; matrix harness now logs and skips those unusable samples instead of failing the whole benchmark.
+
+## Objective (Live Benchmark: Legacy vs Edge Speed on Same Data)
+
+Measure and compare end-to-end oracle route latency between legacy Next app routes and edge Pages function wrappers using the same live transaction data.
+
+## Plan
+
+- [x] Add a gated live integration benchmark test for legacy vs edge route latency on identical input.
+- [x] Capture per-mode timing metrics (`fetch`, `verify`, `total`) with warmup + measured iterations.
+- [x] Run benchmark test command and collect results.
+- [x] Document benchmark summary and conclusions in this task file.
+
+## Review (Live Benchmark: Legacy vs Edge Speed on Same Data)
+
+- Status: Completed
+- Notes:
+  - Added live benchmark suite: `tests/integration/live-legacy-vs-edge-speed.test.ts`.
+  - Added runnable command: `npm run test:live:speed:legacy-vs-edge`.
+  - Benchmark compares:
+    - legacy path: Next app routes (`app/api/oracle/fetch-tx`, `app/api/oracle/verify-signature`)
+    - edge path: Pages function wrappers (`functions/api/oracle/fetch-tx`, `functions/api/oracle/verify-signature`)
+  - Fairness controls:
+    - same BTC tx hash for all rounds,
+    - warmup phase + measured phase,
+    - alternating execution order per round,
+    - canonical fetch cache disabled (`ORACLE_FETCH_TX_CANONICAL_CACHE_TTL_MS=0`) during run.
+- Validation:
+  - `npm run test:live:speed:legacy-vs-edge` pass.
+  - Result summary (warmup=1, measured=4):
+    - Legacy mean total: `1322ms`
+    - Edge mean total: `1418ms`
+    - Delta (edge vs legacy): `+7.26%`
+    - Legacy p50 total: `1323ms`, p95 total: `1331ms`
+    - Edge p50 total: `1322ms`, p95 total: `1719ms`
+
+## Objective (Live Integration: Real-World Conditions Run)
+
+Execute the live integration suite against real provider endpoints and live chain transactions, then capture pass/fail evidence and blockers.
+
+## Plan
+
+- [x] Run `npm run test:live:oracle` with `LIVE_INTEGRATION=1` flow enabled.
+- [x] Capture concrete failures (missing env keys, tx mismatches, provider errors) if any.
+- [x] Document run outcome and validation evidence in this task file.
+
+## Review (Live Integration: Real-World Conditions Run)
+
+- Status: Completed
+- Notes:
+  - Executed live integration suite using real provider calls and real-world chain transactions via `scripts/run-live-oracle-tests.sh`.
+  - `tests/integration/live-oracle-flows.test.ts` passed with successful provider cascade calls (`blockcypher`, `etherscan`, `helius`).
+  - `tests/integration/live-consensus-flows.test.ts` passed in strict consensus mode (BTC + ETH native + ETH USDC + SOL paths).
+  - No env-key, tx-format, schema, commitment, witness, proof, or signature-verification failures occurred in this run.
+- Validation:
+  - `npm run test:live:oracle` pass.
+  - Result summary: `2` test suites passed, `7` tests passed, `0` failed.
+
+## Objective (Integration Coverage: Edge Worker With Client Fallback)
+
+Add integration test coverage for the new proof runtime path that prefers the edge worker execution path and safely falls back to client/main-thread proving when worker execution fails.
+
+## Plan
+
+- [x] Add integration tests that validate successful worker-path proof resolution when worker runtime is available.
+- [x] Add integration tests that validate fallback to direct `groth16.fullProve` when worker runtime errors.
+- [x] Run targeted integration tests for the new suite.
+- [x] Document review/results in this task file.
+
+## Review (Integration Coverage: Edge Worker With Client Fallback)
+
+- Status: Completed
+- Notes:
+  - Added integration suite: `tests/integration/proof-worker-edge-fallback.test.ts`.
+  - Added coverage for the worker-first runtime branch by stubbing a browser-like `window` + `Worker` runtime and asserting worker-returned proof/public signals are used.
+  - Added coverage for runtime fallback by simulating worker-constructor failure and asserting `groth16.fullProve` executes as the client/main-thread fallback.
+  - Reused Jest module mocking for `snarkjs` (`groth16.fullProve`) to keep integration runtime deterministic and avoid readonly spy failures from direct `spyOn`.
+- Validation:
+  - `npm test -- tests/integration/proof-worker-edge-fallback.test.ts --runInBand --ci` pass.
+
+## Objective (Modularity Hardening: Reusable Pages Adapters)
+
+Ensure the recent Cloudflare Pages refactor is fully reusable across projects by removing duplicated in-memory adapter logic from route handlers and centralizing it in backend-core primitives.
+
+## Plan
+
+- [x] Add no-timer mode support to shared in-memory replay/nullifier adapters without changing existing defaults.
+- [x] Refactor Pages `verify-signature` and `check-nullifier` handlers to use the shared adapters instead of local Map adapters.
+- [x] Add focused unit tests for no-timer adapter mode and Pages handler regression coverage.
+- [x] Run `npm run typecheck` and targeted unit tests for backend-core + Pages wrappers.
+- [x] Document review/results in this task file.
+
+## Review (Modularity Hardening: Reusable Pages Adapters)
+
+- Status: Completed
+- Notes:
+  - Added `startCleanupTimer` option to shared reusable adapters:
+    - `InMemoryOracleAuthReplayAdapter`
+    - `InMemoryNullifierRegistryAdapter`
+  - Defaults are unchanged (`startCleanupTimer: true`) to preserve existing behavior in other runtimes.
+  - Cloudflare Pages handlers now use shared adapters in no-timer mode (`startCleanupTimer: false`) instead of route-local Map adapter duplication.
+  - This makes the Pages runtime slimmer and keeps replay/nullifier behavior centralized in backend-core for reuse in other projects.
+- Validation:
+  - `npm run typecheck` pass.
+  - `npm test -- tests/unit/backend-core/http/oracle-auth-replay.test.ts tests/unit/backend-core/http/oracle-nullifier.test.ts tests/unit/functions/oracle-pages-wrappers.test.ts --runInBand --ci` pass.
+
+## Objective (Restore Real Production Oracle APIs On Cloudflare Pages)
+
+Move production Pages Functions from fail-closed stubs back to real behavior while keeping stability-first controls and extracting reusable modules for other projects.
+
+## Plan
+
+- [x] Replace fail-closed `functions/api/oracle/fetch-tx.ts` with real production handler.
+- [x] Replace fail-closed `functions/api/oracle/verify-signature.ts` with real production handler.
+- [x] Add `functions/api/oracle/check-nullifier.ts` production handler for parity.
+- [x] Extract shared Pages runtime logic into reusable backend-core modules.
+- [x] Keep function entrypoints thin and generic for reuse in other projects.
+- [x] Add/keep focused unit tests for function behavior.
+- [x] Run typecheck and targeted unit tests.
+- [x] Deploy to Cloudflare Pages and smoke-check production endpoints.
+
+## Review (Restore Real Production Oracle APIs On Cloudflare Pages)
+
+- Status: Completed
+- Notes:
+  - Added reusable, project-agnostic handler modules:
+    - `lib/libraries/backend-core/http/pages/runtime-shared.ts`
+    - `lib/libraries/backend-core/http/pages/fetch-tx-pages.ts`
+    - `lib/libraries/backend-core/http/pages/verify-signature-pages.ts`
+    - `lib/libraries/backend-core/http/pages/check-nullifier-pages.ts`
+  - `functions/api/oracle/*` files are now thin entrypoints that call backend-core reusable handlers.
+  - Added backend-core exports in `lib/libraries/backend-core/http/index.ts` so other projects can import the same primitives/handlers directly.
+  - Removed global-scope timer dependencies from the Pages runtime path to satisfy Cloudflare publish/runtime constraints.
+  - Updated Pages deployment/runtime docs and function docs to reflect the modular architecture.
+- Validation:
+  - `npm run typecheck` pass.
+  - `npm test -- tests/unit/functions/oracle-pages-wrappers.test.ts --runInBand --ci` pass.
+  - `npm test -- tests/unit/functions/oracle-pages-wrappers.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts --runInBand --ci` pass.
+  - `npm run deploy` pass.
+  - Production smoke checks on `https://ghostreceipt.pages.dev`:
+    - `POST /api/oracle/fetch-tx` invalid body -> `400 INVALID_HASH`
+    - `POST /api/oracle/verify-signature` invalid body -> `400 INVALID_HASH`
+    - `POST /api/oracle/check-nullifier` invalid body -> `400 INVALID_HASH`
+
+## Objective (Implement P1-06 Safely: Durable Limiter With Legacy Fallback)
+
+Implement item `2` with stability-first guarantees:
+- keep `legacy` as the default mode,
+- add `durable_prefer` and `durable_strict` modes,
+- fallback to legacy only for technical durable-backend failures (not for rate-limit denials),
+- keep behavior rollback-safe via env flags.
+
+## Plan
+
+- [x] Add resilient rate-limit backend abstraction in backend-core HTTP limiter path.
+- [x] Add durable backend env controls and defaults in `.env.example`.
+- [x] Return safe error response when strict durable mode backend is unavailable.
+- [x] Add focused unit tests for `legacy`, `durable_prefer`, and strict-unavailable behavior.
+- [x] Run typecheck and targeted unit tests.
+
+## Review (Implement P1-06 Safely: Durable Limiter With Legacy Fallback)
+
+- Status: Completed (feature-flagged, stability-first default)
+- Notes:
+  - Added backend modes in route rate-limiter path:
+    - `legacy` (default),
+    - `durable_prefer` (technical durable failure -> legacy fallback),
+    - `durable_strict` (technical durable failure -> fail closed).
+  - Fallback guardrail enforced:
+    - No fallback-allow on explicit durable deny decisions.
+  - Added per-limiter backend scopes (`fetch-tx`, `verify-signature`, `check-nullifier`) for deterministic durable buckets.
+  - Added strict-mode envelope behavior: backend outage returns `503` with `INTERNAL_ERROR`.
+  - Added env controls in `.env.example` for backend mode, durable endpoint, timeout, and circuit-breaker thresholds.
+  - Hardened catch-path observability:
+    - non-JSON durable responses now include parse-error details in fatal exceptions,
+    - durable `429` parse fallback now logs warning details before safe deny fallback,
+    - invalid durable URL config is validated and logged before safe legacy fallback.
+- Validation:
+  - `npm run typecheck` pass.
+  - `npm test -- tests/unit/backend-core/http/rate-limit-envelope.test.ts tests/unit/backend-core/http/oracle-route-envelope.test.ts --runInBand --ci` pass.
+  - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts --runInBand --ci` pass.
+  - `npm test -- tests/unit/api/oracle-check-nullifier-route.test.ts --runInBand --ci` pass.
+
+## Objective (Deploy Safety Hotfix: Remove False-Positive Oracle Function Behavior)
+
+After preview deploy validation, `/api/oracle/*` Cloudflare Functions were confirmed to be placeholder logic (unsafe success responses). Ship immediate fail-closed stubs to prevent trust-model violations.
+
+## Plan
+
+- [x] Replace placeholder success responses in `functions/api/oracle/fetch-tx.ts` and `functions/api/oracle/verify-signature.ts` with explicit `503` fail-closed responses.
+- [x] Add structured error payloads and no-store headers for fail-closed function responses.
+- [x] Update `functions/README.md` to reflect fail-closed status and required production parity work.
+
 ## Objective (Spike-Safety Step 1: Cloudflare Edge Route Wall)
 
 Implement only item `1` from the safety batch with rollback-safe operations and no extra API spend:

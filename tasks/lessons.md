@@ -1,5 +1,20 @@
 # Lessons Learned
 
+## 2026-03-25 - Client Failover Paths Must Emit Warning Signals Before Backup Retry
+- Do not silently continue to backup endpoint in client failover helpers; emit at least a warning with endpoint and failure reason/status.
+- Cover both failover triggers in tests: response-based failover (`404/405/5xx`) and thrown transport errors.
+- Keep logs payload-safe: include endpoint/status/error message only, never request body contents.
+
+## 2026-03-25 - Cloudflare Runtime Fixes Should Be Extracted Into Reusable Backend Modules
+- When hardening Cloudflare Pages handlers, do not leave complex logic inside `functions/*` entry files; extract runtime logic into reusable backend-core modules.
+- Keep `functions/*` as thin route adapters so the same implementation can be reused by other projects and deployment targets.
+- For Workers compatibility, avoid global-scope timers/random/network side effects in shared modules; prefer lazy/no-timer in-memory primitives.
+
+## 2026-03-25 - Never Swallow Catch Errors In Security-Critical Paths
+- In limiter/replay/security paths, catch blocks must either rethrow with explicit context or log structured details before fallback.
+- Empty `catch {}` blocks in backend control-plane logic are not acceptable because they hide operational root causes.
+- Validate env-driven endpoints (for example durable backend URLs) at startup/path creation and log invalid config once before falling back.
+
 ## 2026-03-25 - Stability Must Gate Infra Upgrades Even When Performance Looks Better
 - When deciding between new infra complexity and performance gains, choose the path with the safest rollback and lowest latent risk by default.
 - Keep new distributed rate-limit backends deferred until local + staging behavior is proven under failure scenarios.
