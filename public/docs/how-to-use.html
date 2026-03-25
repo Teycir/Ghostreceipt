@@ -90,9 +90,9 @@
 
   <h2>Step 1: Enter Transaction Details</h2>
   <ul>
-    <li><strong>Chain:</strong> Choose <code>Bitcoin</code> or <code>Ethereum</code>.</li>
+    <li><strong>Chain:</strong> Choose <code>Bitcoin</code>, <code>Ethereum (ETH)</code>, <code>Ethereum (USDC)</code>, or <code>Solana (SOL)</code>.</li>
     <li><strong>Transaction Hash:</strong> Paste the on-chain transaction identifier.</li>
-    <li><strong>Claimed Amount:</strong> Enter your minimum claim threshold (satoshis for BTC, wei for ETH).</li>
+    <li><strong>Claimed Amount:</strong> Enter your minimum claim threshold (satoshis for BTC, wei for ETH, lamports for SOL, or USDC atomic units for USDC).</li>
     <li><strong>Minimum Date:</strong> Set the earliest acceptable transaction date.</li>
   </ul>
 
@@ -133,7 +133,7 @@
 
   <h2>Troubleshooting</h2>
   <ul>
-    <li><strong>Invalid hash format:</strong> BTC expects 64 hex chars, ETH expects <code>0x</code> + 64 hex chars.</li>
+    <li><strong>Invalid hash format:</strong> BTC expects 64 hex chars, ETH expects <code>0x</code> + 64 hex chars, SOL expects base58 signature (64-88 chars).</li>
     <li><strong>Proof failure:</strong> Re-check that claim amount/date are consistent with the on-chain transaction.</li>
     <li><strong>Clipboard errors:</strong> Allow browser clipboard permissions and retry.</li>
   </ul>

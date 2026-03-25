@@ -84,7 +84,7 @@ GhostReceipt solves this by combining:
 - Deterministic proof generation and verification pipeline
 - Shareable receipt links + QR export
 - Mobile-first UX with progressive disclosure
-- Static docs pages linked from footer (`how-to-use`, `faq`, `security`, `canary`, `license`)
+- Static docs pages linked from footer (`how-to-use`, `faq`, `security`, `license`)
 
 ## Use Cases
 - Freelancers proving milestone payments without revealing wallet graph
@@ -113,13 +113,14 @@ flowchart LR
 GhostReceipt uses four API types so the product stays reliable while keeping UX friction near zero:
 
 1. Public no-key data APIs (default path):
-- BTC reads from `mempool.space` first.
-- ETH prefers managed Etherscan API key cascade, with public RPC as final fallback.
-- Used first to keep onboarding keyless and no-card friendly.
+- BTC reads from `mempool.space` (public, no API key required).
+- ETH uses managed Etherscan API key cascade.
+- SOL uses managed Helius API key cascade.
+- Used to keep onboarding keyless and no-card friendly.
 
 2. Managed keyed provider APIs (server-side preferred path):
-- For ETH, provider access uses only Etherscan keys provided by project maintainers.
-- Current ETH managed key pool is the internal Etherscan set (primary + fallback keys) configured via server env vars.
+- ETH uses Etherscan API keys provided by project maintainers.
+- SOL uses Helius API keys provided by project maintainers.
 - Keys are platform-managed in server environment variables and never exposed in client code.
 - Multiple managed keys are rotated through a cascade manager for resilience (same pattern as smartcontractpatternfinder).
 
@@ -130,7 +131,7 @@ GhostReceipt uses four API types so the product stays reliable while keeping UX 
 4. Optional BYOK APIs (advanced mode only):
 - Users may add their own provider keys for higher throughput.
 - BYOK is optional and never required for receipt generation or verification.
-- For non-ETH providers, GhostReceipt uses the same cascade/failover system now and can attach managed keys later as they are provided.
+- Provider integrations remain API-only in production runtime (no public-RPC fallback path).
 
 ## Oracle Trust Model
 GhostReceipt currently uses a single first-party oracle signing key as the trust anchor for canonical transaction facts.
@@ -197,8 +198,9 @@ sequenceDiagram
 - ZK:
 - Circom 2 + snarkjs
 - Data:
-- BTC: mempool.space primary, Blockchair fallback
-- ETH: Etherscan API first (rolling managed key cascade), public RPC last fallback
+- BTC: mempool.space (public, no API key)
+- ETH: Etherscan API (rolling managed key cascade)
+- SOL: Helius API (rolling managed key cascade)
 - Reliability:
 - Provider/key cascade manager with immediate failover and bounded concurrency (smartcontractpatternfinder-style)
 
@@ -238,7 +240,7 @@ Open `http://localhost:3000`.
 - No-user-API-key mode: users are not required to bring API keys.
 - Optional BYOK: power users can add keys for higher throughput, but core UX remains keyless.
 - Server-managed keys: sensitive provider keys live only in `.env.local`/deployment secrets and must never be committed.
-- ETH provider path is API-first (Etherscan key cascade) with RPC as the last fallback attempt.
+- Provider paths: BTC uses public mempool.space (no API key), ETH uses Etherscan API cascade, SOL uses Helius API cascade.
 
 ## Documentation
 - Documentation hub: [docs/README.md](./docs/README.md)
@@ -280,11 +282,11 @@ It proves your claim satisfies the circuit against oracle-signed canonical tx fa
 ### What BTC value does `valueAtomic` represent?
 For BTC, `valueAtomic` is currently tx-level total output value (`sum(vout)` / `output_total`), not recipient-specific net received value. In multi-output transactions, this can exceed what any single recipient received.
 
-### Are stablecoins supported?
-Yes. Ethereum now supports native ETH and ERC-20 USDC claim mode through the same oracle fetch flow.
+### Which blockchains are supported?
+Currently Bitcoin, Ethereum (native ETH + ERC-20 USDC), and Solana (native SOL).
 
-### Is Monero supported?
-Not in the active runtime path yet. It remains deferred until a stable free-tier provider strategy is validated for GhostReceipt's canonical receipt model.
+### Are stablecoins supported?
+Yes. Ethereum supports both native ETH and ERC-20 USDC claim modes through the same oracle fetch flow.
 
 ## Complementary Projects
 

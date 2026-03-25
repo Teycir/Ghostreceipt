@@ -267,3 +267,32 @@ Advance the roadmap into release-readiness execution by automating deterministic
     - `npm run test -- tests/unit/zk/artifact-checksums.test.ts` pass
     - `npm run typecheck` pass
     - `npm run check:zk-artifact-checksums -- --json` pass
+
+## Objective (Release Readiness Command + API-Only Doc Consistency Gate)
+
+Continue roadmap execution by adding an automated release-readiness checker command and eliminating stale ETH public-RPC fallback claims from trust-critical docs.
+
+## Plan
+
+- [x] Add reusable release-readiness doc checks module for critical documentation expectations.
+- [x] Add `check:release-readiness` CLI command + npm script to run doc checks and key release checks (`oracle transparency`, `zk checksums`).
+- [x] Update README API/trust sections to align with current API-only ETH/SOL provider policy.
+- [x] Add focused unit tests for release-readiness doc check behavior.
+- [x] Run validation commands and record completion evidence.
+
+## Review (Release Readiness Command + API-Only Doc Consistency Gate)
+
+- Status: Completed
+- Notes:
+  - Added release-readiness doc consistency checks at `lib/release/readiness-checks.js` (with typings in `lib/release/readiness-checks.d.ts`).
+  - Added new gate command `npm run check:release-readiness` via `scripts/check-release-readiness.mjs`.
+  - New command enforces:
+    - trust-critical doc checks (README trust-model presence, API-only wording, security/circuit runbook anchors)
+    - execution of `check-oracle-transparency-log`
+    - execution of `check-zk-artifact-checksums --required-only`.
+  - Updated README provider wording to remove stale public-RPC fallback claims and align ETH/SOL with current API-only runtime policy.
+  - Added focused unit coverage at `tests/unit/release/readiness-checks.test.ts`.
+  - Validation:
+    - `npm run test -- tests/unit/release/readiness-checks.test.ts` pass
+    - `npm run typecheck` pass
+    - `npm run check:release-readiness` pass

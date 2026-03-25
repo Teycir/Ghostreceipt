@@ -44,6 +44,7 @@ Use this checklist before cutting the first public tag and announcing the live d
 
 - [ ] Create release branch/tag name (example: `v0.1.0`).
 - [ ] Run final validation:
+  - [ ] `npm run check:release-readiness`
   - [ ] `npm run lint`
   - [ ] `npm run typecheck`
   - [ ] `npm run check:oracle-transparency-log`
