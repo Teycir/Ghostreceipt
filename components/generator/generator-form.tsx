@@ -551,6 +551,9 @@ export function GeneratorForm(): React.JSX.Element {
           claimedAmountDisclosure={proofResult.claimedAmountDisclosure}
           minDate={proofResult.minDate}
           minDateDisclosure={proofResult.minDateDisclosure}
+          {...(proofResult.oracleValidationStatus
+            ? { oracleValidationStatus: proofResult.oracleValidationStatus }
+            : {})}
           {...(proofResult.oracleValidationLabel
             ? { oracleValidationLabel: proofResult.oracleValidationLabel }
             : {})}

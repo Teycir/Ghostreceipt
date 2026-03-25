@@ -9,9 +9,16 @@
 
 import { useState, useEffect } from 'react';
 import { Button }       from '@/components/ui/button';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { ValidationStrengthBadge } from '@/components/ui/validation-strength-badge';
 import { useReceiptShare } from '@/lib/generator/use-receipt-share';
 import { toHumanAmount } from '@/lib/format/units';
-import type { Chain, EthereumAsset, GeneratorTimingTelemetry }   from '@/lib/generator/types';
+import type {
+  Chain,
+  EthereumAsset,
+  GeneratorTimingTelemetry,
+  OracleValidationStatus,
+} from '@/lib/generator/types';
 import type { SocialNetwork } from '@/lib/share/social';
 
 interface ReceiptSuccessProps {
@@ -22,6 +29,7 @@ interface ReceiptSuccessProps {
   claimedAmountDisclosure: 'disclosed' | 'hidden';
   minDate:        string;
   minDateDisclosure: 'disclosed' | 'hidden';
+  oracleValidationStatus?: OracleValidationStatus;
   oracleValidationLabel?: string;
   receiptLabel?:  string;
   receiptCategory?: string;
@@ -52,6 +60,7 @@ export function ReceiptSuccess({
   claimedAmountDisclosure,
   minDate,
   minDateDisclosure,
+  oracleValidationStatus,
   oracleValidationLabel,
   receiptLabel,
   receiptCategory,
@@ -91,9 +100,6 @@ export function ReceiptSuccess({
     { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.15s' },
     { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.25s' },
     { label: 'Min Date', value: minDate,                                                  delay: '0.35s' },
-    ...(oracleValidationLabel
-      ? [{ label: 'Validation', value: oracleValidationLabel, delay: '0.45s' }]
-      : []),
     ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.45s' }] : []),
     ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.55s' }] : []),
   ] as const;
@@ -142,6 +148,16 @@ export function ReceiptSuccess({
               <span className="receipt-field__value font-mono">{value}</span>
             </div>
           ))}
+          {(oracleValidationStatus || oracleValidationLabel) && (
+            <div className="receipt-field" style={{ animationDelay: '0.45s' }}>
+              <span className="receipt-field__label">Validation</span>
+              <ValidationStrengthBadge
+                status={oracleValidationStatus}
+                label={oracleValidationLabel}
+                className="receipt-field__value"
+              />
+            </div>
+          )}
         </div>
 
         {timings && (
@@ -214,7 +230,13 @@ export function ReceiptSuccess({
         </p>
         <div className="space-y-2 text-sm">
           <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-            <span className="text-white/50">Amount</span>
+            <span className="flex items-center gap-1.5 text-white/50">
+              Amount
+              <InfoTooltip
+                label="What does this prove?"
+                content="The verifier can confirm your payment met this minimum amount without exposing wallet addresses."
+              />
+            </span>
             <p className="mt-0.5 font-mono text-white/90">
               {claimedAmountDisclosure === 'disclosed'
                 ? `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`
@@ -222,7 +244,13 @@ export function ReceiptSuccess({
             </p>
           </div>
           <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-            <span className="text-white/50">Minimum Date</span>
+            <span className="flex items-center gap-1.5 text-white/50">
+              Minimum Date
+              <InfoTooltip
+                label="Why is this hidden?"
+                content="Hidden fields protect privacy while the proof still verifies your claim thresholds."
+              />
+            </span>
             <p className="mt-0.5 font-mono text-white/90">
               {minDateDisclosure === 'disclosed' ? minDate : 'Hidden'}
             </p>
