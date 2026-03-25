@@ -8,7 +8,7 @@ import {
   type OraclePayload,
 } from '@/lib/validation/schemas';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
-import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
+import { BlockCypherProvider } from '@/lib/providers/bitcoin/blockcypher';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
@@ -25,7 +25,6 @@ export interface FetchTxMappedError {
 
 export interface OracleFetchOptions {
   authTtlSeconds?: number;
-  blockchairApiKey?: string;
   canonicalCacheTtlMs?: number;
   cascadeConfig?: CascadeConfig;
   ethereumAsset?: EthereumAsset;
@@ -153,7 +152,6 @@ async function fetchCanonicalTxData(
   txHash: string,
   options: Pick<
     OracleFetchOptions,
-    | 'blockchairApiKey'
     | 'canonicalCacheTtlMs'
     | 'cascadeConfig'
     | 'ethereumAsset'
@@ -367,18 +365,14 @@ export function createProviderCascadeForChain(
   chain: Chain,
   options: Pick<
     OracleFetchOptions,
-    'blockchairApiKey' | 'cascadeConfig' | 'ethereumAsset' | 'etherscanKeys' | 'heliusKeys'
+    'cascadeConfig' | 'ethereumAsset' | 'etherscanKeys' | 'heliusKeys'
   > = {}
 ): ProviderCascade {
   const cascadeConfig = options.cascadeConfig ?? DEFAULT_CASCADE_CONFIG;
   if (chain === 'bitcoin') {
     const providers: Provider[] = [
       new MempoolSpaceProvider(),
-      new BlockchairProvider(
-        options.blockchairApiKey
-          ? { apiKey: options.blockchairApiKey }
-          : undefined
-      ),
+      new BlockCypherProvider(),
     ];
 
     return new ProviderCascade(providers, cascadeConfig);
@@ -424,16 +418,12 @@ export async function fetchAndSignOracleTransaction(
 ): Promise<SignedOracleFetchResult> {
   const cascadeOptions: Pick<
     OracleFetchOptions,
-    | 'blockchairApiKey'
     | 'canonicalCacheTtlMs'
     | 'cascadeConfig'
     | 'ethereumAsset'
     | 'etherscanKeys'
     | 'heliusKeys'
   > = {};
-  if (options.blockchairApiKey !== undefined) {
-    cascadeOptions.blockchairApiKey = options.blockchairApiKey;
-  }
   if (options.canonicalCacheTtlMs !== undefined) {
     cascadeOptions.canonicalCacheTtlMs = options.canonicalCacheTtlMs;
   }

@@ -56,7 +56,6 @@ This will automatically set:
 - `ETHERSCAN_API_KEY_1` through `ETHERSCAN_API_KEY_6` (if defined)
 - `HELIUS_API_KEY`
 - `HELIUS_API_KEY_1` through `HELIUS_API_KEY_6` (if defined)
-- `BLOCKCHAIR_API_KEY` (if defined)
 
 **Manual CLI commands:**
 
@@ -82,8 +81,6 @@ echo "fallback_helius_1" | npx wrangler pages secret put HELIUS_API_KEY_1 --proj
 echo "fallback_helius_2" | npx wrangler pages secret put HELIUS_API_KEY_2 --project-name=ghostreceipt
 echo "fallback_helius_3" | npx wrangler pages secret put HELIUS_API_KEY_3 --project-name=ghostreceipt
 
-# BTC fallback provider
-echo "blockchair_key" | npx wrangler pages secret put BLOCKCHAIR_API_KEY --project-name=ghostreceipt
 ```
 
 **Public Variables:**

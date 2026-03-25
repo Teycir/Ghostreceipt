@@ -15,7 +15,7 @@ The oracle API (`POST /api/oracle/fetch-tx`) is the primary trust boundary.
 
 Current model:
 - Single first-party oracle signing key (centralized trust anchor).
-- Upstream provider dependency (for example mempool.space, Blockchair, Etherscan, public RPC).
+- Upstream provider dependency (for example mempool.space, blockstream.info, Etherscan, Helius).
 - Browser-local proof generation and verification.
 
 ## What A Verified Receipt Proves
@@ -63,4 +63,3 @@ Planned direction after pre-release hardening:
 - Multi-oracle attestation/quorum model.
 - Independent oracle operators.
 - Research track for TLS-notary/light-client verification to reduce single-operator trust.
-

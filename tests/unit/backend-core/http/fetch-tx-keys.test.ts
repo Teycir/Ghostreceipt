@@ -51,4 +51,13 @@ describe('provider key env loaders', () => {
     expect(solanaProviders).toContain('helius');
     expect(solanaProviders).not.toContain('solana-public-rpc');
   });
+
+  it('uses free-tier public provider cascade for bitcoin', () => {
+    const bitcoinCascade = createProviderCascadeForChain('bitcoin');
+    const bitcoinProviders = Object.keys(bitcoinCascade.getStats());
+
+    expect(bitcoinProviders).toContain('mempool.space');
+    expect(bitcoinProviders).toContain('blockstream.info');
+    expect(bitcoinProviders).not.toContain('blockchair');
+  });
 });

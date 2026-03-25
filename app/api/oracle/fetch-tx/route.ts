@@ -114,12 +114,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     reservedReplayKey = replayReservation.replayKey;
 
-    const blockchairApiKey = process.env['BLOCKCHAIR_API_KEY'];
     const signedResult = await fetchAndSignOracleTransaction(
       chain,
       txHash,
       {
-        ...(blockchairApiKey ? { blockchairApiKey } : {}),
         ...(chain === 'ethereum' && ethereumAsset
           ? { ethereumAsset }
           : {}),

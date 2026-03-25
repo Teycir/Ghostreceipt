@@ -5,7 +5,7 @@ import {
 } from '@/app/api/oracle/fetch-tx/route';
 import { __resetFetchTxCanonicalCacheForTests } from '@/lib/libraries/backend-core/http';
 import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
-import { BlockchairProvider } from '@/lib/providers/bitcoin/blockchair';
+import { BlockCypherProvider } from '@/lib/providers/bitcoin/blockcypher';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { NextRequest } from 'next/server';
@@ -225,7 +225,7 @@ describe('POST /api/oracle/fetch-tx', () => {
     };
 
     jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
-    jest.spyOn(BlockchairProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
 
     const request = new NextRequest('http://localhost/api/oracle/fetch-tx', {
       method: 'POST',
@@ -404,7 +404,7 @@ describe('POST /api/oracle/fetch-tx', () => {
     };
 
     jest.spyOn(MempoolSpaceProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
-    jest.spyOn(BlockchairProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockResolvedValue(canonicalTx);
 
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
     const requestA = new NextRequest('http://localhost/api/oracle/fetch-tx', {
@@ -514,7 +514,7 @@ describe('POST /api/oracle/fetch-tx', () => {
         blockHash: 'b'.repeat(64),
       };
     });
-    jest.spyOn(BlockchairProvider.prototype, 'fetchTransaction').mockRejectedValue(
+    jest.spyOn(BlockCypherProvider.prototype, 'fetchTransaction').mockRejectedValue(
       new Error('Provider timeout')
     );
 

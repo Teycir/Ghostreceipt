@@ -296,3 +296,29 @@ Continue roadmap execution by adding an automated release-readiness checker comm
     - `npm run test -- tests/unit/release/readiness-checks.test.ts` pass
     - `npm run typecheck` pass
     - `npm run check:release-readiness` pass
+
+## Objective (BTC Free-Tier Fallback Cascade Hardening)
+
+Align Bitcoin provider reliability with zero-budget constraints by removing paid-key assumptions from the runtime fallback path and using real free-tier/public providers only.
+
+## Plan
+
+- [x] Replace Blockchair in active BTC cascade with a free public fallback provider (`blockstream.info` Esplora).
+- [x] Remove Blockchair API key wiring from oracle fetch route/runtime options.
+- [x] Update BTC provider/cascade tests for new fallback topology.
+- [x] Update docs/config templates to remove Blockchair key dependency messaging.
+- [x] Run targeted tests + typecheck and capture review evidence.
+
+## Review (BTC Free-Tier Fallback Cascade Hardening)
+
+- Status: Completed
+- Notes:
+  - Removed Blockchair from active BTC runtime cascade and replaced fallback with `blockstream.info` public Esplora provider.
+  - Added `BlockstreamProvider` implementation at `lib/providers/bitcoin/blockstream.ts`.
+  - Removed `BLOCKCHAIR_API_KEY` wiring from `/api/oracle/fetch-tx` request flow and fetch options.
+  - Updated BTC cascade coverage to assert free-provider topology (`mempool.space` + `blockstream.info`).
+  - Updated docs/config guidance to stop requiring Blockchair key setup in default flow.
+  - Validation:
+    - `npm run test -- tests/unit/providers/blockstream.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/providers/provider-throttle.test.ts tests/unit/api/fetch-tx-route.test.ts` pass
+    - `npm run typecheck` pass
+    - `npm run check:release-readiness` pass

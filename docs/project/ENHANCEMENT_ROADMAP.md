@@ -35,7 +35,7 @@ Budget rule: roadmap items must remain executable with zero mandatory spend (no 
 - [x] Added compact canonical proof payload format with hard cutover (legacy format removed).
 - [x] Enforced API-only oracle provider policy (public RPC paths removed from active cascade; live integration now uses Exa-sourced BTC/ETH/SOL fixtures with API-key gating for ETH/SOL).
 - [x] Ported Etherscan v2 throttling/cascade pacing from `smartcontractpatternfinder` and validated full live BTC/ETH/SOL integration pass with API providers only.
-- [x] Generalized provider throttling to doc-driven + context-parameterized policy across Etherscan/Helius/mempool.space/Blockchair with validated live BTC/ETH/SOL flow.
+- [x] Generalized provider throttling to doc-driven + context-parameterized policy across Etherscan/Helius/mempool.space with validated live BTC/ETH/SOL flow.
 - [x] Added Ethereum asset-mode support for stablecoin claims (`ETH` native + `USDC` ERC-20 via Etherscan) with API/schema validation and provider normalization.
 - [x] Added deterministic ZK artifact checksum automation command for release-readiness evidence (`npm run check:zk-artifact-checksums`).
 - [x] Added automated release-readiness command gate (`npm run check:release-readiness`) with API-only doc consistency checks.

@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-25 - Do Not Assume Optional Paid BTC Fallback Is Acceptable For Zero-Budget Scope
+- If the user states a provider is not truly free-tier or they do not have that API key (for example Blockchair), remove it from the active default runtime path rather than treating it as acceptable fallback capacity.
+- Keep Bitcoin fallback topology aligned with real public/free endpoints in the live cascade and keep docs/env templates consistent with that runtime behavior.
+- When a user corrects pricing/access assumptions, immediately convert that correction into explicit roadmap and implementation updates (not just narrative acknowledgement).
+
 ## 2026-03-25 - Avoid Hardcoding Default Artifact Version In Tests
 - Tests for artifact-version fallback should not assert a literal date/version string that is expected to change during normal circuit artifact refreshes.
 - Derive expected fallback behavior dynamically (for example baseline with env unset) so version bumps do not cause false CI failures.

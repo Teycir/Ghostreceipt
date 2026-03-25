@@ -47,8 +47,6 @@ wrangler secret put ETHERSCAN_API_KEY_1
 wrangler secret put ETHERSCAN_API_KEY_2
 wrangler secret put ETHERSCAN_API_KEY_3
 
-# Blockchair API key (optional)
-wrangler secret put BLOCKCHAIR_API_KEY
 ```
 
 For production environment:
@@ -126,7 +124,6 @@ Set as secrets (via `wrangler secret put`):
 - `ETHERSCAN_API_KEY_1`: Primary Etherscan key
 - `ETHERSCAN_API_KEY_2`: Fallback Etherscan key
 - `ETHERSCAN_API_KEY_3`: Fallback Etherscan key
-- `BLOCKCHAIR_API_KEY`: Blockchair API key (optional)
 
 ## Troubleshooting
 

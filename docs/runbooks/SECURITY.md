@@ -19,7 +19,6 @@ These files contain secrets and must NEVER be committed to git:
    - Oracle private keys
    - Etherscan API keys
    - Helius API keys
-   - Blockchair API keys
    - Any provider API keys
 
 ### 🟡 PROTECTED - Gitignored
@@ -62,8 +61,6 @@ HELIUS_API_KEY_1=your_primary_key
 HELIUS_API_KEY_2=your_fallback_key_1
 HELIUS_API_KEY_3=your_fallback_key_2
 
-# Optional: Blockchair API key
-BLOCKCHAIR_API_KEY=your_blockchair_key
 ```
 
 Edit `wrangler.toml`:

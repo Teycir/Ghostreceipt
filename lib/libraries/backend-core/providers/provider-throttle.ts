@@ -1,4 +1,9 @@
-type ProviderThrottleName = 'etherscan' | 'helius' | 'mempool.space' | 'blockchair';
+type ProviderThrottleName =
+  'etherscan'
+  | 'helius'
+  | 'mempool.space'
+  | 'blockchair'
+  | 'blockstream';
 
 export type ProviderThrottleContext = 'reliability' | 'balanced' | 'throughput' | 'off';
 
@@ -81,6 +86,14 @@ const PROVIDER_THROTTLE_SPECS: Record<ProviderThrottleName, ProviderThrottleSpec
     requestThrottleEnvVar: 'BLOCKCHAIR_REQUEST_THROTTLE_MS',
     requestRateEnvVar: 'BLOCKCHAIR_RATE_LIMIT_RPS',
     contextEnvVar: 'BLOCKCHAIR_THROTTLE_CONTEXT',
+  },
+  blockstream: {
+    scope: 'provider:blockstream',
+    // Esplora public endpoint; use conservative baseline for reliability under shared infra.
+    documentedRequestsPerSecond: () => 1,
+    requestThrottleEnvVar: 'BLOCKSTREAM_REQUEST_THROTTLE_MS',
+    requestRateEnvVar: 'BLOCKSTREAM_RATE_LIMIT_RPS',
+    contextEnvVar: 'BLOCKSTREAM_THROTTLE_CONTEXT',
   },
 };
 

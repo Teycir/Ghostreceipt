@@ -72,4 +72,18 @@ describe('provider-throttle policy', () => {
     expect(keyedPolicy.documentedRequestsPerSecond).toBe(5);
     expect(keyedPolicy.requestThrottleMs).toBe(220);
   });
+
+  it('uses conservative blockstream public baseline', () => {
+    const env = {
+      NODE_ENV: 'test',
+      ORACLE_PROVIDER_THROTTLE_CONTEXT: 'throughput',
+    } as NodeJS.ProcessEnv;
+
+    const policy = resolveProviderThrottlePolicy('blockstream', {
+      env,
+    });
+
+    expect(policy.documentedRequestsPerSecond).toBe(1);
+    expect(policy.requestThrottleMs).toBe(1100);
+  });
 });
