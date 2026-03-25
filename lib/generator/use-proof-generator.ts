@@ -24,6 +24,7 @@ import { scheduleZkArtifactPreload } from '@/lib/zk/artifacts';
 import type { ReceiptMetadata } from '@/lib/zk/prover';
 import { addReceiptHistoryEntry } from '@/lib/history/receipt-history';
 import { mapFetchTxApiError, mapWitnessValidationErrors } from '@/lib/generator/error-messages';
+import { postOracleJson } from '@/lib/oracle/client';
 
 // ── Field-level validation ───────────────────────────────────────────────────
 function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
@@ -162,14 +163,10 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       announceToScreenReader('Fetching transaction data');
       const fetchStart = nowMs();
 
-      const response = await fetch('/api/oracle/fetch-tx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chain: values.chain,
-          txHash: values.txHash,
-          ...(values.chain === 'ethereum' ? { ethereumAsset: values.ethereumAsset } : {}),
-        }),
+      const { response } = await postOracleJson('fetch-tx', {
+        chain: values.chain,
+        txHash: values.txHash,
+        ...(values.chain === 'ethereum' ? { ethereumAsset: values.ethereumAsset } : {}),
       });
 
       let data: ({ data?: OraclePayload } & ApiErrorPayload) | null = null;

@@ -1,6 +1,8 @@
 import { type NextRequest, type NextResponse } from 'next/server';
 import { type ZodType } from 'zod';
 import { getClientIdentifier } from '@/lib/security/rate-limit';
+import { secureError } from '@/lib/security/secure-logging';
+import { createJsonErrorResponse } from '@/lib/libraries/backend';
 import { type ErrorCode } from '@/lib/validation/schemas';
 import { checkOracleRouteRateLimits, type OracleRouteRateLimitMessages, type OracleRouteRateLimiters } from './rate-limit-envelope';
 import { parseSecureJsonWithError, validateBodyWithSchema } from './request-envelope';
@@ -37,22 +39,36 @@ export async function parseRateLimitedOracleRouteBody<T>({
   rateLimit,
 }: OracleRouteBodyEnvelopeOptions<T>): Promise<OracleRouteBodyEnvelopeResult<T>> {
   const clientId = getClientIdentifier(request);
-  const rateLimitResponse = checkOracleRouteRateLimits({
-    clientId,
-    clientMaxRequests: rateLimit.clientMaxRequests,
-    globalMaxRequests: rateLimit.globalMaxRequests,
-    ...(rateLimit.clientBurstMaxRequests !== undefined
-      ? { clientBurstMaxRequests: rateLimit.clientBurstMaxRequests }
-      : {}),
-    ...(rateLimit.globalBurstMaxRequests !== undefined
-      ? { globalBurstMaxRequests: rateLimit.globalBurstMaxRequests }
-      : {}),
-    limiters: rateLimit.limiters,
-    messages: rateLimit.messages,
-    ...(rateLimit.globalScopeKey !== undefined
-      ? { globalScopeKey: rateLimit.globalScopeKey }
-      : {}),
-  });
+  let rateLimitResponse: NextResponse | null;
+  try {
+    rateLimitResponse = await checkOracleRouteRateLimits({
+      clientId,
+      clientMaxRequests: rateLimit.clientMaxRequests,
+      globalMaxRequests: rateLimit.globalMaxRequests,
+      ...(rateLimit.clientBurstMaxRequests !== undefined
+        ? { clientBurstMaxRequests: rateLimit.clientBurstMaxRequests }
+        : {}),
+      ...(rateLimit.globalBurstMaxRequests !== undefined
+        ? { globalBurstMaxRequests: rateLimit.globalBurstMaxRequests }
+        : {}),
+      limiters: rateLimit.limiters,
+      messages: rateLimit.messages,
+      ...(rateLimit.globalScopeKey !== undefined
+        ? { globalScopeKey: rateLimit.globalScopeKey }
+        : {}),
+    });
+  } catch (error) {
+    secureError('[Oracle API] Rate-limit backend error:', error);
+    return {
+      ok: false,
+      clientId,
+      response: createJsonErrorResponse({
+        code: 'INTERNAL_ERROR',
+        message: 'Rate limit service temporarily unavailable. Please retry shortly.',
+        status: 503,
+      }),
+    };
+  }
   if (rateLimitResponse) {
     return {
       ok: false,

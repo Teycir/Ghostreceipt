@@ -46,7 +46,10 @@ const NULLIFIER_RATE_LIMIT = {
   burstWindowMs: 1_000,
 } as const;
 
-const routeRateLimiters = createOracleRouteRateLimiters(NULLIFIER_RATE_LIMIT);
+const routeRateLimiters = createOracleRouteRateLimiters({
+  ...NULLIFIER_RATE_LIMIT,
+  backendScope: 'oracle_check_nullifier',
+});
 const nullifierRegistry = getSharedNullifierRegistry({
   cleanupIntervalMs: parsePositiveIntEnv(
     'ORACLE_NULLIFIER_CLEANUP_INTERVAL_MS',

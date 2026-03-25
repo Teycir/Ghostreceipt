@@ -12,6 +12,7 @@ import {
 } from '@/lib/zk/nullifier';
 import type { ShareableProofPayload, ProofGenerator } from '@/lib/zk/prover';
 import type { OracleValidationStatus } from '@/lib/generator/types';
+import { postOracleJson } from '@/lib/oracle/client';
 
 export interface OracleSignatureVerificationResult {
   valid: boolean;
@@ -71,19 +72,13 @@ export async function verifyOracleSignatureViaApi(
   oracleAuth: NonNullable<ShareableProofPayload['oracleAuth']>
 ): Promise<OracleSignatureVerificationResult> {
   const { expiresAt, messageHash, nonce, oracleSignature, oraclePubKeyId, signedAt } = oracleAuth;
-  const response = await fetch('/api/oracle/verify-signature', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      expiresAt,
-      messageHash,
-      nonce,
-      oracleSignature,
-      oraclePubKeyId,
-      signedAt,
-    }),
+  const { response } = await postOracleJson('verify-signature', {
+    expiresAt,
+    messageHash,
+    nonce,
+    oracleSignature,
+    oraclePubKeyId,
+    signedAt,
   });
 
   if (!response.ok) {

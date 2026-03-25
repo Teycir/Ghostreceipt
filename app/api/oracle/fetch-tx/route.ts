@@ -56,7 +56,10 @@ const FETCH_TX_RATE_LIMIT = {
   burstWindowMs: 1000,
 } as const;
 
-const routeRateLimiters = createOracleRouteRateLimiters(FETCH_TX_RATE_LIMIT);
+const routeRateLimiters = createOracleRouteRateLimiters({
+  ...FETCH_TX_RATE_LIMIT,
+  backendScope: 'oracle_fetch_tx',
+});
 
 /**
  * POST /api/oracle/fetch-tx

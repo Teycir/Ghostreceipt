@@ -49,7 +49,10 @@ const VERIFY_SIGNATURE_RATE_LIMIT = {
   burstWindowMs: 1000,
 } as const;
 
-const routeRateLimiters = createOracleRouteRateLimiters(VERIFY_SIGNATURE_RATE_LIMIT);
+const routeRateLimiters = createOracleRouteRateLimiters({
+  ...VERIFY_SIGNATURE_RATE_LIMIT,
+  backendScope: 'oracle_verify_signature',
+});
 const verifyReplayRegistry = getSharedOracleAuthReplayRegistry({
   cleanupIntervalMs: parsePositiveIntEnv(
     'ORACLE_VERIFY_REPLAY_CLEANUP_INTERVAL_MS',
