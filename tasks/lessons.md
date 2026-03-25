@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-25 - Avoid Hardcoding Default Artifact Version In Tests
+- Tests for artifact-version fallback should not assert a literal date/version string that is expected to change during normal circuit artifact refreshes.
+- Derive expected fallback behavior dynamically (for example baseline with env unset) so version bumps do not cause false CI failures.
+
 ## 2026-03-25 - Cloud Secrets And Local Live Tests Need Separate Env Hydration
 - Cloudflare Pages secrets do not automatically populate local Jest `process.env`; local live integration runs must source local env values explicitly.
 - In `NODE_ENV=test`, Next excludes `.env.local` by design, so live integration tests should include an explicit `.env.local` loader helper for local runs.

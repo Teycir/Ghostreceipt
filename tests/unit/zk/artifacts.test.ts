@@ -29,9 +29,12 @@ describe('zk artifact caching', () => {
   });
 
   it('falls back to default artifact version when invalid', () => {
+    delete process.env['NEXT_PUBLIC_ZK_ARTIFACT_VERSION'];
+    const expectedDefault = getZkArtifactVersion();
+
     process.env['NEXT_PUBLIC_ZK_ARTIFACT_VERSION'] = 'bad version with spaces';
 
-    expect(getZkArtifactVersion()).toBe('2026-03-24');
+    expect(getZkArtifactVersion()).toBe(expectedDefault);
   });
 
   it('creates versioned artifact URLs for cache-safe invalidation', () => {

@@ -201,3 +201,43 @@ Add a dedicated real-data end-to-end Solana integration test that validates orac
     - `npm run typecheck` pass
     - `npm run test -- tests/integration/live-solana-e2e.test.ts` pass (skipped by default without `LIVE_INTEGRATION=1`)
     - `LIVE_INTEGRATION=1 npm run test -- tests/integration/live-solana-e2e.test.ts --runInBand` pass with local `.env.local` Helius keys.
+
+## Objective (Husky Hook Repair)
+
+Fix broken Husky pre-commit/pre-push hook bootstrap so normal `git commit` and `git push` no longer fail with `.husky/h` path errors.
+
+## Plan
+
+- [x] Update top-level hooks to source `.husky/_/h` directly.
+- [x] Add compatibility fallback in `.husky/_/husky.sh` for old templates.
+- [x] Validate hook scripts execute without bootstrap errors.
+
+## Review (Husky Hook Repair)
+
+- Status: Completed
+- Notes:
+  - Patched `.husky/pre-commit` and `.husky/pre-push` to source `.husky/_/h`.
+  - Updated `.husky/_/husky.sh` to support both caller contexts (`./_/h` and `./h`) as a defensive compatibility shim.
+  - Validation:
+    - `HUSKY=0 sh .husky/pre-commit` pass
+    - `HUSKY=0 sh .husky/pre-push` pass
+    - `sh .husky/_/husky.sh` pass
+
+## Objective (CI Artifact Version Test Stability)
+
+Resolve CI failure in `tests/unit/zk/artifacts.test.ts` caused by hardcoded fallback version expectation after artifact-version bump.
+
+## Plan
+
+- [x] Replace hardcoded fallback version assertion with dynamic default-version baseline.
+- [x] Run targeted unit test and typecheck.
+
+## Review (CI Artifact Version Test Stability)
+
+- Status: Completed
+- Notes:
+  - Updated invalid-version fallback test to derive the expected default from `getZkArtifactVersion()` when env is unset.
+  - This removes brittle coupling to literal date strings and prevents repeated breakage on intentional artifact-version updates.
+  - Validation:
+    - `npm run test -- tests/unit/zk/artifacts.test.ts` pass
+    - `npm run typecheck` pass
