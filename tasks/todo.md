@@ -348,3 +348,36 @@ Use the provided BlockCypher key pool as primary BTC source, keep public provide
   - Validation:
     - `npm run test -- tests/unit/providers/blockcypher.test.ts tests/unit/backend-core/http/fetch-tx-keys.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts tests/unit/providers/provider-throttle.test.ts` pass
     - `npm run typecheck` pass
+
+## Objective (Live BTC BlockCypher E2E Integration)
+
+Add a dedicated live BTC end-to-end integration test that validates the full oracle and ZK flow using BlockCypher as the primary provider path.
+
+## Plan
+
+- [x] Add `tests/integration/live-bitcoin-blockcypher-e2e.test.ts` with `LIVE_INTEGRATION=1` gating and `.env.local` hydration.
+- [x] Require BlockCypher API token configuration and fail fast if missing.
+- [x] Execute full flow: fetch-tx route, commitment recomputation, witness build/validation, Groth16 prove/verify, verify-signature route.
+- [x] Add npm script for this live test and run it with live mode enabled.
+- [x] Record validation evidence in this review section.
+
+## Review (Live BTC BlockCypher E2E Integration)
+
+- Status: Completed
+- Notes:
+  - Added dedicated live BTC integration at `tests/integration/live-bitcoin-blockcypher-e2e.test.ts`.
+  - Test is explicitly `LIVE_INTEGRATION=1` gated and hydrates `.env.local`.
+  - Enforces BlockCypher token presence before execution (`BLOCKCYPHER_API_TOKEN` + `_1.._6` / alias keys).
+  - Validates full E2E pipeline:
+    - `/api/oracle/fetch-tx` (bitcoin)
+    - oracle commitment recomputation
+    - witness build + validation
+    - Groth16 prove + verify
+    - `/api/oracle/verify-signature`
+  - Asserts BlockCypher provider usage via runtime metrics (`totalAttempts > 0`, `totalSuccesses > 0`) so the run proves BlockCypher path, not public fallback.
+  - Added script `npm run test:live:btc:blockcypher` for repeatable execution.
+  - Validation:
+    - `npm run typecheck` pass
+    - `npm run test:live:btc:blockcypher` pass (`[Cascade] Success with provider: blockcypher`)
+  - Residual note:
+    - Jest emitted a standard open-handles warning after completion (`Jest did not exit one second after the test run has completed`), but the test itself passed with real network/API flow.

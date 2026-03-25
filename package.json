@@ -20,6 +20,7 @@
     "export:solidity-verifier": "node scripts/export-solidity-verifier.mjs",
     "check:solidity-verifier": "node scripts/check-solidity-verifier.mjs",
     "test:live:oracle": "bash scripts/run-live-oracle-tests.sh",
+    "test:live:btc:blockcypher": "LIVE_INTEGRATION=1 jest tests/integration/live-bitcoin-blockcypher-e2e.test.ts --runInBand --ci --testTimeout=180000",
     "test:live:solana": "LIVE_INTEGRATION=1 jest tests/integration/live-solana-e2e.test.ts --runInBand --ci --testTimeout=180000",
     "test:stress:oracle": "STRESS_TEST=1 ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_MINUTE=300 ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_MINUTE=1200 ORACLE_FETCH_TX_CLIENT_MAX_REQUESTS_PER_SECOND=30 ORACLE_FETCH_TX_GLOBAL_MAX_REQUESTS_PER_SECOND=600 ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_MINUTE=300 ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_MINUTE=1200 ORACLE_VERIFY_CLIENT_MAX_REQUESTS_PER_SECOND=30 ORACLE_VERIFY_GLOBAL_MAX_REQUESTS_PER_SECOND=600 jest tests/integration/stress-oracle-volume.test.ts --runInBand --ci --testTimeout=180000",
     "test:perf:proof": "PROOF_PERF_TEST=1 PROOF_PERF_ITERATIONS=2 PROOF_PERF_WARMUP_ITERATIONS=1 PROOF_PERF_TOTAL_P50_BUDGET_MS=25000 PROOF_PERF_PROVE_P50_BUDGET_MS=25000 PROOF_PERF_VERIFY_P50_BUDGET_MS=2500 PROOF_PERF_WITNESS_P50_BUDGET_MS=250 PROOF_PERF_TOTAL_P95_BUDGET_MS=60000 PROOF_PERF_PROVE_P95_BUDGET_MS=60000 PROOF_PERF_VERIFY_P95_BUDGET_MS=5000 PROOF_PERF_WITNESS_P95_BUDGET_MS=500 jest tests/integration/proof-performance-budget.test.ts --runInBand --ci --testTimeout=300000 --forceExit",

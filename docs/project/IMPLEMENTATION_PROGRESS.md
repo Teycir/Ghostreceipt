@@ -65,6 +65,7 @@ npm run check:secrets # ✅ Detects secrets in .env.local
   - `npm run typecheck` passes.
 - ✅ Live non-mocked route verification:
   - `npm test -- tests/unit/api/oracle-fetch-tx.test.ts` passes.
+  - `npm run test:live:btc:blockcypher` passes with real BTC tx + BlockCypher provider usage.
   - BTC path now attempts fallback provider on primary failure.
 - ✅ Cascade failover tuning:
   - Rate-limit errors now fail over immediately to next provider (no same-provider retry loop).
