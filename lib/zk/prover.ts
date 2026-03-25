@@ -38,6 +38,8 @@ export interface OracleAuthData {
 export interface ReceiptMetadata {
   category?: string;
   label?: string;
+  oracleValidationLabel?: string;
+  oracleValidationStatus?: 'consensus_verified' | 'single_source_fallback' | 'single_source_only';
 }
 
 export interface ShareableProofPayload extends ProofResult {
@@ -73,6 +75,8 @@ interface CompactOracleAuth {
 interface CompactReceiptMeta {
   c?: string;
   l?: string;
+  vl?: string;
+  vs?: string;
 }
 
 export interface SelectiveDisclosurePackagingOptions {
@@ -97,6 +101,8 @@ function assertValidReceiptMeta(meta: unknown): ReceiptMetadata {
 
   const label = meta['l'];
   const category = meta['c'];
+  const oracleValidationStatus = meta['vs'];
+  const oracleValidationLabel = meta['vl'];
 
   if (label !== undefined) {
     const validLabel =
@@ -118,9 +124,35 @@ function assertValidReceiptMeta(meta: unknown): ReceiptMetadata {
     }
   }
 
+  if (oracleValidationStatus !== undefined) {
+    const validStatus =
+      oracleValidationStatus === 'consensus_verified' ||
+      oracleValidationStatus === 'single_source_fallback' ||
+      oracleValidationStatus === 'single_source_only';
+    if (!validStatus) {
+      throw new Error('Invalid proof format');
+    }
+  }
+
+  if (oracleValidationLabel !== undefined) {
+    const validValidationLabel =
+      typeof oracleValidationLabel === 'string' &&
+      oracleValidationLabel.trim().length > 0 &&
+      oracleValidationLabel.length <= 200;
+    if (!validValidationLabel) {
+      throw new Error('Invalid proof format');
+    }
+  }
+
   return {
     ...(typeof label === 'string' ? { label } : {}),
     ...(typeof category === 'string' ? { category } : {}),
+    ...(oracleValidationStatus === 'consensus_verified' ||
+    oracleValidationStatus === 'single_source_fallback' ||
+    oracleValidationStatus === 'single_source_only'
+      ? { oracleValidationStatus }
+      : {}),
+    ...(typeof oracleValidationLabel === 'string' ? { oracleValidationLabel } : {}),
   };
 }
 
@@ -190,6 +222,12 @@ function toCompactPayload(
           m: {
             ...(payload.receiptMeta.label ? { l: payload.receiptMeta.label } : {}),
             ...(payload.receiptMeta.category ? { c: payload.receiptMeta.category } : {}),
+            ...(payload.receiptMeta.oracleValidationStatus
+              ? { vs: payload.receiptMeta.oracleValidationStatus }
+              : {}),
+            ...(payload.receiptMeta.oracleValidationLabel
+              ? { vl: payload.receiptMeta.oracleValidationLabel }
+              : {}),
           },
         }
       : {}),

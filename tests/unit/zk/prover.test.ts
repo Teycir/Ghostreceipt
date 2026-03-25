@@ -110,6 +110,8 @@ describe('ProofGenerator share payload encoding', () => {
       {
         label: 'Invoice #428',
         category: 'Operations',
+        oracleValidationStatus: 'consensus_verified',
+        oracleValidationLabel: 'Dual-source consensus verified (primary + peer)',
       }
     );
 
@@ -118,6 +120,8 @@ describe('ProofGenerator share payload encoding', () => {
     expect(imported.receiptMeta).toEqual({
       label: 'Invoice #428',
       category: 'Operations',
+      oracleValidationStatus: 'consensus_verified',
+      oracleValidationLabel: 'Dual-source consensus verified (primary + peer)',
     });
   });
 
@@ -177,6 +181,25 @@ describe('ProofGenerator share payload encoding', () => {
     }));
 
     expect(() => generator.importProof(malformedMetaPayload)).toThrow(
+      'Invalid proof format'
+    );
+  });
+
+  it('rejects invalid validation-strength status in imported payload metadata', () => {
+    const malformedStatusPayload = encodeSharePayload(JSON.stringify({
+      p: {
+        a: sampleProof.proof.pi_a,
+        b: sampleProof.proof.pi_b,
+        c: sampleProof.proof.pi_c,
+      },
+      s: sampleProof.publicSignals,
+      m: {
+        l: 'Invoice #428',
+        vs: 'unknown_status',
+      },
+    }));
+
+    expect(() => generator.importProof(malformedStatusPayload)).toThrow(
       'Invalid proof format'
     );
   });
