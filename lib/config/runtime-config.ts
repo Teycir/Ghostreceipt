@@ -51,7 +51,15 @@ function parseBoolean(value: string | undefined): boolean | null {
 }
 
 function shouldValidateRuntimeConfigOnLoad(env: NodeJS.ProcessEnv): boolean {
-  if ((env['NODE_ENV'] ?? '').toLowerCase() === 'test') {
+  const nodeEnv = (env['NODE_ENV'] ?? '').toLowerCase();
+  
+  // Skip validation during test runs
+  if (nodeEnv === 'test') {
+    return false;
+  }
+
+  // Skip validation during build phase (Next.js sets this during `next build`)
+  if (env['NEXT_PHASE'] === 'phase-production-build') {
     return false;
   }
 
