@@ -71,6 +71,8 @@ export function ReceiptSuccess({
 }: Readonly<ReceiptSuccessProps>): React.JSX.Element {
   const {
     verifyUrl,
+    isPreparingVerifyUrl,
+    usesCompactVerifyUrl,
     verificationCode,
     qrCode,
     qrError,
@@ -225,7 +227,9 @@ export function ReceiptSuccess({
       {/* ── Share card ── */}
       <div className="glass-card rounded-xl p-5 space-y-3">
         <p className="text-xs uppercase tracking-[0.14em] text-white/50">Share Receipt</p>
-        <p className="text-xs text-white/55">Verification URL</p>
+        <p className="text-xs text-white/55">
+          Verification URL {usesCompactVerifyUrl ? '(Compact)' : '(Preparing...)'}
+        </p>
         <code className="block w-full max-h-24 overflow-auto break-all rounded-lg border border-white/12 bg-black/35 px-3 py-2 text-[11px] text-white/85">
           {verifyUrl || 'Preparing link…'}
         </code>
@@ -241,25 +245,48 @@ export function ReceiptSuccess({
           onClick={() => { void copyShareBundle(); }}
           variant="primary"
           className="w-full"
+          disabled={isPreparingVerifyUrl}
         >
           {copied && copyFlavor === 'bundle'
             ? '✓ Copied Share Packet'
             : '⎘ Copy Link + Code (All)'}
         </Button>
-        <Button type="button" onClick={() => { void copyLink(); }} variant="primary" className="w-full">
+        <Button
+          type="button"
+          onClick={() => { void copyLink(); }}
+          variant="primary"
+          className="w-full"
+          disabled={isPreparingVerifyUrl}
+        >
           {copied && copyFlavor === 'url'
             ? '✓ Copied Verify URL'
             : '⎘ Copy Verify URL'}
         </Button>
         <Button
           type="button"
+          onClick={openReceipt}
+          variant="secondary"
+          className="w-full"
+          disabled={isPreparingVerifyUrl}
+        >
+          👁 Open Receipt
+        </Button>
+        <Button
+          type="button"
           onClick={() => { void shareNatively(); }}
           variant={nativeShareAvailable ? 'primary' : 'secondary'}
           className="w-full"
+          disabled={isPreparingVerifyUrl}
         >
           {nativeShareAvailable ? '↗ Share via Apps (Recommended)' : '↗ Share Link'}
         </Button>
-        <Button type="button" onClick={exportPdf} variant="secondary" className="w-full">
+        <Button
+          type="button"
+          onClick={exportPdf}
+          variant="secondary"
+          className="w-full"
+          disabled={isPreparingVerifyUrl}
+        >
           ↓ Export as PDF
         </Button>
 
@@ -270,6 +297,7 @@ export function ReceiptSuccess({
               type="button"
               variant="secondary"
               className="text-xs"
+              disabled={isPreparingVerifyUrl}
               onClick={() => shareToNetwork(network)}
             >
               {label}
@@ -353,7 +381,7 @@ export function ReceiptSuccess({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" onClick={downloadQR}   variant="secondary" className="text-sm">↓ Download QR</Button>
-            <Button type="button" onClick={openReceipt}  variant="secondary" className="text-sm">👁 Open Receipt</Button>
+            <Button type="button" onClick={openReceipt}  variant="secondary" className="text-sm" disabled={isPreparingVerifyUrl}>👁 Open Receipt</Button>
           </div>
         </div>
       )}

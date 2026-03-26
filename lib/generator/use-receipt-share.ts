@@ -35,6 +35,10 @@ interface UseReceiptShareOptions {
 export interface UseReceiptShareReturn {
   /** Full verify URL — empty string while computing */
   verifyUrl: string;
+  /** True while the verify link is being prepared */
+  isPreparingVerifyUrl: boolean;
+  /** True when current verifyUrl uses compact sid pointer mode */
+  usesCompactVerifyUrl: boolean;
   /** Base64 data-URL for QR code image — empty while generating */
   qrCode: string;
   /** Non-empty when QR generation fails */
@@ -135,6 +139,7 @@ export function useReceiptShare({
   receiptCategory,
 }: Readonly<UseReceiptShareOptions>): UseReceiptShareReturn {
   const [verifyUrl, setVerifyUrl] = useState('');
+  const [isPreparingVerifyUrl, setIsPreparingVerifyUrl] = useState(false);
   const [qrCode, setQrCode]       = useState('');
   const [qrError, setQrError]     = useState('');
   const [shareStatus, setShareStatus] = useState('');
@@ -154,6 +159,7 @@ export function useReceiptShare({
   useEffect(() => {
     let cancelled = false;
     const fallbackUrl = buildProofVerifyUrl(proof);
+    setIsPreparingVerifyUrl(true);
     setVerifyUrl(fallbackUrl);
     setQrCode('');
     setQrError('');
@@ -180,6 +186,7 @@ export function useReceiptShare({
         setShareStatus(compactLinkWarning);
         setQrError('Compact QR links are unavailable on this deployment. Please use "Copy Verify URL" instead.');
         setQrCode('');
+        setIsPreparingVerifyUrl(false);
         return;
       }
 
@@ -187,10 +194,12 @@ export function useReceiptShare({
         const generatedQrCode = await generateQRDataUrl(preferredUrl);
         if (!cancelled) {
           setQrCode(generatedQrCode);
+          setIsPreparingVerifyUrl(false);
         }
       } catch {
         if (!cancelled) {
           setQrError('Could not generate QR code. You can still copy the verification link.');
+          setIsPreparingVerifyUrl(false);
         }
       }
     })();
@@ -201,7 +210,10 @@ export function useReceiptShare({
   }, [proof]);
 
   const copyLink = useCallback(async (): Promise<void> => {
-    if (!verifyUrl) return;
+    if (isPreparingVerifyUrl || !verifyUrl) {
+      setShareStatus('Verification link is still preparing. Please try again in a moment.');
+      return;
+    }
     try {
       await copyToClipboard(verifyUrl);
       setCopyFlavor('url');
@@ -209,10 +221,13 @@ export function useReceiptShare({
     } catch {
       setShareStatus('Copy failed');
     }
-  }, [verifyUrl, copyToClipboard]);
+  }, [copyToClipboard, isPreparingVerifyUrl, verifyUrl]);
 
   const copyShareBundle = useCallback(async (): Promise<void> => {
-    if (!verifyUrl) return;
+    if (isPreparingVerifyUrl || !verifyUrl) {
+      setShareStatus('Verification link is still preparing. Please try again in a moment.');
+      return;
+    }
     try {
       const packet = buildShareBundleText({
         chain,
@@ -225,20 +240,26 @@ export function useReceiptShare({
     } catch {
       setShareStatus('Copy failed');
     }
-  }, [chain, copyToClipboard, proof, verifyUrl]);
+  }, [chain, copyToClipboard, isPreparingVerifyUrl, proof, verifyUrl]);
 
   const shareToNetwork = useCallback((network: SocialNetwork): void => {
-    if (!verifyUrl) return;
+    if (isPreparingVerifyUrl || !verifyUrl) {
+      setShareStatus('Verification link is still preparing. Please try again in a moment.');
+      return;
+    }
     const payload = buildSharePayload(verifyUrl, chain);
     openSocialShare(network, payload);
-  }, [verifyUrl, chain]);
+  }, [chain, isPreparingVerifyUrl, verifyUrl]);
 
   const shareNatively = useCallback(async (): Promise<void> => {
-    if (!verifyUrl) return;
+    if (isPreparingVerifyUrl || !verifyUrl) {
+      setShareStatus('Verification link is still preparing. Please try again in a moment.');
+      return;
+    }
     const payload = buildSharePayload(verifyUrl, chain);
     const status  = await nativeShare(payload);
     setShareStatus(status);
-  }, [verifyUrl, chain]);
+  }, [chain, isPreparingVerifyUrl, verifyUrl]);
 
   const downloadQR = useCallback((): void => {
     if (!qrCode) return;
@@ -249,12 +270,15 @@ export function useReceiptShare({
   }, [qrCode]);
 
   const openReceipt = useCallback((): void => {
-    if (!verifyUrl) return;
+    if (isPreparingVerifyUrl || !verifyUrl) {
+      setShareStatus('Verification link is still preparing. Please try again in a moment.');
+      return;
+    }
     globalThis.location.href = verifyUrl;
-  }, [verifyUrl]);
+  }, [isPreparingVerifyUrl, verifyUrl]);
 
   const exportPdf = useCallback((): void => {
-    if (!verifyUrl) {
+    if (isPreparingVerifyUrl || !verifyUrl) {
       setShareStatus('Verification link is still preparing. Try again in a moment.');
       return;
     }
@@ -277,7 +301,7 @@ export function useReceiptShare({
       const message = error instanceof Error ? error.message : 'PDF export failed';
       setShareStatus(message);
     }
-  }, [chain, claimedAmount, ethereumAsset, minDate, proof, qrCode, receiptCategory, receiptLabel, verifyUrl]);
+  }, [chain, claimedAmount, ethereumAsset, isPreparingVerifyUrl, minDate, proof, qrCode, receiptCategory, receiptLabel, verifyUrl]);
 
   useEffect(() => {
     if (!copied) {
@@ -287,6 +311,8 @@ export function useReceiptShare({
 
   return {
     verifyUrl,
+    isPreparingVerifyUrl,
+    usesCompactVerifyUrl: verifyUrl.includes('sid='),
     qrCode,
     qrError,
     shareStatus,
