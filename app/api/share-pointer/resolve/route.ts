@@ -1,38 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SharePointerResolveRequestSchema } from '@/lib/validation/schemas';
 import { createJsonErrorResponse } from '@/lib/libraries/backend';
 import {
-  isLikelySharePointerId,
+  parseSecureJsonWithError,
+  validateBodyWithSchema,
+} from '@ghostreceipt/backend-core/http';
+import {
   resolveSharePointerPayload,
 } from '@/lib/share/share-pointer-service';
 
-interface SharePointerRouteContext {
-  params: Promise<{ id: string }> | { id: string };
-}
-
-async function readPointerId(context: SharePointerRouteContext): Promise<string> {
-  const params = await context.params;
-  return params.id;
-}
-
 /**
- * GET /api/share-pointer/:id
+ * POST /api/share-pointer/resolve
  *
  * Resolves a compact pointer ID to the original proof payload.
  */
-export async function GET(
-  _request: NextRequest,
-  context: SharePointerRouteContext
-): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const id = (await readPointerId(context)).trim();
-    if (!isLikelySharePointerId(id)) {
-      return createJsonErrorResponse({
-        code: 'INVALID_HASH',
-        message: 'Invalid share pointer id',
-        status: 400,
-      });
+    const parsedBody = await parseSecureJsonWithError(request, {
+      fallbackMessage: 'Invalid share pointer resolve request body',
+      maxSize: 2048,
+    });
+    if (!parsedBody.ok) {
+      return parsedBody.response;
     }
 
+    const validated = validateBodyWithSchema({
+      body: parsedBody.data,
+      options: {
+        message: 'Invalid share pointer resolve request',
+      },
+      schema: SharePointerResolveRequestSchema,
+    });
+    if (!validated.ok) {
+      return validated.response;
+    }
+
+    const { id } = validated.data;
     const resolved = await resolveSharePointerPayload(id);
     if (resolved.reason === null) {
       return NextResponse.json({

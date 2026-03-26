@@ -112,8 +112,12 @@ export async function createSharePointerLink(proof: string): Promise<SharePointe
 }
 
 export async function resolveSharePointerLink(pointerId: string): Promise<SharePointerResolveSuccessResponse['data']> {
-  const response = await fetch(`/api/share-pointer/${encodeURIComponent(pointerId)}`, {
-    method: 'GET',
+  const response = await fetch('/api/share-pointer/resolve', {
+    body: JSON.stringify({ id: pointerId }),
+    headers: {
+      'content-type': 'application/json',
+    },
+    method: 'POST',
   });
 
   const payload = await response.json().catch(() => null);

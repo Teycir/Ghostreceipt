@@ -1,5 +1,29 @@
 # Task Plan - 2026-03-26
 
+## Objective (Remove Next.js Viewport Metadata Warnings In CI)
+
+Eliminate App Router viewport metadata warnings during `next build` so CI output is clean.
+
+## Plan
+
+- [x] Move viewport config out of `metadata` and into `export const viewport` in `app/layout.tsx`.
+- [x] Run `npm run build` and verify no viewport metadata warnings remain.
+- [x] Record review notes and residual risk.
+
+## Review (Remove Next.js Viewport Metadata Warnings In CI)
+
+- Status: Completed
+- Root cause:
+  - `viewport` was declared inside `export const metadata`, which Next.js 16 flags as unsupported for App Router metadata.
+- Fixes shipped:
+  - Moved viewport declaration from `metadata.viewport` to dedicated `export const viewport` in `app/layout.tsx`.
+  - Added `Viewport` type import from `next` for explicit typing.
+- Validation:
+  - `npm run build` pass
+  - Build log contains no `Unsupported metadata viewport is configured` warnings.
+- Residual risk:
+  - New page-level metadata additions must keep viewport in `export const viewport`, not inside `metadata`.
+
 ## Objective (Short Verify Pointer Links For QR Scanability)
 
 Replace long proof-in-query share URLs with compact pointer-based verify links so QR codes remain easily decodable by camera scanners (including Google Lens).
@@ -19,7 +43,7 @@ Replace long proof-in-query share URLs with compact pointer-based verify links s
 - Fixes shipped:
   - Added short-pointer API routes:
     - `POST /api/share-pointer/create`
-    - `GET /api/share-pointer/:id`
+    - `POST /api/share-pointer/resolve` (`{ id }`)
   - Added Cloudflare Pages parity routes:
     - `functions/api/share-pointer/create.ts`
     - `functions/api/share-pointer/[id].ts`

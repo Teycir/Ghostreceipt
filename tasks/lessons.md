@@ -1,5 +1,15 @@
 # Lessons Learned
 
+## 2026-03-26 - Next.js 16 Requires `viewport` Export, Not `metadata.viewport`
+- In App Router, declaring `viewport` inside `export const metadata` triggers build warnings for every route.
+- Define viewport in `export const viewport` (typed as `Viewport`) at layout/page level instead.
+- Treat metadata-shape warnings as CI blockers when the goal is a warning-free build output.
+
+## 2026-03-26 - Static Export Rejects New GET App Routes Without Export-Static Compatibility
+- With `output: 'export'`, adding a new GET App Router API route can fail build-time page-data collection even if the route is only meant for runtime use.
+- Prefer POST endpoints for runtime-only APIs in static-export projects, matching the existing Cloudflare Functions pattern.
+- Avoid dynamic App API route segments (`[id]`) for export builds; use non-dynamic route paths plus body/query validation.
+
 ## 2026-03-26 - QR Scan Success Requires Compact URL Payloads, Not Only Visual Contrast
 - Even with scanner-safe black/white styling, embedding very long query payloads can produce QR density that camera scanners fail to decode silently.
 - For shareable verify flows, prefer short pointer-based URLs (for example `sid`) and resolve payload server-side.

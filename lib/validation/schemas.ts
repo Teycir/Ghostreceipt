@@ -111,6 +111,14 @@ export const SharePointerCreateRequestSchema = z
 
 export type SharePointerCreateRequest = z.infer<typeof SharePointerCreateRequestSchema>;
 
+export const SharePointerResolveRequestSchema = z
+  .object({
+    id: SharePointerIdSchema,
+  })
+  .strict();
+
+export type SharePointerResolveRequest = z.infer<typeof SharePointerResolveRequestSchema>;
+
 /**
  * Canonical transaction data (normalized across chains)
  */

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { POST as createPointer } from '@/app/api/share-pointer/create/route';
-import { GET as resolvePointer } from '@/app/api/share-pointer/[id]/route';
+import { POST as resolvePointer } from '@/app/api/share-pointer/resolve/route';
 import { __resetSharePointerManagerForTests } from '@/lib/share/share-pointer-service';
 
 describe('Share pointer API routes', () => {
@@ -29,12 +29,13 @@ describe('Share pointer API routes', () => {
     expect(typeof createPayload.data.expiresAt).toBe('string');
 
     const pointerId = createPayload.data.id as string;
-    const resolveRequest = new NextRequest(`http://localhost:3000/api/share-pointer/${pointerId}`, {
-      method: 'GET',
+    const resolveRequest = new NextRequest('http://localhost:3000/api/share-pointer/resolve', {
+      body: JSON.stringify({
+        id: pointerId,
+      }),
+      method: 'POST',
     });
-    const resolveResponse = await resolvePointer(resolveRequest, {
-      params: { id: pointerId },
-    });
+    const resolveResponse = await resolvePointer(resolveRequest);
     const resolvePayload = await resolveResponse.json();
 
     expect(resolveResponse.status).toBe(200);
@@ -43,26 +44,28 @@ describe('Share pointer API routes', () => {
   });
 
   it('rejects malformed pointer ids', async () => {
-    const resolveRequest = new NextRequest('http://localhost:3000/api/share-pointer/bad-id', {
-      method: 'GET',
+    const resolveRequest = new NextRequest('http://localhost:3000/api/share-pointer/resolve', {
+      body: JSON.stringify({
+        id: 'bad-id',
+      }),
+      method: 'POST',
     });
-    const resolveResponse = await resolvePointer(resolveRequest, {
-      params: { id: 'bad-id' },
-    });
+    const resolveResponse = await resolvePointer(resolveRequest);
     const payload = await resolveResponse.json();
 
     expect(resolveResponse.status).toBe(400);
-    expect(payload.error.message).toBe('Invalid share pointer id');
+    expect(payload.error.message).toBe('Invalid share pointer resolve request');
   });
 
   it('returns 404 for unknown pointer id', async () => {
     const unknownId = 'r_AAAAAAAAAAAAAAAA';
-    const resolveRequest = new NextRequest(`http://localhost:3000/api/share-pointer/${unknownId}`, {
-      method: 'GET',
+    const resolveRequest = new NextRequest('http://localhost:3000/api/share-pointer/resolve', {
+      body: JSON.stringify({
+        id: unknownId,
+      }),
+      method: 'POST',
     });
-    const resolveResponse = await resolvePointer(resolveRequest, {
-      params: { id: unknownId },
-    });
+    const resolveResponse = await resolvePointer(resolveRequest);
     const payload = await resolveResponse.json();
 
     expect(resolveResponse.status).toBe(404);
