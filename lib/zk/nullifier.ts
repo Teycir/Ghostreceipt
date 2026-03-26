@@ -126,11 +126,14 @@ export function checkClientNullifierConflict(
       mode: 'conflict',
       message: 'Nullifier conflict detected: this transaction was already used for a different claim.',
     };
-  } catch {
-    return {
-      valid: true,
-      mode: 'storage_unavailable',
-    };
+  } catch (error) {
+    if (error instanceof Error && (error.name === 'QuotaExceededError' || error.message.includes('storage'))) {
+      return {
+        valid: true,
+        mode: 'storage_unavailable',
+      };
+    }
+    throw error;
   }
 }
 
@@ -184,10 +187,13 @@ export function checkClientNullifierConflictByDigest(
       mode: 'conflict',
       message: 'Nullifier conflict detected: this transaction was already used for a different claim.',
     };
-  } catch {
-    return {
-      valid: true,
-      mode: 'storage_unavailable',
-    };
+  } catch (error) {
+    if (error instanceof Error && (error.name === 'QuotaExceededError' || error.message.includes('storage'))) {
+      return {
+        valid: true,
+        mode: 'storage_unavailable',
+      };
+    }
+    throw error;
   }
 }

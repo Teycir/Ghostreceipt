@@ -293,8 +293,11 @@ export class EtherscanProvider implements EthereumProvider {
 
       try {
         return total + BigInt(valueData);
-      } catch {
-        return total;
+      } catch (error) {
+        if (error instanceof RangeError || error instanceof SyntaxError) {
+          return total;
+        }
+        throw error;
       }
     }, BigInt(0));
   }
@@ -348,8 +351,11 @@ export class EtherscanProvider implements EthereumProvider {
     let data: unknown;
     try {
       data = await response.json();
-    } catch {
-      throw new Error('Invalid JSON response from Etherscan');
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON response from Etherscan');
+      }
+      throw error;
     }
 
     if (!data || typeof data !== 'object') {
@@ -401,8 +407,11 @@ export class EtherscanProvider implements EthereumProvider {
 
     try {
       return BigInt(value);
-    } catch {
-      throw new Error(`Invalid ${fieldName} value from Etherscan`);
+    } catch (error) {
+      if (error instanceof RangeError || error instanceof SyntaxError || error instanceof TypeError) {
+        throw new Error(`Invalid ${fieldName} value from Etherscan`);
+      }
+      throw error;
     }
   }
 
