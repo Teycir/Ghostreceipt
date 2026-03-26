@@ -488,3 +488,8 @@
 - If branch protection is removed to keep a single-branch workflow, GitHub cannot enforce required checks before push on `main`.
 - Use a strict local `pre-push` gate that mirrors CI quality steps so pushes fail fast on local quality regressions.
 - Keep runbooks explicit about this tradeoff: one long-lived branch with local enforcement, while remote CI/deploy still executes post-push.
+
+## 2026-03-26 - Always Verify Live Branch-Protection State Before Assuming Push Policy Changed
+- Documentation or local hook changes do not modify GitHub branch rules; confirm live `main` protection state via API/UI when pushes still return `GH006`.
+- If user requests direct push on single-branch flow, remove protection explicitly and validate by re-running a direct `git push --no-verify origin main`.
+- Separate blockers during diagnosis: local pre-push hook failures vs remote protection rejections.

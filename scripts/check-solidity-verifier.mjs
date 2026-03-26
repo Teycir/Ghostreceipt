@@ -22,13 +22,24 @@ if (!existsSync(verifierPath)) {
 
 const tempDir = mkdtempSync(path.join(tmpdir(), 'ghostreceipt-verifier-'));
 const generatedPath = path.join(tempDir, 'Verifier.generated.sol');
+const snarkjsBin = path.join(
+  projectRoot,
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'snarkjs.cmd' : 'snarkjs'
+);
+
+function runSnarkjs(args) {
+  if (existsSync(snarkjsBin)) {
+    execFileSync(snarkjsBin, args, { cwd: projectRoot, stdio: 'pipe' });
+    return;
+  }
+
+  execFileSync('npx', ['snarkjs', ...args], { cwd: projectRoot, stdio: 'pipe' });
+}
 
 try {
-  execFileSync(
-    'npx',
-    ['snarkjs', 'zkey', 'export', 'solidityverifier', zkeyPath, generatedPath],
-    { stdio: 'pipe' }
-  );
+  runSnarkjs(['zkey', 'export', 'solidityverifier', zkeyPath, generatedPath]);
 
   const normalize = (content) => content.replace(/\r\n/g, '\n').trim();
   const expected = normalize(readFileSync(verifierPath, 'utf8'));
