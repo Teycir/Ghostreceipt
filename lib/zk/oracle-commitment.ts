@@ -1,26 +1,10 @@
-import { buildPoseidon } from 'circomlibjs';
 import { createHash } from 'crypto';
 import type { CanonicalTxData, Chain } from '@/lib/validation/schemas';
-
-type PoseidonHash = ((inputs: bigint[]) => unknown) & {
-  F: {
-    toString(value: unknown): string;
-  };
-};
-
-let poseidonPromise: Promise<PoseidonHash> | null = null;
+import { poseidonHash } from '@/lib/zk/poseidon-opt';
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const BASE58_INDEX_MAP = new Map<string, number>(
   BASE58_ALPHABET.split('').map((character, index) => [character, index])
 );
-
-function getPoseidon(): Promise<PoseidonHash> {
-  if (!poseidonPromise) {
-    poseidonPromise = buildPoseidon() as Promise<PoseidonHash>;
-  }
-
-  return poseidonPromise;
-}
 
 function chainToId(chain: Chain): bigint {
   switch (chain) {
@@ -112,15 +96,14 @@ function txHashToChunks(chain: Chain, txHash: string): bigint[] {
 }
 
 export async function computeOracleCommitment(data: CanonicalTxData): Promise<string> {
-  const poseidon = await getPoseidon();
   const txHashChunks = txHashToChunks(data.chain, data.txHash);
-  const txHashCommitment = poseidon(txHashChunks);
-  const commitment = poseidon([
+  const txHashCommitment = poseidonHash(txHashChunks);
+  const commitment = poseidonHash([
     BigInt(data.valueAtomic),
     BigInt(data.timestampUnix),
-    txHashCommitment as bigint,
+    txHashCommitment,
     chainToId(data.chain),
   ]);
 
-  return poseidon.F.toString(commitment);
+  return commitment.toString();
 }
