@@ -9,6 +9,7 @@ import {
 } from '../../../lib/libraries/backend-core/http/pages/runtime-shared';
 import {
   buildVerifySidUrl,
+  hasDurableSharePointerStorage,
   storeSharePointerPayload,
 } from '../../../lib/share/share-pointer-service';
 
@@ -36,6 +37,18 @@ export async function onRequest(context: PagesFunctionContextLike): Promise<Resp
   );
   if (!validated.ok) {
     return validated.response;
+  }
+
+  if (!hasDurableSharePointerStorage(context.env)) {
+    return jsonErrorResponse({
+      code: 'INTERNAL_ERROR',
+      details: {
+        requiredBinding: 'SHARE_POINTERS_DB',
+        storageBackend: 'memory',
+      },
+      message: 'Compact share links are unavailable on this deployment (missing SHARE_POINTERS_DB D1 binding).',
+      status: 503,
+    });
   }
 
   try {

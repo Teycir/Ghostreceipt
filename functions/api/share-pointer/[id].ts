@@ -5,6 +5,7 @@ import {
   jsonResponse,
 } from '../../../lib/libraries/backend-core/http/pages/runtime-shared';
 import {
+  hasDurableSharePointerStorage,
   isLikelySharePointerId,
   resolveSharePointerPayload,
 } from '../../../lib/share/share-pointer-service';
@@ -31,6 +32,18 @@ export async function onRequest(context: SharePointerPagesContext): Promise<Resp
       code: 'INVALID_HASH',
       message: 'Invalid share pointer id',
       status: 400,
+    });
+  }
+
+  if (!hasDurableSharePointerStorage(context.env)) {
+    return jsonErrorResponse({
+      code: 'INTERNAL_ERROR',
+      details: {
+        requiredBinding: 'SHARE_POINTERS_DB',
+        storageBackend: 'memory',
+      },
+      message: 'Compact share links are unavailable on this deployment (missing SHARE_POINTERS_DB D1 binding).',
+      status: 503,
     });
   }
 

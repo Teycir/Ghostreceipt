@@ -353,6 +353,7 @@ Open `http://localhost:3000` in your browser.
 - Configure consensus validation modes
 - Customize provider endpoints
 - Configure optional client failover backup route with `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`
+- For compact QR short links on Cloudflare Pages, bind D1 as `SHARE_POINTERS_DB` (see `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md`)
 
 See `.env.example` for all available options.
 

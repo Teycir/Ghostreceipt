@@ -110,6 +110,27 @@ Client runtime policy remains primary-first:
 - `/api/oracle/fetch-tx` - Oracle transaction fetching endpoint
 - `/api/oracle/verify-signature` - Oracle signature verification endpoint
 - `/api/oracle/check-nullifier` - Nullifier conflict detection endpoint
+- `/api/share-pointer/create` - Create compact short-link pointers for QR sharing
+- `/api/share-pointer/resolve` - Resolve compact pointer IDs to proof payloads
+
+### Required Binding For Compact QR Links
+
+Compact `sid` verify links require durable storage. In Pages production/preview, bind D1 as `SHARE_POINTERS_DB`.
+
+1. Create D1 database (one-time):
+```bash
+npx wrangler d1 create ghostreceipt-share-pointers
+```
+2. Add the binding in Cloudflare Pages:
+`Settings > Functions > D1 bindings`
+3. Binding name must be exactly:
+`SHARE_POINTERS_DB`
+4. Initialize schema:
+```bash
+npx wrangler d1 execute ghostreceipt-share-pointers --file=./scripts/sql/share-pointers.sql
+```
+
+Without this binding, compact QR short links are disabled and the API returns a configuration error instead of creating non-resolvable pointers.
 
 ### Function Configuration
 Functions run in Cloudflare's edge network with:
@@ -147,6 +168,7 @@ npx wrangler pages deployment tail
 - Check function logs in deployment details
 - Ensure environment variables are set
 - Ensure `wrangler.toml` includes `compatibility_flags = ["nodejs_compat"]` for function bundling
+- For compact QR links, ensure D1 binding `SHARE_POINTERS_DB` is set and database schema is applied
 - If using backup failover, ensure `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` points to a reachable deployment exposing `/fetch-tx`, `/verify-signature`, and `/check-nullifier`
 
 ### Static Assets Not Loading

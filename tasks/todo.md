@@ -1,5 +1,39 @@
 # Task Plan - 2026-03-26
 
+## Objective (Prevent Non-Resolvable QR Share Pointers On Pages)
+
+Ensure compact `sid` QR links are only issued when durable storage is configured, so links opened from another device do not fail with "Share pointer was not found".
+
+## Plan
+
+- [x] Add storage-backend detection helper in shared pointer service.
+- [x] Guard Cloudflare Pages share-pointer create/resolve routes to reject non-durable (memory-only) mode with explicit config error.
+- [x] Surface the missing-binding warning in client share flow and document required D1 setup.
+- [x] Add unit coverage for Pages share-pointer routes in missing-D1 mode; run targeted tests/typecheck/build.
+
+## Review (Prevent Non-Resolvable QR Share Pointers On Pages)
+
+- Status: Completed
+- Root cause:
+  - Cloudflare Pages runtime had no `SHARE_POINTERS_DB` D1 binding.
+  - Share-pointer service fell back to in-memory storage, so `sid` links were not durable across requests/devices and resolved as not found.
+- Fixes shipped:
+  - Added share-pointer storage backend detection helpers in `lib/share/share-pointer-service.ts`.
+  - Updated Pages routes:
+    - `functions/api/share-pointer/create.ts`
+    - `functions/api/share-pointer/resolve.ts`
+    - `functions/api/share-pointer/[id].ts`
+  - Routes now return `503` with explicit binding guidance when `SHARE_POINTERS_DB` is missing, instead of creating/trying non-durable pointers.
+  - Updated share hook (`lib/generator/use-receipt-share.ts`) to surface a clear UI status message when compact links are unavailable.
+  - Added `tests/unit/functions/share-pointer-pages.test.ts` to lock missing-binding behavior.
+  - Updated deployment docs in `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md` and setup note in root `README.md`.
+- Validation:
+  - `npm test -- tests/unit/functions/share-pointer-pages.test.ts tests/unit/api/share-pointer-routes.test.ts tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+  - `npm run build` pass (outside sandbox; Turbopack sandbox port restriction avoided)
+- Residual risk:
+  - Existing deployed environments still require actual D1 binding + schema setup before compact cross-device QR links can work.
+
 ## Objective (Cloudflare Pages Deploy Stability + No Deprecated Deploy Command)
 
 Fix Cloudflare Pages deployment failure caused by global-scope side effects in Functions bundle, and remove deprecated `wrangler pages publish` usage from CI deploy workflow.

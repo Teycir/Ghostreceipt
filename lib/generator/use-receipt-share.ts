@@ -78,6 +78,18 @@ interface QRDataUrlOptions {
 
 type QRToDataUrl = (url: string, options: QRDataUrlOptions) => Promise<string>;
 
+function isCompactShareLinkUnavailableError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('compact share links are unavailable') ||
+    message.includes('missing share_pointers_db')
+  );
+}
+
 /**
  * Prefer medium/low correction first for on-screen scanning readability,
  * then escalate if encoding constraints require it.
@@ -145,20 +157,28 @@ export function useReceiptShare({
     setVerifyUrl(fallbackUrl);
     setQrCode('');
     setQrError('');
+    setShareStatus('');
 
     void (async () => {
       let preferredUrl = fallbackUrl;
+      let compactLinkWarning: string | null = null;
       try {
         const pointer = await createSharePointerLink(proof);
         preferredUrl = pointer.verifyUrl;
-      } catch {
+      } catch (error) {
         preferredUrl = fallbackUrl;
+        if (isCompactShareLinkUnavailableError(error)) {
+          compactLinkWarning = 'Compact QR links are disabled on this deployment because SHARE_POINTERS_DB is not configured.';
+        }
       }
 
       if (cancelled) {
         return;
       }
       setVerifyUrl(preferredUrl);
+      if (compactLinkWarning) {
+        setShareStatus(compactLinkWarning);
+      }
 
       try {
         const generatedQrCode = await generateQRDataUrl(preferredUrl);

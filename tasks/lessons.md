@@ -423,3 +423,8 @@
 ## 2026-03-22 - Prototype-Pollution Guard Precision
 - Do not use broad inherited-property checks (`in` on plain objects) to detect malicious keys in parsed JSON payloads; this creates false positives (`constructor` on `Object.prototype`).
 - For deserialization hardening, scan own enumerable keys recursively and block only explicit dangerous keys present in the payload shape.
+
+## 2026-03-26 - Compact QR Links Need Durable Pointer Storage
+- Never ship compact `sid` share links in Cloudflare Pages memory-only mode; they can resolve as "not found" across devices/requests.
+- For share-pointer endpoints, fail fast with an explicit configuration error when `SHARE_POINTERS_DB` (D1) is missing instead of silently issuing non-durable pointers.
+- Keep deployment docs explicit about D1 binding + schema setup for compact QR links so runtime behavior matches user expectations.

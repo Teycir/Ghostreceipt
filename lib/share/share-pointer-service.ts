@@ -8,6 +8,7 @@ import {
 } from '@/lib/libraries/backend-core/http/share-pointer-storage';
 
 type SharePointerEnvBindings = Record<string, unknown> | undefined;
+export type SharePointerStorageBackend = 'd1' | 'memory';
 
 const DEFAULT_SHARE_POINTER_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const DEFAULT_SHARE_POINTER_HARD_DELETE_AFTER_MS = 1000 * 60 * 60 * 24 * 30;
@@ -152,6 +153,18 @@ async function getSharePointerStorageManager(
   }
 
   return getInMemoryManager(bindings);
+}
+
+export function resolveSharePointerStorageBackend(
+  bindings?: SharePointerEnvBindings
+): SharePointerStorageBackend {
+  return isD1DatabaseLike(bindings?.['SHARE_POINTERS_DB']) ? 'd1' : 'memory';
+}
+
+export function hasDurableSharePointerStorage(
+  bindings?: SharePointerEnvBindings
+): boolean {
+  return resolveSharePointerStorageBackend(bindings) === 'd1';
 }
 
 export async function storeSharePointerPayload(
