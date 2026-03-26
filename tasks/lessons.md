@@ -483,3 +483,8 @@
 ## 2026-03-26 - Endpoint Registry Must Be Env-Backed, Not URL-Literal TS
 - Keep endpoint registry modules as env-key resolvers; do not hardcode URL literals in TypeScript source.
 - Treat `.env`/deployment variables as the reusable source of endpoint URLs, and use constant names only for selection/order.
+
+## 2026-03-26 - Single-Branch + "Checks Before Push" Requires Local Hooks, Not GitHub Protection
+- If branch protection is removed to keep a single-branch workflow, GitHub cannot enforce required checks before push on `main`.
+- Use a strict local `pre-push` gate that mirrors CI quality steps so pushes fail fast on local quality regressions.
+- Keep runbooks explicit about this tradeoff: one long-lived branch with local enforcement, while remote CI/deploy still executes post-push.

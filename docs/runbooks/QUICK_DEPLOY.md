@@ -11,21 +11,26 @@
    # Get token from: https://dash.cloudflare.com/profile/api-tokens
    ```
 
-2. **Push to main branch**
+2. **Use single-branch mode (`main` only)**
+   - In GitHub branch settings, disable protection rules on `main` (no PR requirement, no required checks gate on GitHub side).
+   - Local `pre-push` hook now enforces the full quality gate before any push.
+
+3. **Push to main branch**
    ```bash
    git add .
    git commit -m "feat: add Cloudflare Pages deployment"
    git push origin main
    ```
 
-3. **CI gate then deploy**
-   - `CI` workflow must pass (`Quality Gate` + `Dependency Review` on PRs).
-   - Deploy workflow starts only after successful CI on `main`.
-
-4. **(One-time hardening) enforce branch protection**
+4. **Verify local CI gate command (one-time)**
    ```bash
-   npm run github:protect-main
+   npm run ci:quality-gate
    ```
+
+5. **CI gate then deploy**
+   - Local push is blocked unless `ci:quality-gate` passes.
+   - Remote `CI` workflow still runs on push to `main`.
+   - Deploy workflow starts only after successful CI on `main`.
 
 ### Option 2: Manual Deployment via Dashboard
 
@@ -84,10 +89,11 @@
 
 Run this before deploying:
 ```bash
-npm run deploy:check
+npm run ci:quality-gate && npm run deploy:check
 ```
 
 This checks:
+- ✓ Secrets/config guards (`check:secrets`, oracle log, verifier artifact)
 - ✓ Node.js version (>= 20.9.0)
 - ✓ Required files exist
 - ✓ Dependencies installed

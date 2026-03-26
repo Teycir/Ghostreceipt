@@ -5,7 +5,7 @@
   "scripts": {
     "prepare": "husky install",
     "precommit": "npm test && npm run lint",
-    "prepush": "npm run test && npm run lint",
+    "prepush": "npm run ci:quality-gate",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
@@ -41,7 +41,8 @@
     "pages:dev": "npx wrangler pages dev out",
     "cf:setup": "bash scripts/setup-cloudflare.sh",
     "cf:secrets": "bash scripts/manage-secrets.sh",
-    "cf:sync": "bash scripts/sync-secrets.sh"
+    "cf:sync": "bash scripts/sync-secrets.sh",
+    "ci:quality-gate": "npm run check:secrets && npm run check:oracle-transparency-log && npm run check:solidity-verifier && npm run typecheck && npm run lint && npm run test:coverage && npm run test:perf:proof && npm run test:stress:oracle && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

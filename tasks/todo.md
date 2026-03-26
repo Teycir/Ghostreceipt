@@ -1956,3 +1956,34 @@ Eliminate URL literals from provider/config TS endpoint registries, make endpoin
   - Validation:
     - `npm run typecheck` pass.
     - `npm test -- tests/unit/providers/mempool.test.ts tests/unit/providers/ethereum-public-rpc.test.ts tests/unit/providers/solana-public-rpc.test.ts tests/unit/providers/ssrf-enforcement.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts --runInBand --ci` pass.
+
+## Objective (Single-Branch Flow With Local CI Gate Before Push)
+
+Keep `main` as the only working branch while enforcing a full local quality gate before every push.
+
+## Plan
+
+- [x] Align local pre-push gate with CI quality steps via one reusable npm command.
+- [x] Wire Husky `pre-push` hook to block pushes when the local quality gate fails.
+- [x] Update quick deploy runbook to document single-branch mode and local pre-push CI rule.
+
+## Review (Single-Branch Flow With Local CI Gate Before Push)
+
+- Status: Completed
+- Notes:
+  - Added `ci:quality-gate` script in `package.json` to run:
+    - `check:secrets`
+    - `check:oracle-transparency-log`
+    - `check:solidity-verifier`
+    - `typecheck`
+    - `lint`
+    - `test:coverage`
+    - `test:perf:proof`
+    - `test:stress:oracle`
+    - `build`
+  - Updated `.husky/pre-push` to execute `npm run prepush` (now mapped to the full local quality gate).
+  - Updated `docs/runbooks/QUICK_DEPLOY.md` to reflect single-branch operation and local CI-before-push policy.
+  - Validation:
+    - `npm run check:secrets` pass
+    - `npm run check:oracle-transparency-log` pass
+    - `npm run check:solidity-verifier` pass
