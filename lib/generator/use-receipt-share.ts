@@ -63,15 +63,49 @@ function buildVerifyUrl(proof: string): string {
   return `${globalThis.location.origin}/verify?${params.toString()}`;
 }
 
-/** Generates a QR code data URL with dark, app-palette colours */
-async function generateQRDataUrl(url: string): Promise<string> {
-  const QRCode = (await import('qrcode')).default;
-  return QRCode.toDataURL(url, {
-    errorCorrectionLevel: 'H',
+type QRErrorCorrectionLevel = 'H' | 'Q' | 'M' | 'L';
+
+interface QRDataUrlOptions {
+  color: {
+    dark: string;
+    light: string;
+  };
+  errorCorrectionLevel: QRErrorCorrectionLevel;
+  margin: number;
+  width: number;
+}
+
+type QRToDataUrl = (url: string, options: QRDataUrlOptions) => Promise<string>;
+
+const QR_ERROR_CORRECTION_LEVELS: readonly QRErrorCorrectionLevel[] = ['H', 'Q', 'M', 'L'];
+
+function buildQROptions(errorCorrectionLevel: QRErrorCorrectionLevel): QRDataUrlOptions {
+  return {
+    errorCorrectionLevel,
     width: 256,
     margin: 2,
     color: { dark: '#22d3ee', light: '#080d1a' },
-  });
+  };
+}
+
+export async function generateQRDataUrlWithFallback(url: string, toDataUrl: QRToDataUrl): Promise<string> {
+  let lastError: unknown = null;
+
+  for (const level of QR_ERROR_CORRECTION_LEVELS) {
+    try {
+      return await toDataUrl(url, buildQROptions(level));
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error('QR generation failed');
+}
+
+/** Generates a QR code data URL with dark, app-palette colours */
+async function generateQRDataUrl(url: string): Promise<string> {
+  const QRCode = (await import('qrcode')).default;
+  return generateQRDataUrlWithFallback(url, (value, options) => QRCode.toDataURL(value, options));
 }
 
 export function useReceiptShare({

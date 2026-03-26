@@ -1,5 +1,30 @@
 # Task Plan - 2026-03-26
 
+## Objective (QR Generation Failure for Long Verify URLs)
+
+Fix the receipt share screen so QR generation succeeds for longer verification URLs instead of showing "Could not generate QR code" for valid receipts.
+
+## Plan
+
+- [x] Implement resilient QR generation that retries with lower error-correction levels when payload size is large.
+- [x] Add unit tests under `tests/` that verify fallback sequencing and hard-failure behavior.
+- [x] Run targeted tests + typecheck and capture review notes.
+
+## Review (QR Generation Failure for Long Verify URLs)
+
+- Status: Completed
+- Root cause:
+  - QR creation attempted only `errorCorrectionLevel: 'H'`, which fails for larger verify URLs even though lower correction levels can still encode them.
+- Fixes shipped:
+  - Added QR generation fallback sequence `H -> Q -> M -> L` in `lib/generator/use-receipt-share.ts`.
+  - Kept existing user-facing error handling for true hard-limit cases when all levels fail.
+  - Added unit tests in `tests/unit/generator/use-receipt-share.test.ts` for fallback and hard-failure behavior.
+- Validation:
+  - `npm test -- tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+- Residual risk:
+  - Extremely long links can still exceed QR version-40 `L` capacity; in those rare cases users still need the copy/share link fallback.
+
 ## Objective (Browser `base64url` Runtime Error + Manifest Icon 404)
 
 Fix the UI runtime failure (`Unknown encoding: base64url`) and remove manifest icon fetch errors (`/icon-192.png` 404) observed in production.
