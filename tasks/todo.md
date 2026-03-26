@@ -1,5 +1,26 @@
 # Task Plan - 2026-03-26
 
+## Objective (Fresh Transaction Table Doc + README Link)
+
+Create a dedicated test-data document containing amount/hash/time rows and link it from README docs navigation.
+
+## Plan
+
+- [x] Collect fresh cross-chain transaction rows with amount + hash + UTC timestamp.
+- [x] Add a dedicated runbook doc with a markdown table and source links.
+- [x] Link the new document from `README.md` and `docs/README.md`.
+
+## Review (Fresh Transaction Table Doc + README Link)
+
+- Status: Completed
+- Added:
+  - `docs/runbooks/FRESH_TRANSACTION_TEST_DATA_2026-03-26.md`
+- Linked from:
+  - `README.md` (For developers docs list)
+  - `docs/README.md` (Runbooks list)
+- Notes:
+  - Table rows include BTC, ETH, and SOL with explicit amount semantics and UTC timestamps.
+
 ## Objective (Visible Circuit Runtime Fingerprint)
 
 Expose a clear runtime fingerprint after receipt generation so users can verify proving backend details at a glance.
