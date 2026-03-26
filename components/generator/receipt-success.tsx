@@ -18,6 +18,7 @@ import type {
   EthereumAsset,
   GeneratorTimingTelemetry,
   OracleValidationStatus,
+  ProofRuntimeTelemetry,
 } from '@/lib/generator/types';
 import type { SocialNetwork } from '@/lib/share/social';
 
@@ -31,6 +32,7 @@ interface ReceiptSuccessProps {
   minDateDisclosure: 'disclosed' | 'hidden';
   oracleValidationStatus?: OracleValidationStatus;
   oracleValidationLabel?: string;
+  proofRuntime?: ProofRuntimeTelemetry;
   receiptLabel?:  string;
   receiptCategory?: string;
   timings?:       GeneratorTimingTelemetry;
@@ -62,6 +64,7 @@ export function ReceiptSuccess({
   minDateDisclosure,
   oracleValidationStatus,
   oracleValidationLabel,
+  proofRuntime,
   receiptLabel,
   receiptCategory,
   timings,
@@ -194,18 +197,27 @@ export function ReceiptSuccess({
           )}
         </div>
 
-        {timings && (
+        {(timings || proofRuntime) && (
           <div className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3">
             <p className="text-[10px] uppercase tracking-[0.14em] text-cyan-300/80 mb-2">
               Generation Telemetry (ms)
             </p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-cyan-100/85 font-mono">
-              <span>fetch: {Math.round(timings.fetchMs)}</span>
-              <span>witness: {Math.round(timings.witnessMs)}</span>
-              <span>prove: {Math.round(timings.proveMs)}</span>
-              <span>package: {Math.round(timings.packageMs)}</span>
-              <span className="col-span-2">total: {Math.round(timings.totalMs)}</span>
-            </div>
+            {timings && (
+              <div className="grid grid-cols-2 gap-2 text-xs text-cyan-100/85 font-mono">
+                <span>fetch: {Math.round(timings.fetchMs)}</span>
+                <span>witness: {Math.round(timings.witnessMs)}</span>
+                <span>prove: {Math.round(timings.proveMs)}</span>
+                <span>package: {Math.round(timings.packageMs)}</span>
+                <span className="col-span-2">total: {Math.round(timings.totalMs)}</span>
+              </div>
+            )}
+            {proofRuntime && (
+              <p className={`text-xs text-cyan-100/85 ${timings ? 'mt-2' : ''}`}>
+                Runtime: <span className="font-mono">
+                  {proofRuntime.backend} / {proofRuntime.executionMode} / v{proofRuntime.artifactVersion}
+                </span>
+              </p>
+            )}
           </div>
         )}
       </div>

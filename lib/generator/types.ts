@@ -42,6 +42,12 @@ export interface GeneratorTimingTelemetry {
   witnessMs: number;
 }
 
+export interface ProofRuntimeTelemetry {
+  artifactVersion: string;
+  backend: 'groth16';
+  executionMode: 'worker' | 'main-thread';
+}
+
 export type OracleValidationStatus =
   | 'consensus_verified'
   | 'single_source_fallback'
@@ -61,6 +67,7 @@ export interface ProofResult {
   receiptLabel?: string;
   receiptCategory?: string;
   timings?: GeneratorTimingTelemetry;
+  proofRuntime?: ProofRuntimeTelemetry;
 }
 
 /** Shape of the structured API error payload */

@@ -12,12 +12,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { announceToScreenReader } from '@/lib/accessibility';
 import type {
-  GeneratorState,
-  GeneratorFormValues,
   GeneratorFormErrors,
+  GeneratorFormValues,
+  GeneratorState,
   GeneratorTimingTelemetry,
-  ProofResult,
   ApiErrorPayload,
+  ProofResult,
+  ProofRuntimeTelemetry,
 } from '@/lib/generator/types';
 import type { OraclePayload } from '@/lib/validation/schemas';
 import { scheduleZkArtifactPreload } from '@/lib/zk/artifacts';
@@ -221,6 +222,12 @@ export function useProofGenerator(): UseProofGeneratorReturn {
       const { createProofGenerator } = await import('@/lib/zk/prover');
       const prover = createProofGenerator();
       const proofOutput = await prover.generateProof(witness);
+      const runtimeInfo = prover.getRuntimeInfo();
+      const proofRuntime: ProofRuntimeTelemetry = {
+        artifactVersion: runtimeInfo.artifactVersion,
+        backend: runtimeInfo.backend,
+        executionMode: runtimeInfo.executionMode,
+      };
       telemetry.proveMs = nowMs() - proveStart;
       if (slowHintTimer !== null) {
         clearTimeout(slowHintTimer);
@@ -269,9 +276,10 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         ...(receiptMeta?.label ? { receiptLabel: receiptMeta.label } : {}),
         ...(receiptMeta?.category ? { receiptCategory: receiptMeta.category } : {}),
         timings:        telemetry,
+        proofRuntime,
       });
       if (typeof console !== 'undefined') {
-        console.info('[ghostreceipt][proof_timing_ms]', telemetry);
+        console.info('[ghostreceipt][proof_timing_ms]', { ...telemetry, runtime: proofRuntime });
       }
 
       void addReceiptHistoryEntry({

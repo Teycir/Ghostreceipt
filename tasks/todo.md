@@ -1,5 +1,33 @@
 # Task Plan - 2026-03-26
 
+## Objective (Visible Circuit Runtime Fingerprint)
+
+Expose a clear runtime fingerprint after receipt generation so users can verify proving backend details at a glance.
+
+## Plan
+
+- [x] Add prover runtime metadata (`backend`, `executionMode`, `artifactVersion`) and expose it after each proof generation.
+- [x] Thread runtime metadata through generator state and display it in success telemetry UI.
+- [x] Include runtime metadata in console telemetry log and validate with targeted tests/typecheck.
+
+## Review (Visible Circuit Runtime Fingerprint)
+
+- Status: Completed
+- Changes shipped:
+  - Added `ProofGenerator.getRuntimeInfo()` with:
+    - `backend: groth16`
+    - `executionMode: worker | main-thread`
+    - `artifactVersion`
+  - Threaded runtime telemetry into generator success state as `proofRuntime`.
+  - Updated success UI telemetry card to show:
+    - `Runtime: groth16 / <mode> / v<artifactVersion>`
+  - Updated console telemetry log payload to include `runtime`.
+- Validation:
+  - `npm test -- tests/unit/zk/prover-runtime.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+- Residual risk:
+  - If worker proving succeeds, runtime mode displays `worker`; otherwise it correctly reports `main-thread` fallback.
+
 ## Objective (QR Generation Failure for Long Verify URLs)
 
 Fix the receipt share screen so QR generation succeeds for longer verification URLs instead of showing "Could not generate QR code" for valid receipts.

@@ -25,6 +25,12 @@ export interface ProofResult {
   publicSignals: string[];
 }
 
+export interface ProofRuntimeInfo {
+  artifactVersion: string;
+  backend: 'groth16';
+  executionMode: 'worker' | 'main-thread';
+}
+
 export interface OracleAuthData {
   expiresAt: number;
   messageHash: string;
@@ -377,6 +383,8 @@ async function proveInWorker(
  * Proof generator for receipt circuit
  */
 export class ProofGenerator {
+  private readonly artifactVersion: string;
+  private lastExecutionMode: ProofRuntimeInfo['executionMode'];
   private wasmPath: string;
   private zkeyPath: string;
   private vkeyPath: string;
@@ -384,7 +392,8 @@ export class ProofGenerator {
   constructor(
     wasmPath: string,
     zkeyPath: string,
-    vkeyPath: string
+    vkeyPath: string,
+    artifactVersion = 'unknown'
   ) {
     // Validate paths are within expected /zk/ directory (defense-in-depth)
     if (!wasmPath.startsWith('/zk/') || wasmPath.includes('..')) {
@@ -400,6 +409,8 @@ export class ProofGenerator {
     this.wasmPath = wasmPath;
     this.zkeyPath = zkeyPath;
     this.vkeyPath = vkeyPath;
+    this.artifactVersion = artifactVersion;
+    this.lastExecutionMode = 'main-thread';
   }
 
   /**
@@ -409,7 +420,9 @@ export class ProofGenerator {
     try {
       if (canUseProofWorker()) {
         try {
-          return await proveInWorker(witness, this.wasmPath, this.zkeyPath);
+          const workerResult = await proveInWorker(witness, this.wasmPath, this.zkeyPath);
+          this.lastExecutionMode = 'worker';
+          return workerResult;
         } catch {
           // Fall through to main-thread proving when worker path is unavailable.
         }
@@ -420,6 +433,7 @@ export class ProofGenerator {
         this.wasmPath,
         this.zkeyPath
       );
+      this.lastExecutionMode = 'main-thread';
 
       return {
         proof,
@@ -529,6 +543,14 @@ export class ProofGenerator {
       throw new Error('Failed to import proof: Unknown error');
     }
   }
+
+  getRuntimeInfo(): ProofRuntimeInfo {
+    return {
+      artifactVersion: this.artifactVersion,
+      backend: 'groth16',
+      executionMode: this.lastExecutionMode,
+    };
+  }
 }
 
 /**
@@ -539,6 +561,7 @@ export function createProofGenerator(): ProofGenerator {
   return new ProofGenerator(
     artifactPaths.wasmPath,
     artifactPaths.zkeyPath,
-    artifactPaths.vkeyPath
+    artifactPaths.vkeyPath,
+    artifactPaths.version
   );
 }

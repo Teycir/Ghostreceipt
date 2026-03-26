@@ -49,6 +49,11 @@ describe('ProofGenerator runtime behavior', () => {
 
     expect(mockedGroth16.fullProve).toHaveBeenCalledTimes(1);
     expect(result.publicSignals).toEqual(['11', '12', '13']);
+    expect(generator.getRuntimeInfo()).toEqual({
+      artifactVersion: 'unknown',
+      backend: 'groth16',
+      executionMode: 'main-thread',
+    });
   });
 
   it('falls back to direct fullProve when worker path errors at runtime', async () => {
@@ -93,6 +98,11 @@ describe('ProofGenerator runtime behavior', () => {
 
       expect(mockedGroth16.fullProve).toHaveBeenCalledTimes(1);
       expect(result.publicSignals).toEqual(['21', '22', '23']);
+      expect(generator.getRuntimeInfo()).toEqual({
+        artifactVersion: 'unknown',
+        backend: 'groth16',
+        executionMode: 'main-thread',
+      });
     } finally {
       if (originalWindow === undefined) {
         delete globalAny.window;

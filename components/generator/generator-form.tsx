@@ -595,6 +595,7 @@ export function GeneratorForm(): React.JSX.Element {
           {...(proofResult.receiptLabel ? { receiptLabel: proofResult.receiptLabel } : {})}
           {...(proofResult.receiptCategory ? { receiptCategory: proofResult.receiptCategory } : {})}
           {...(proofResult.timings ? { timings: proofResult.timings } : {})}
+          {...(proofResult.proofRuntime ? { proofRuntime: proofResult.proofRuntime } : {})}
         />
       )}
 
