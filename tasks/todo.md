@@ -1,5 +1,35 @@
 # Task Plan - 2026-03-26
 
+## Objective (Cloudflare Pages Deploy Stability + No Deprecated Deploy Command)
+
+Fix Cloudflare Pages deployment failure caused by global-scope side effects in Functions bundle, and remove deprecated `wrangler pages publish` usage from CI deploy workflow.
+
+## Plan
+
+- [x] Remove broad backend-core barrel import from share-pointer service to avoid pulling replay/timer globals into Cloudflare Functions bundle.
+- [x] Update deploy workflow to use `wrangler pages deploy` path.
+- [x] Run targeted tests/typecheck/build and capture review notes.
+
+## Review (Cloudflare Pages Deploy Stability + No Deprecated Deploy Command)
+
+- Status: Completed
+- Root cause:
+  - `lib/share/share-pointer-service.ts` imported `@ghostreceipt/backend-core/http` barrel, which transitively initialized replay protection timers (`setInterval`) at module scope.
+  - Cloudflare Pages Functions rejects global-scope async/timer/random operations, causing deploy-time function publish failure.
+  - Deploy workflow used `cloudflare/pages-action@v1`, which emits deprecated `wrangler pages publish` warnings.
+- Fixes shipped:
+  - Narrowed share-pointer service import to side-effect-free module:
+    - `@/lib/libraries/backend-core/http/share-pointer-storage`
+  - Updated deploy workflow to:
+    - `cloudflare/wrangler-action@v3`
+    - `pages deploy out --project-name=ghostreceipt --branch=${{ github.ref_name }}`
+- Validation:
+  - `npm test -- tests/unit/api/share-pointer-routes.test.ts tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+  - `npm run build` pass
+- Residual risk:
+  - Other future imports of broad runtime barrels inside functions-facing modules could reintroduce global-scope side effects; keep functions paths on narrow module imports.
+
 ## Objective (Remove Next.js Viewport Metadata Warnings In CI)
 
 Eliminate App Router viewport metadata warnings during `next build` so CI output is clean.

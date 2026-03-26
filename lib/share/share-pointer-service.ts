@@ -5,7 +5,7 @@ import {
   type D1DatabaseLike,
   type SharePointerResolveResult,
   type SharePointerStoreResult,
-} from '@ghostreceipt/backend-core/http';
+} from '@/lib/libraries/backend-core/http/share-pointer-storage';
 
 type SharePointerEnvBindings = Record<string, unknown> | undefined;
 

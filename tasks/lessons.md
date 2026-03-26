@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-26 - Cloudflare Functions Must Avoid Barrel Imports With Global-Scope Side Effects
+- In Cloudflare Pages Functions, importing broad backend barrels can accidentally execute timer/random/network setup at module scope and break deploy with "Disallowed operation called within global scope".
+- For functions-facing modules, import only the minimal side-effect-free submodule needed (for example `.../share-pointer-storage`) rather than `.../http` barrel exports.
+- Treat "global scope disallowed operation" as a deploy-time architecture issue, not just a runtime bug.
+
 ## 2026-03-26 - Next.js 16 Requires `viewport` Export, Not `metadata.viewport`
 - In App Router, declaring `viewport` inside `export const metadata` triggers build warnings for every route.
 - Define viewport in `export const viewport` (typed as `Viewport`) at layout/page level instead.
