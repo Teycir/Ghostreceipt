@@ -97,6 +97,21 @@ export const OracleFetchTxRequestSchema = z.object({
 export type OracleFetchTxRequest = z.infer<typeof OracleFetchTxRequestSchema>;
 
 /**
+ * Share pointer request schemas for compact verification URLs.
+ */
+export const SharePointerIdSchema = z
+  .string()
+  .regex(/^r_[A-Za-z0-9_-]{16}$/u, 'Invalid share pointer id');
+
+export const SharePointerCreateRequestSchema = z
+  .object({
+    proof: z.string().trim().min(1, 'Proof payload is required').max(100_000, 'Proof payload is too large'),
+  })
+  .strict();
+
+export type SharePointerCreateRequest = z.infer<typeof SharePointerCreateRequestSchema>;
+
+/**
  * Canonical transaction data (normalized across chains)
  */
 export const CanonicalTxDataSchema = z.object({
