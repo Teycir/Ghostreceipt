@@ -4,6 +4,12 @@ import { SolanaTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureError } from '@/lib/security/secure-logging';
 import { waitForProviderThrottleSlot } from '@/lib/libraries/backend-core/providers/provider-throttle';
+import {
+  DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_NAMES,
+  SOLANA_PUBLIC_RPC_ENDPOINT_ENV_KEYS,
+  SOLANA_PUBLIC_RPC_ENDPOINTS,
+  resolveRequiredEndpointUrlsFromNames,
+} from '@/lib/config/public-rpc-endpoints';
 
 interface JsonRpcError {
   code?: number;
@@ -53,11 +59,9 @@ interface SignatureStatusesResult {
   value?: Array<SignatureStatusValue | null>;
 }
 
-const DEFAULT_SOLANA_PUBLIC_RPC_URLS = [
-  'https://api.mainnet-beta.solana.com',
-  'https://solana-rpc.publicnode.com',
-];
 const DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS = 500;
+const DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES = 1;
+const DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS = 250;
 const RPC_SCOPE = 'provider:solana-public-rpc';
 
 function parseNonNegativeIntEnv(key: string, fallback: number): number {
@@ -88,13 +92,24 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
   };
 
   private readonly endpointUrls: string[];
+  private readonly endpointRetryDelayMs: number;
+  private readonly endpointRetries: number;
   private readonly throttleMs: number;
 
   constructor() {
     this.endpointUrls = this.resolveEndpointUrls();
+    this.assertConfiguredEndpointUrls(this.endpointUrls, 'resolved Solana public RPC endpoint list');
     this.throttleMs = parseNonNegativeIntEnv(
       'SOLANA_PUBLIC_RPC_REQUEST_THROTTLE_MS',
       DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS
+    );
+    this.endpointRetries = parseNonNegativeIntEnv(
+      'SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES',
+      DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES
+    );
+    this.endpointRetryDelayMs = parseNonNegativeIntEnv(
+      'SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS',
+      DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS
     );
   }
 
@@ -114,14 +129,24 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
           maxSupportedTransactionVersion: 0,
         },
       ],
-      signal
+      signal,
+      {
+        isResultUsable: (result) => result !== null,
+        unusableResultMessage: 'transaction not found on endpoint',
+      }
     );
 
     if (!txResult) {
       throw new Error(`Transaction not found: ${txHash}`);
     }
 
-    const confirmations = await this.fetchConfirmations(txHash, signal);
+    let confirmations = 0;
+    try {
+      confirmations = await this.fetchConfirmations(txHash, signal);
+    } catch (error) {
+      // Confirmation depth should not invalidate an otherwise canonical tx fetch.
+      secureError(`[${this.name}] Confirmation lookup failed; defaulting to 0`, error);
+    }
     const valueAtomic = this.extractNativeTransferLamports(txResult);
     const timestampUnix =
       typeof txResult.blockTime === 'number' && txResult.blockTime > 0
@@ -155,7 +180,14 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
     const statusResult = await this.requestRpc<SignatureStatusesResult>(
       'getSignatureStatuses',
       [[txHash], { searchTransactionHistory: true }],
-      signal
+      signal,
+      {
+        isResultUsable: (result) => {
+          const firstStatus = result.value?.[0];
+          return firstStatus !== null && firstStatus !== undefined;
+        },
+        unusableResultMessage: 'signature status unavailable on endpoint',
+      }
     );
 
     const status = statusResult.value?.[0];
@@ -224,20 +256,119 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
   private async requestRpc<T>(
     method: string,
     params: unknown[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options: {
+      isResultUsable?: (result: T) => boolean;
+      unusableResultMessage?: string;
+    } = {}
   ): Promise<T> {
-    const errors: string[] = [];
+    const endpointFailures: string[] = [];
+    const unusableResults: string[] = [];
 
     for (const endpointUrl of this.endpointUrls) {
       try {
-        return await this.requestRpcOnEndpoint(endpointUrl, method, params, signal);
+        const result = await this.requestRpcOnEndpointWithRetries<T>(
+          endpointUrl,
+          method,
+          params,
+          signal
+        );
+        if (options.isResultUsable && !options.isResultUsable(result)) {
+          unusableResults.push(
+            `${endpointUrl} -> ${options.unusableResultMessage ?? 'unusable RPC result'}`
+          );
+          continue;
+        }
+        return result;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        errors.push(`${endpointUrl} -> ${message}`);
+        endpointFailures.push(`${endpointUrl} -> ${message}`);
       }
     }
 
+    const errors = [...endpointFailures, ...unusableResults];
+    if (errors.length === 0) {
+      throw new Error('Solana public RPC endpoints failed: no endpoints configured');
+    }
+
     throw new Error(`Solana public RPC endpoints failed: ${errors.join(' | ')}`);
+  }
+
+  private async requestRpcOnEndpointWithRetries<T>(
+    endpointUrl: string,
+    method: string,
+    params: unknown[],
+    signal?: AbortSignal
+  ): Promise<T> {
+    let attempt = 0;
+
+    while (true) {
+      try {
+          return await this.requestRpcOnEndpoint<T>(endpointUrl, method, params, signal);
+      } catch (error) {
+        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        if (
+          attempt >= this.endpointRetries ||
+          !this.isRetryableEndpointError(normalizedError)
+        ) {
+          throw normalizedError;
+        }
+
+        attempt += 1;
+        await this.waitBeforeRetry(this.endpointRetryDelayMs * attempt, signal);
+      }
+    }
+  }
+
+  private isRetryableEndpointError(error: Error): boolean {
+    const normalizedMessage = error.message.toLowerCase();
+    return (
+      normalizedMessage.includes('rate limit') ||
+      normalizedMessage.includes('too many requests') ||
+      normalizedMessage.includes('failed to fetch') ||
+      normalizedMessage.includes('network') ||
+      normalizedMessage.includes('timeout') ||
+      normalizedMessage.startsWith('http 5')
+    );
+  }
+
+  private async waitBeforeRetry(ms: number, signal?: AbortSignal): Promise<void> {
+    if (ms <= 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      const finish = (callback: () => void) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (signal) {
+          signal.removeEventListener('abort', onAbort);
+        }
+        callback();
+      };
+
+      const onAbort = () => finish(() => reject(new Error('Request aborted')));
+      timeoutId = setTimeout(() => finish(resolve), ms);
+
+      if (!signal) {
+        return;
+      }
+
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
   }
 
   private async requestRpcOnEndpoint<T>(
@@ -302,16 +433,80 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
   }
 
   private resolveEndpointUrls(): string[] {
+    const numberedFromEnv = this.parseNumberedEnvValues('SOLANA_PUBLIC_RPC_URL_');
     const listFromEnv = this.parseEndpointListEnv('SOLANA_PUBLIC_RPC_URLS');
     const singleFromEnv = process.env['SOLANA_PUBLIC_RPC_URL']?.trim() ?? '';
+    const configuredUrls = [
+      ...numberedFromEnv,
+      ...listFromEnv,
+      singleFromEnv,
+    ].map((value) => value.trim()).filter((value) => value.length > 0);
 
-    return Array.from(
-      new Set([
-        ...listFromEnv,
-        singleFromEnv,
-        ...DEFAULT_SOLANA_PUBLIC_RPC_URLS,
-      ].map((value) => value.trim()).filter((value) => value.length > 0))
+    if (configuredUrls.length > 0) {
+      const deduped = Array.from(new Set(configuredUrls));
+      this.assertConfiguredEndpointUrls(deduped, 'SOLANA_PUBLIC_RPC_URL/URLS');
+      return deduped;
+    }
+
+    const configuredNames = [
+      ...this.parseNumberedEnvValues('SOLANA_PUBLIC_RPC_NAME_'),
+      ...this.parseEndpointListEnv('SOLANA_PUBLIC_RPC_NAMES'),
+      process.env['SOLANA_PUBLIC_RPC_NAME']?.trim() ?? '',
+    ].map((value) => value.trim()).filter((value) => value.length > 0);
+
+    if (configuredNames.length > 0) {
+      return resolveRequiredEndpointUrlsFromNames(
+        SOLANA_PUBLIC_RPC_ENDPOINTS,
+        configuredNames,
+        'SOLANA_PUBLIC_RPC_NAME/NAMES',
+        SOLANA_PUBLIC_RPC_ENDPOINT_ENV_KEYS
+      );
+    }
+
+    return resolveRequiredEndpointUrlsFromNames(
+      SOLANA_PUBLIC_RPC_ENDPOINTS,
+      DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_NAMES,
+      'DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_NAMES',
+      SOLANA_PUBLIC_RPC_ENDPOINT_ENV_KEYS
     );
+  }
+
+  private assertConfiguredEndpointUrls(endpointUrls: string[], configSource: string): void {
+    if (endpointUrls.length === 0) {
+      throw new Error(`[Config] Missing Solana public RPC endpoints from ${configSource}.`);
+    }
+
+    for (const endpointUrl of endpointUrls) {
+      const urlValidation = validateUrl(endpointUrl);
+      if (!urlValidation.valid) {
+        throw new Error(
+          `[Config] Invalid Solana public RPC URL in ${configSource}: ${endpointUrl} (${urlValidation.error ?? 'invalid URL'})`
+        );
+      }
+    }
+  }
+
+  private parseNumberedEnvValues(prefix: string): string[] {
+    return Object.keys(process.env)
+      .map((key) => {
+        if (!key.startsWith(prefix)) {
+          return null;
+        }
+
+        const suffix = key.slice(prefix.length);
+        if (!/^[1-9][0-9]*$/.test(suffix)) {
+          return null;
+        }
+
+        return {
+          key,
+          index: Number.parseInt(suffix, 10),
+        };
+      })
+      .filter((value): value is { key: string; index: number } => value !== null)
+      .sort((a, b) => a.index - b.index)
+      .map((entry) => process.env[entry.key]?.trim() ?? '')
+      .filter((value) => value.length > 0);
   }
 
   private parseEndpointListEnv(envKey: string): string[] {

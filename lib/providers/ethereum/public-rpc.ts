@@ -4,6 +4,13 @@ import { EthereumTxHashSchema } from '@/lib/validation/schemas';
 import { validateUrl } from '@/lib/security/ssrf';
 import { secureError } from '@/lib/security/secure-logging';
 import { waitForProviderThrottleSlot } from '@/lib/libraries/backend-core/providers/provider-throttle';
+import {
+  DEFAULT_ETHEREUM_PUBLIC_RPC_ENDPOINT_NAMES,
+  DEFAULT_ETHEREUM_USDC_PUBLIC_RPC_ENDPOINT_NAMES,
+  ETHEREUM_PUBLIC_RPC_ENDPOINT_ENV_KEYS,
+  ETHEREUM_PUBLIC_RPC_ENDPOINTS,
+  resolveRequiredEndpointUrlsFromNames,
+} from '@/lib/config/public-rpc-endpoints';
 
 interface JsonRpcError {
   code?: number;
@@ -41,15 +48,9 @@ interface RpcReceiptLog {
 }
 
 const HEX_QUANTITY_REGEX = /^0x[0-9a-f]+$/i;
-const DEFAULT_ETH_PUBLIC_RPC_URLS = [
-  'https://ethereum-rpc.publicnode.com',
-  'https://cloudflare-eth.com',
-];
-const DEFAULT_ETH_USDC_PUBLIC_RPC_URLS = [
-  'https://ethereum-rpc.publicnode.com',
-  'https://cloudflare-eth.com',
-];
 const DEFAULT_ETH_PUBLIC_RPC_THROTTLE_MS = 900;
+const DEFAULT_ETH_PUBLIC_RPC_ENDPOINT_RETRIES = 1;
+const DEFAULT_ETH_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS = 250;
 const RPC_SCOPE = 'provider:ethereum-public-rpc';
 const USDC_CONTRACT_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
 const ERC20_TRANSFER_TOPIC0 = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -95,14 +96,25 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
 
   private readonly ethereumAsset: EthereumAsset;
   private readonly endpointUrls: string[];
+  private readonly endpointRetryDelayMs: number;
+  private readonly endpointRetries: number;
   private readonly throttleMs: number;
 
   constructor(ethereumAsset: EthereumAsset = 'native') {
     this.ethereumAsset = ethereumAsset;
     this.endpointUrls = this.resolveEndpointUrls();
+    this.assertConfiguredEndpointUrls(this.endpointUrls, 'resolved Ethereum public RPC endpoint list');
     this.throttleMs = parseNonNegativeIntEnv(
       'ETHEREUM_PUBLIC_RPC_REQUEST_THROTTLE_MS',
       DEFAULT_ETH_PUBLIC_RPC_THROTTLE_MS
+    );
+    this.endpointRetries = parseNonNegativeIntEnv(
+      'ETHEREUM_PUBLIC_RPC_ENDPOINT_RETRIES',
+      DEFAULT_ETH_PUBLIC_RPC_ENDPOINT_RETRIES
+    );
+    this.endpointRetryDelayMs = parseNonNegativeIntEnv(
+      'ETHEREUM_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS',
+      DEFAULT_ETH_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS
     );
   }
 
@@ -115,7 +127,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     const tx = await this.requestRpc<RpcTransaction | null>(
       'eth_getTransactionByHash',
       [txHash],
-      signal
+      signal,
+      {
+        isResultUsable: (result) => result !== null && typeof result.hash === 'string',
+        unusableResultMessage: 'transaction not found on endpoint',
+      }
     );
     if (!tx || typeof tx.hash !== 'string') {
       throw new Error(`Transaction not found: ${txHash}`);
@@ -127,7 +143,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     const receipt = await this.requestRpc<RpcReceipt | null>(
       'eth_getTransactionReceipt',
       [txHash],
-      signal
+      signal,
+      {
+        isResultUsable: (result) => result !== null && typeof result.blockNumber === 'string',
+        unusableResultMessage: 'transaction receipt unavailable on endpoint',
+      }
     );
     if (!receipt || typeof receipt.blockNumber !== 'string') {
       throw new Error(`Transaction receipt unavailable: ${txHash}`);
@@ -142,7 +162,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     const block = await this.requestRpc<RpcBlock | null>(
       'eth_getBlockByNumber',
       [receipt.blockNumber, false],
-      signal
+      signal,
+      {
+        isResultUsable: (result) => result !== null && typeof result.timestamp === 'string',
+        unusableResultMessage: 'block details unavailable on endpoint',
+      }
     );
     if (!block || typeof block.timestamp !== 'string') {
       throw new Error(`Block details unavailable for transaction: ${txHash}`);
@@ -218,20 +242,68 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
   private async requestRpc<T>(
     method: string,
     params: unknown[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options: {
+      isResultUsable?: (result: T) => boolean;
+      unusableResultMessage?: string;
+    } = {}
   ): Promise<T> {
-    const errors: string[] = [];
+    const endpointFailures: string[] = [];
+    const unusableResults: string[] = [];
 
     for (const endpointUrl of this.endpointUrls) {
       try {
-        return await this.requestRpcOnEndpoint(endpointUrl, method, params, signal);
+        const result = await this.requestRpcOnEndpointWithRetries<T>(
+          endpointUrl,
+          method,
+          params,
+          signal
+        );
+        if (options.isResultUsable && !options.isResultUsable(result)) {
+          unusableResults.push(
+            `${endpointUrl} -> ${options.unusableResultMessage ?? 'unusable RPC result'}`
+          );
+          continue;
+        }
+        return result;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        errors.push(`${endpointUrl} -> ${message}`);
+        endpointFailures.push(`${endpointUrl} -> ${message}`);
       }
     }
 
+    const errors = [...endpointFailures, ...unusableResults];
+    if (errors.length === 0) {
+      throw new Error('Ethereum public RPC endpoints failed: no endpoints configured');
+    }
+
     throw new Error(`Ethereum public RPC endpoints failed: ${errors.join(' | ')}`);
+  }
+
+  private async requestRpcOnEndpointWithRetries<T>(
+    endpointUrl: string,
+    method: string,
+    params: unknown[],
+    signal?: AbortSignal
+  ): Promise<T> {
+    let attempt = 0;
+
+    while (true) {
+      try {
+        return await this.requestRpcOnEndpoint<T>(endpointUrl, method, params, signal);
+      } catch (error) {
+        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        if (
+          attempt >= this.endpointRetries ||
+          !this.isRetryableEndpointError(normalizedError)
+        ) {
+          throw normalizedError;
+        }
+
+        attempt += 1;
+        await this.waitBeforeRetry(this.endpointRetryDelayMs * attempt, signal);
+      }
+    }
   }
 
   private async requestRpcOnEndpoint<T>(
@@ -295,7 +367,63 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     return payload.result as T;
   }
 
+  private isRetryableEndpointError(error: Error): boolean {
+    const normalizedMessage = error.message.toLowerCase();
+    return (
+      normalizedMessage.includes('rate limit') ||
+      normalizedMessage.includes('too many requests') ||
+      normalizedMessage.includes('failed to fetch') ||
+      normalizedMessage.includes('network') ||
+      normalizedMessage.includes('timeout') ||
+      normalizedMessage.startsWith('http 5')
+    );
+  }
+
+  private async waitBeforeRetry(ms: number, signal?: AbortSignal): Promise<void> {
+    if (ms <= 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      const finish = (callback: () => void) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (signal) {
+          signal.removeEventListener('abort', onAbort);
+        }
+        callback();
+      };
+
+      const onAbort = () => finish(() => reject(new Error('Request aborted')));
+      timeoutId = setTimeout(() => finish(resolve), ms);
+
+      if (!signal) {
+        return;
+      }
+
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
+
   private resolveEndpointUrls(): string[] {
+    const usdcNumbered =
+      this.ethereumAsset === 'usdc'
+        ? this.parseNumberedEnvValues('ETHEREUM_USDC_PUBLIC_RPC_URL_')
+        : [];
+    const sharedNumbered = this.parseNumberedEnvValues('ETHEREUM_PUBLIC_RPC_URL_');
     const usdcPreferred = this.ethereumAsset === 'usdc'
       ? this.parseEndpointListEnv('ETHEREUM_USDC_PUBLIC_RPC_URLS')
       : [];
@@ -305,20 +433,77 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
       this.ethereumAsset === 'usdc' ? process.env['ETHEREUM_USDC_PUBLIC_RPC_URL']?.trim() ?? '' : '';
     const sharedSingle = process.env['ETHEREUM_PUBLIC_RPC_URL']?.trim() ?? '';
 
-    const defaults =
-      this.ethereumAsset === 'usdc'
-        ? DEFAULT_ETH_USDC_PUBLIC_RPC_URLS
-        : DEFAULT_ETH_PUBLIC_RPC_URLS;
+    const configuredUrls = [
+      ...usdcNumbered,
+      ...usdcPreferred,
+      usdcSingle,
+      ...sharedNumbered,
+      ...sharedList,
+      sharedSingle,
+    ].map((value) => value.trim()).filter((value) => value.length > 0);
 
-    return Array.from(
-      new Set([
-        ...usdcPreferred,
-        ...sharedList,
-        usdcSingle,
-        sharedSingle,
-        ...defaults,
-      ].map((value) => value.trim()).filter((value) => value.length > 0))
+    if (configuredUrls.length > 0) {
+      const deduped = Array.from(new Set(configuredUrls));
+      this.assertConfiguredEndpointUrls(
+        deduped,
+        this.ethereumAsset === 'usdc'
+          ? 'ETHEREUM_USDC_PUBLIC_RPC_URL/URLS (+ shared ETHEREUM_PUBLIC_RPC_URL/URLS)'
+          : 'ETHEREUM_PUBLIC_RPC_URL/URLS'
+      );
+      return deduped;
+    }
+
+    const configuredNames = [
+      ...(this.ethereumAsset === 'usdc'
+        ? this.parseNumberedEnvValues('ETHEREUM_USDC_PUBLIC_RPC_NAME_')
+        : []),
+      ...(this.ethereumAsset === 'usdc'
+        ? this.parseEndpointListEnv('ETHEREUM_USDC_PUBLIC_RPC_NAMES')
+        : []),
+      (this.ethereumAsset === 'usdc'
+        ? process.env['ETHEREUM_USDC_PUBLIC_RPC_NAME']?.trim() ?? ''
+        : ''),
+      ...this.parseNumberedEnvValues('ETHEREUM_PUBLIC_RPC_NAME_'),
+      ...this.parseEndpointListEnv('ETHEREUM_PUBLIC_RPC_NAMES'),
+      process.env['ETHEREUM_PUBLIC_RPC_NAME']?.trim() ?? '',
+    ].map((value) => value.trim()).filter((value) => value.length > 0);
+
+    if (configuredNames.length > 0) {
+      return resolveRequiredEndpointUrlsFromNames(
+        ETHEREUM_PUBLIC_RPC_ENDPOINTS,
+        configuredNames,
+        this.ethereumAsset === 'usdc'
+          ? 'ETHEREUM_USDC_PUBLIC_RPC_NAME/NAMES (+ shared ETHEREUM_PUBLIC_RPC_NAME/NAMES)'
+          : 'ETHEREUM_PUBLIC_RPC_NAME/NAMES',
+        ETHEREUM_PUBLIC_RPC_ENDPOINT_ENV_KEYS
+      );
+    }
+
+    return resolveRequiredEndpointUrlsFromNames(
+      ETHEREUM_PUBLIC_RPC_ENDPOINTS,
+      this.ethereumAsset === 'usdc'
+        ? DEFAULT_ETHEREUM_USDC_PUBLIC_RPC_ENDPOINT_NAMES
+        : DEFAULT_ETHEREUM_PUBLIC_RPC_ENDPOINT_NAMES,
+      this.ethereumAsset === 'usdc'
+        ? 'DEFAULT_ETHEREUM_USDC_PUBLIC_RPC_ENDPOINT_NAMES'
+        : 'DEFAULT_ETHEREUM_PUBLIC_RPC_ENDPOINT_NAMES',
+      ETHEREUM_PUBLIC_RPC_ENDPOINT_ENV_KEYS
     );
+  }
+
+  private assertConfiguredEndpointUrls(endpointUrls: string[], configSource: string): void {
+    if (endpointUrls.length === 0) {
+      throw new Error(`[Config] Missing Ethereum public RPC endpoints from ${configSource}.`);
+    }
+
+    for (const endpointUrl of endpointUrls) {
+      const urlValidation = validateUrl(endpointUrl);
+      if (!urlValidation.valid) {
+        throw new Error(
+          `[Config] Invalid Ethereum public RPC URL in ${configSource}: ${endpointUrl} (${urlValidation.error ?? 'invalid URL'})`
+        );
+      }
+    }
   }
 
   private parseEndpointListEnv(envKey: string): string[] {
@@ -330,6 +515,29 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     return raw
       .split(',')
       .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+
+  private parseNumberedEnvValues(prefix: string): string[] {
+    return Object.keys(process.env)
+      .map((key) => {
+        if (!key.startsWith(prefix)) {
+          return null;
+        }
+
+        const suffix = key.slice(prefix.length);
+        if (!/^[1-9][0-9]*$/.test(suffix)) {
+          return null;
+        }
+
+        return {
+          key,
+          index: Number.parseInt(suffix, 10),
+        };
+      })
+      .filter((value): value is { key: string; index: number } => value !== null)
+      .sort((a, b) => a.index - b.index)
+      .map((entry) => process.env[entry.key]?.trim() ?? '')
       .filter((value) => value.length > 0);
   }
 

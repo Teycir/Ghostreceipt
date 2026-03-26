@@ -17,6 +17,11 @@ import {
   resolveProviderThrottlePolicy,
   waitForProviderThrottleSlot,
 } from '@/lib/libraries/backend-core/providers/provider-throttle';
+import {
+  ETHEREUM_PROVIDER_API_ENDPOINT_ENV_KEYS,
+  ETHEREUM_PROVIDER_API_ENDPOINTS,
+  resolveRequiredEndpointUrl,
+} from '@/lib/config/public-rpc-endpoints';
 
 /**
  * Etherscan proxy API response types
@@ -101,7 +106,7 @@ export class EtherscanProvider implements EthereumProvider {
     },
   };
 
-  private readonly baseUrl = 'https://api.etherscan.io/v2/api';
+  private readonly baseUrl: string;
   private readonly keyCascade: ApiKeyCascade;
   private readonly ethereumAsset: EthereumAsset;
   private readonly throttlePolicy = resolveProviderThrottlePolicy('etherscan', {
@@ -113,6 +118,19 @@ export class EtherscanProvider implements EthereumProvider {
       metricsScope: ETHERSCAN_METRICS_SCOPE,
     });
     this.ethereumAsset = ethereumAsset;
+    this.baseUrl = resolveRequiredEndpointUrl(
+      ETHEREUM_PROVIDER_API_ENDPOINTS,
+      'ETHERSCAN_V2_MAINNET',
+      'ETHEREUM_PROVIDER_API_ENDPOINTS.ETHERSCAN_V2_MAINNET',
+      ETHEREUM_PROVIDER_API_ENDPOINT_ENV_KEYS
+    );
+
+    const urlValidation = validateUrl(this.baseUrl);
+    if (!urlValidation.valid) {
+      throw new Error(
+        `[Config] Invalid Etherscan API endpoint URL: ${this.baseUrl} (${urlValidation.error ?? 'invalid URL'})`
+      );
+    }
   }
 
   static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {

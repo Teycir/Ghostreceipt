@@ -17,6 +17,11 @@ import {
   resolveProviderThrottlePolicy,
   waitForProviderThrottleSlot,
 } from '@/lib/libraries/backend-core/providers/provider-throttle';
+import {
+  BITCOIN_PROVIDER_API_ENDPOINTS,
+  BITCOIN_PROVIDER_API_ENDPOINT_ENV_KEYS,
+  resolveRequiredEndpointUrl,
+} from '@/lib/config/public-rpc-endpoints';
 
 interface BlockCypherOutput {
   value?: number;
@@ -74,7 +79,7 @@ export class BlockCypherProvider implements BitcoinProvider {
     },
   };
 
-  private baseUrl = 'https://api.blockcypher.com/v1/btc/main';
+  private readonly baseUrl: string;
   private readonly keyCascade: ApiKeyCascade | null;
   private readonly throttlePolicy: ProviderThrottlePolicy;
 
@@ -88,6 +93,19 @@ export class BlockCypherProvider implements BitcoinProvider {
     this.throttlePolicy = resolveProviderThrottlePolicy('blockcypher', {
       hasApiKey: this.keyCascade !== null && this.keyCascade.size > 0,
     });
+    this.baseUrl = resolveRequiredEndpointUrl(
+      BITCOIN_PROVIDER_API_ENDPOINTS,
+      'BLOCKCYPHER_MAINNET',
+      'BITCOIN_PROVIDER_API_ENDPOINTS.BLOCKCYPHER_MAINNET',
+      BITCOIN_PROVIDER_API_ENDPOINT_ENV_KEYS
+    );
+
+    const urlValidation = validateUrl(this.baseUrl);
+    if (!urlValidation.valid) {
+      throw new Error(
+        `[Config] Invalid BlockCypher API endpoint URL: ${this.baseUrl} (${urlValidation.error ?? 'invalid URL'})`
+      );
+    }
   }
 
   static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {

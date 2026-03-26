@@ -7,6 +7,12 @@ import {
   resolveProviderThrottlePolicy,
   waitForProviderThrottleSlot,
 } from '@/lib/libraries/backend-core/providers/provider-throttle';
+import {
+  BITCOIN_PUBLIC_RPC_ENDPOINT_ENV_KEYS,
+  BITCOIN_PUBLIC_RPC_ENDPOINTS,
+  DEFAULT_BITCOIN_PUBLIC_RPC_ENDPOINT_NAMES,
+  resolveRequiredEndpointUrlsFromNames,
+} from '@/lib/config/public-rpc-endpoints';
 
 /**
  * Mempool.space API response types
@@ -66,10 +72,23 @@ export class MempoolSpaceProvider implements BitcoinProvider {
   };
 
   private readonly baseUrls: string[];
+  private readonly endpointRetryDelayMs: number;
+  private readonly endpointRetries: number;
   private readonly throttlePolicy = resolveProviderThrottlePolicy('mempool.space');
+  private static readonly DEFAULT_ENDPOINT_RETRIES = 1;
+  private static readonly DEFAULT_ENDPOINT_RETRY_DELAY_MS = 250;
 
   constructor() {
     this.baseUrls = this.resolveBaseUrls();
+    this.assertConfiguredBaseUrls(this.baseUrls, 'resolved Bitcoin public RPC endpoint list');
+    this.endpointRetries = this.parseNonNegativeIntEnv(
+      'BITCOIN_PUBLIC_RPC_ENDPOINT_RETRIES',
+      MempoolSpaceProvider.DEFAULT_ENDPOINT_RETRIES
+    );
+    this.endpointRetryDelayMs = this.parseNonNegativeIntEnv(
+      'BITCOIN_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS',
+      MempoolSpaceProvider.DEFAULT_ENDPOINT_RETRY_DELAY_MS
+    );
   }
 
   async fetchTransaction(
@@ -87,7 +106,7 @@ export class MempoolSpaceProvider implements BitcoinProvider {
 
     for (const baseUrl of this.baseUrls) {
       try {
-        return await this.fetchTransactionFromBaseUrl(baseUrl, txHash, signal);
+        return await this.fetchTransactionFromBaseUrlWithRetries(baseUrl, txHash, signal);
       } catch (error) {
         const normalized = error instanceof Error ? error : new Error(String(error));
         endpointErrors.push(normalized);
@@ -143,7 +162,8 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     }
 
     if (typeof currentTipHeight !== 'number') {
-      throw new Error('Missing current block height for confirmation calculation');
+      // Keep canonical fetch resilient even when tip-height endpoint is unavailable.
+      return 1;
     }
 
     return Math.max(currentTipHeight - blockHeight + 1, 1);
@@ -250,18 +270,83 @@ export class MempoolSpaceProvider implements BitcoinProvider {
     return this.normalize(data, currentTipHeight);
   }
 
+  private async fetchTransactionFromBaseUrlWithRetries(
+    baseUrl: string,
+    txHash: string,
+    signal?: AbortSignal
+  ): Promise<CanonicalTxData> {
+    let attempt = 0;
+
+    while (true) {
+      try {
+        return await this.fetchTransactionFromBaseUrl(baseUrl, txHash, signal);
+      } catch (error) {
+        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        if (
+          attempt >= this.endpointRetries ||
+          !this.isRetryableEndpointError(normalizedError)
+        ) {
+          throw normalizedError;
+        }
+
+        attempt += 1;
+        await this.waitBeforeRetry(this.endpointRetryDelayMs * attempt, signal);
+      }
+    }
+  }
+
   private resolveBaseUrls(): string[] {
+    const numberedFromEnv = this.parseNumberedEnvValues('BITCOIN_PUBLIC_RPC_URL_');
     const listFromEnv = this.parseListEnv('BITCOIN_PUBLIC_RPC_URLS');
     const singleFromEnv = process.env['BITCOIN_PUBLIC_RPC_URL']?.trim() ?? '';
-    const defaultBaseUrls = ['https://mempool.space/api'];
+    const configuredBaseUrls = [
+      ...numberedFromEnv,
+      ...listFromEnv,
+      singleFromEnv,
+    ].map((value) => value.trim()).filter((value) => value.length > 0);
 
-    return Array.from(
-      new Set([
-        ...listFromEnv,
-        singleFromEnv,
-        ...defaultBaseUrls,
-      ].map((value) => value.trim()).filter((value) => value.length > 0))
+    if (configuredBaseUrls.length > 0) {
+      const deduped = Array.from(new Set(configuredBaseUrls));
+      this.assertConfiguredBaseUrls(deduped, 'BITCOIN_PUBLIC_RPC_URL/URLS');
+      return deduped;
+    }
+
+    const configuredNames = [
+      ...this.parseNumberedEnvValues('BITCOIN_PUBLIC_RPC_NAME_'),
+      ...this.parseListEnv('BITCOIN_PUBLIC_RPC_NAMES'),
+      process.env['BITCOIN_PUBLIC_RPC_NAME']?.trim() ?? '',
+    ].map((value) => value.trim()).filter((value) => value.length > 0);
+
+    if (configuredNames.length > 0) {
+      return resolveRequiredEndpointUrlsFromNames(
+        BITCOIN_PUBLIC_RPC_ENDPOINTS,
+        configuredNames,
+        'BITCOIN_PUBLIC_RPC_NAME/NAMES',
+        BITCOIN_PUBLIC_RPC_ENDPOINT_ENV_KEYS
+      );
+    }
+
+    return resolveRequiredEndpointUrlsFromNames(
+      BITCOIN_PUBLIC_RPC_ENDPOINTS,
+      DEFAULT_BITCOIN_PUBLIC_RPC_ENDPOINT_NAMES,
+      'DEFAULT_BITCOIN_PUBLIC_RPC_ENDPOINT_NAMES',
+      BITCOIN_PUBLIC_RPC_ENDPOINT_ENV_KEYS
     );
+  }
+
+  private assertConfiguredBaseUrls(baseUrls: string[], configSource: string): void {
+    if (baseUrls.length === 0) {
+      throw new Error(`[Config] Missing Bitcoin public RPC endpoints from ${configSource}.`);
+    }
+
+    for (const baseUrl of baseUrls) {
+      const urlValidation = validateUrl(baseUrl);
+      if (!urlValidation.valid) {
+        throw new Error(
+          `[Config] Invalid Bitcoin public RPC URL in ${configSource}: ${baseUrl} (${urlValidation.error ?? 'invalid URL'})`
+        );
+      }
+    }
   }
 
   private parseListEnv(envKey: string): string[] {
@@ -274,6 +359,94 @@ export class MempoolSpaceProvider implements BitcoinProvider {
       .split(',')
       .map((value) => value.trim())
       .filter((value) => value.length > 0);
+  }
+
+  private parseNumberedEnvValues(prefix: string): string[] {
+    return Object.keys(process.env)
+      .map((key) => {
+        if (!key.startsWith(prefix)) {
+          return null;
+        }
+
+        const suffix = key.slice(prefix.length);
+        if (!/^[1-9][0-9]*$/.test(suffix)) {
+          return null;
+        }
+
+        return {
+          key,
+          index: Number.parseInt(suffix, 10),
+        };
+      })
+      .filter((value): value is { key: string; index: number } => value !== null)
+      .sort((a, b) => a.index - b.index)
+      .map((entry) => process.env[entry.key]?.trim() ?? '')
+      .filter((value) => value.length > 0);
+  }
+
+  private parseNonNegativeIntEnv(key: string, fallback: number): number {
+    const rawValue = process.env[key];
+    if (!rawValue) {
+      return fallback;
+    }
+
+    const parsed = Number.parseInt(rawValue, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return fallback;
+    }
+
+    return parsed;
+  }
+
+  private isRetryableEndpointError(error: Error): boolean {
+    const normalizedMessage = error.message.toLowerCase();
+    return (
+      normalizedMessage.includes('rate limit') ||
+      normalizedMessage.includes('too many requests') ||
+      normalizedMessage.includes('failed to fetch') ||
+      normalizedMessage.includes('network') ||
+      normalizedMessage.includes('timeout') ||
+      normalizedMessage.startsWith('http 5')
+    );
+  }
+
+  private async waitBeforeRetry(ms: number, signal?: AbortSignal): Promise<void> {
+    if (ms <= 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      const finish = (callback: () => void) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (signal) {
+          signal.removeEventListener('abort', onAbort);
+        }
+        callback();
+      };
+
+      const onAbort = () => finish(() => reject(new Error('Request aborted')));
+      timeoutId = setTimeout(() => finish(resolve), ms);
+
+      if (!signal) {
+        return;
+      }
+
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
   }
 
   private isNotFoundError(error: Error): boolean {
