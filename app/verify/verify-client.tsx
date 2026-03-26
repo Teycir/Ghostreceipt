@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { UnifiedPageShell } from '@/components/unified-page-shell';
-import { Button } from '@/components/ui/button';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { ValidationStrengthBadge } from '@/components/ui/validation-strength-badge';
 import { resolveSharePointerLink } from '@/lib/share/share-pointer-client';
@@ -224,23 +223,6 @@ function VerifyContent(): React.JSX.Element {
           <p className="mt-1 text-xs text-cyan-100/85">
             Share private payment proof links without exposing wallet addresses.
           </p>
-          <Button
-            onClick={() => (window.location.href = '/')}
-            variant="secondary"
-            className="mt-3 w-full border-cyan-300/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-200/50 hover:bg-cyan-500/15"
-          >
-            Generate Your Own →
-          </Button>
-        </div>
-
-        <div className="mt-6">
-          <Button
-            onClick={() => (window.location.href = '/')}
-            variant="secondary"
-            className="w-full"
-          >
-            ← Generate New Receipt
-          </Button>
         </div>
       </div>
     </VerifyPageChrome>
