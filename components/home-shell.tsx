@@ -28,6 +28,13 @@ const LOADER_USE_CASES = [
   },
 ] as const;
 
+const QUICK_START_STEPS = [
+  { icon: '🔗', text: 'Go to blockchain explorer (mempool.space, etherscan.io, or solscan.io)' },
+  { icon: '📋', text: 'Find your transaction and copy the hash' },
+  { icon: '✨', text: 'Paste it here and click "Generate Receipt"' },
+  { icon: '🎯', text: 'Share the proof link - your wallet stays private!' },
+] as const;
+
 const FAILSAFE_LOADING_MS = MIN_LOADING_MS + (USE_CASE_ROTATE_MS * LOADER_USE_CASES.length) + 2200;
 
 export function HomeShell(): React.JSX.Element {
@@ -128,6 +135,18 @@ export function HomeShell(): React.JSX.Element {
                 />
               ))}
             </div>
+          </div>
+
+          <div className="startup-overlay__quickstart">
+            <p className="startup-overlay__quickstart-title">Quick Start Guide</p>
+            <ol className="startup-overlay__quickstart-steps">
+              {QUICK_START_STEPS.map((step, index) => (
+                <li key={index} className="startup-overlay__quickstart-step">
+                  <span className="startup-overlay__quickstart-icon">{step.icon}</span>
+                  <span className="startup-overlay__quickstart-text">{step.text}</span>
+                </li>
+              ))}
+            </ol>
           </div>
 
           <div className="startup-overlay__bar">
