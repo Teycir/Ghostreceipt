@@ -1,5 +1,36 @@
 # Task Plan - 2026-03-26
 
+## Objective (Scanner-Safe Classic QR Styling)
+
+Make receipt QR output strictly scanner-friendly by using classic black-on-white rendering and removing decorative cyan framing that can hurt camera recognition.
+
+## Plan
+
+- [x] Switch QR generation colors to pure black/white and increase quiet-zone margin.
+- [x] Update QR frame styling to neutral scan-safe appearance (no cyan corner ornaments).
+- [x] Run targeted tests + typecheck and capture verification notes.
+
+## Review (Scanner-Safe Classic QR Styling)
+
+- Status: Completed
+- Root cause:
+  - Decorative cyan-on-dark QR styling reduced scanner reliability, especially for phone camera tools like Google Lens expecting high-contrast finder patterns and quiet zone.
+- Fixes shipped:
+  - Updated QR generation options in `lib/generator/use-receipt-share.ts`:
+    - `color.dark: #000000`
+    - `color.light: #ffffff`
+    - `margin: 8`
+    - `width: 384`
+    - error-correction preference order: `M -> L -> Q -> H` (screen readability first, with fallback resilience).
+  - Updated `.qr-frame` in `app/globals.css` to neutral white framing and removed cyan corner ornaments.
+  - Increased on-screen QR render size in `components/generator/receipt-success.tsx` (`h-72/w-72`, `sm:h-80/sm:w-80`) for easier camera scanning.
+  - Added regression assertion in `tests/unit/generator/use-receipt-share.test.ts` for the new QR color/margin/size options.
+- Validation:
+  - `npm test -- tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+- Residual risk:
+  - Extremely dense URLs can still produce visually dense QR matrices; copy/open link fallback remains available for edge scanner failures.
+
 ## Objective (Fresh Transaction Table Doc + README Link)
 
 Create a dedicated test-data document containing amount/hash/time rows and link it from README docs navigation.

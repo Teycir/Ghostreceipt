@@ -736,44 +736,24 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     QR CODE FRAME — cyan corner brackets
+     QR CODE FRAME — scanner-safe neutral styling
      ══════════════════════════════════════════════════════════ */
   .qr-frame {
     position: relative;
     display: inline-block;
-    padding: 10px;
-    background: #080d1a;
-    border-radius: 10px;
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow:
-      0 0 0 1px rgba(34,211,238,0.08) inset,
+      0 0 0 1px rgba(0, 0, 0, 0.06) inset,
       0 8px 32px rgba(0,0,0,0.4);
   }
 
-  /* Cyan corner brackets via pseudo-elements + box shadows */
-  .qr-frame::before,
-  .qr-frame::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-color: #22d3ee;
-    border-style: solid;
-    border-width: 0;
-  }
-  .qr-frame::before {
-    top: -1px;
-    left: -1px;
-    border-top-width: 2px;
-    border-left-width: 2px;
-    border-top-left-radius: 4px;
-  }
-  .qr-frame::after {
-    bottom: -1px;
-    right: -1px;
-    border-bottom-width: 2px;
-    border-right-width: 2px;
-    border-bottom-right-radius: 4px;
+  .qr-frame img {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: #ffffff;
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -826,4 +806,3 @@
     background: rgba(255, 255, 255, 0.07);
   }
 }
-

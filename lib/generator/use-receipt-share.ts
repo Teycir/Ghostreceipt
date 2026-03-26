@@ -77,14 +77,18 @@ interface QRDataUrlOptions {
 
 type QRToDataUrl = (url: string, options: QRDataUrlOptions) => Promise<string>;
 
-const QR_ERROR_CORRECTION_LEVELS: readonly QRErrorCorrectionLevel[] = ['H', 'Q', 'M', 'L'];
+/**
+ * Prefer medium/low correction first for on-screen scanning readability,
+ * then escalate if encoding constraints require it.
+ */
+const QR_ERROR_CORRECTION_LEVELS: readonly QRErrorCorrectionLevel[] = ['M', 'L', 'Q', 'H'];
 
 function buildQROptions(errorCorrectionLevel: QRErrorCorrectionLevel): QRDataUrlOptions {
   return {
     errorCorrectionLevel,
-    width: 256,
-    margin: 2,
-    color: { dark: '#22d3ee', light: '#080d1a' },
+    width: 384,
+    margin: 8,
+    color: { dark: '#000000', light: '#ffffff' },
   };
 }
 
@@ -102,7 +106,7 @@ export async function generateQRDataUrlWithFallback(url: string, toDataUrl: QRTo
   throw lastError ?? new Error('QR generation failed');
 }
 
-/** Generates a QR code data URL with dark, app-palette colours */
+/** Generates a scanner-friendly black/white QR code data URL. */
 async function generateQRDataUrl(url: string): Promise<string> {
   const QRCode = (await import('qrcode')).default;
   return generateQRDataUrlWithFallback(url, (value, options) => QRCode.toDataURL(value, options));

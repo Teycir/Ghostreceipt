@@ -355,7 +355,7 @@ export function ReceiptSuccess({
               <img
                 src={qrCode}
                 alt="Receipt QR Code — scan to open the verify page"
-                className="w-48 h-48 block"
+                className="h-72 w-72 block sm:h-80 sm:w-80"
               />
             </div>
           </div>

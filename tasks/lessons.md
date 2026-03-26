@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-26 - Scanner Reliability Beats Theme Styling For QR Codes
+- When a user reports scanner/Lens failures, treat visual theming as secondary and enforce classic QR defaults first (black modules on white background, adequate quiet zone).
+- Do not rely on generation success alone as proof of usability; optimize rendered size and contrast for real camera decoding.
+- Prefer a readability-first error-correction order for on-screen QR use (`M/L` before higher-density levels), while keeping fallback attempts for hard payload limits.
+
 ## 2026-03-25 - Static Export Cannot Use Next Middleware Or next.config headers()
 - When `output: 'export'` is enabled, remove `middleware.ts`; it cannot execute in static-export mode and will emit build/runtime warnings.
 - Do not rely on `next.config.*` `headers()` for static export; serve security headers from hosting/static config (for this project: `public/_headers`).
