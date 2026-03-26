@@ -436,3 +436,7 @@
 ## 2026-03-26 - Keep History Surface Scoped To History Page
 - If the user asks to keep history on the dedicated page, remove history widgets/buttons from main generator/success surfaces rather than only hiding one entry point.
 - Preserve `/history` functionality while decluttering main flow to avoid mixed responsibilities.
+
+## 2026-03-26 - 503 Share-Pointer Often Means Missing D1 Provision, Not Bad Rows
+- When `/api/share-pointer/create` returns memory-backend/missing-binding errors, verify D1 actually exists (`wrangler d1 list`) before investigating table contents.
+- Fix order should be: create DB -> bind as `SHARE_POINTERS_DB` -> apply schema -> redeploy -> validate create+resolve endpoints.

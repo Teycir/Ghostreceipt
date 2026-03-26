@@ -1,5 +1,32 @@
 # Task Plan - 2026-03-26
 
+## Objective (Provision Missing D1 Binding For Share Pointers)
+
+Fix production `503` on `/api/share-pointer/create` by provisioning and binding `SHARE_POINTERS_DB` in Wrangler/Pages and initializing schema.
+
+## Plan
+
+- [x] Check Cloudflare D1 inventory and confirm missing database/binding state.
+- [x] Create D1 database and add `SHARE_POINTERS_DB` binding in `wrangler.toml`.
+- [x] Apply `scripts/sql/share-pointers.sql` on remote D1.
+- [x] Redeploy and verify create/resolve APIs return success.
+
+## Review (Provision Missing D1 Binding For Share Pointers)
+
+- Status: Completed
+- Actions completed:
+  - Created D1 database: `ghostreceipt-share-pointers`
+  - Added binding in [wrangler.toml](/home/teycir/Repos/GhostReceipt/wrangler.toml):
+    - `binding = "SHARE_POINTERS_DB"`
+    - `database_name = "ghostreceipt-share-pointers"`
+    - `database_id = "7f085a83-b42a-4b17-a52d-26c71f41097d"`
+  - Applied schema remotely:
+    - `npx wrangler d1 execute ghostreceipt-share-pointers --remote --file=./scripts/sql/share-pointers.sql`
+  - Deployed to Pages.
+- Runtime validation:
+  - `POST https://ghostreceipt.pages.dev/api/share-pointer/create` now returns `200` with `sid` verify URL.
+  - `POST https://ghostreceipt.pages.dev/api/share-pointer/resolve` now resolves created IDs successfully.
+
 ## Objective (Main-Page History Removal + Safer QR Fallback)
 
 Keep receipt history only on the dedicated `/history` page, and prevent invalid QR scans when compact pointer storage is unavailable.
