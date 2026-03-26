@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneratorForm } from '@/components/generator/generator-form';
-import { Button } from '@/components/ui/button';
 import { UnifiedPageShell } from '@/components/unified-page-shell';
 import TextPressure from '@/components/text-pressure';
 
@@ -156,18 +155,6 @@ export function HomeShell(): React.JSX.Element {
         <div className="space-y-2">
           <div className="glass-card rounded-xl p-2.5 shadow-2xl sm:p-3">
             <GeneratorForm />
-          </div>
-          <div className="flex items-center justify-center pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full py-2 text-xs sm:max-w-sm sm:text-sm"
-              onClick={() => {
-                globalThis.location.href = '/history';
-              }}
-            >
-              View Receipt History
-            </Button>
           </div>
         </div>
       </UnifiedPageShell>

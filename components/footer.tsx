@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 const links = [
   { label: 'History', href: '/history' },
   { label: 'How to Use', href: '/docs/how-to-use.html' },
@@ -21,11 +23,14 @@ const SHARE_LINKS = {
 } as const;
 
 export function Footer(): React.JSX.Element {
+  const pathname = usePathname();
+  const visibleLinks = pathname === '/' ? links.filter((link) => link.href !== '/history') : links;
+
   return (
     <footer className="fixed inset-x-0 bottom-0 z-[100] bg-gradient-to-t from-[rgba(4,6,15,0.97)] via-[rgba(4,6,15,0.7)] to-transparent backdrop-blur-[14px]">
       <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-3 py-2.5 text-[11px] text-white/45 sm:justify-between sm:px-5 sm:text-xs">
         <div className="inline-flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-        {links.map((link, i) => (
+        {visibleLinks.map((link, i) => (
           <span key={link.href} className="inline-flex items-center gap-3 sm:gap-4">
             <a
               href={link.href}
@@ -34,7 +39,7 @@ export function Footer(): React.JSX.Element {
             >
               {link.label}
             </a>
-            {i < links.length - 1 && (
+            {i < visibleLinks.length - 1 && (
               <span className="select-none text-white/20">•</span>
             )}
           </span>

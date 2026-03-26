@@ -3,7 +3,7 @@
 /**
  * components/generator/generator-form.tsx
  *
- * Generator UI layer with local-only UX effects (draft/history helpers).
+ * Generator UI layer with local-only UX effects (draft helpers).
  * Proof fetch/validate/generate side-effects live in useProofGenerator().
  */
 
@@ -17,10 +17,6 @@ import { ProofStepper }   from './proof-stepper';
 import { useProofGenerator } from '@/lib/generator/use-proof-generator';
 import { formatAtomicAmount, atomicUnitLabel, amountPlaceholder } from '@/lib/format/units';
 import type { GeneratorFormValues } from '@/lib/generator/types';
-import {
-  listReceiptHistoryEntries,
-  type ReceiptHistoryEntry,
-} from '@/lib/history/receipt-history';
 import { detectChainFromTxHash, isValidTxHashForChain } from '@/lib/generator/tx-hash-detection';
 import { loadGeneratorDraft, saveGeneratorDraft } from '@/lib/generator/form-draft';
 
@@ -36,21 +32,6 @@ const DEFAULT_VALUES: GeneratorFormValues = {
   receiptCategory: '',
 };
 
-function formatRecentChain(entry: ReceiptHistoryEntry): string {
-  if (entry.chain === 'bitcoin') {
-    return 'BTC';
-  }
-  if (entry.chain === 'solana') {
-    return 'SOL';
-  }
-  return entry.ethereumAsset === 'usdc' ? 'ETH-USDC' : 'ETH';
-}
-
-function buildVerifyUrl(proof: string): string {
-  const params = new URLSearchParams({ proof });
-  return `${globalThis.location.origin}/verify?${params.toString()}`;
-}
-
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -65,8 +46,6 @@ export function GeneratorForm(): React.JSX.Element {
   const [optionalExpanded, setOptionalExpanded] = useState(false);
   const [draftStatus, setDraftStatus] = useState('');
   const [txHashHint, setTxHashHint] = useState('');
-  const [recentReceipts, setRecentReceipts] = useState<ReceiptHistoryEntry[]>([]);
-  const [recentStatus, setRecentStatus] = useState('');
   const {
     state,
     errors,
@@ -88,15 +67,6 @@ export function GeneratorForm(): React.JSX.Element {
     values.chain === 'ethereum' && values.ethereumAsset === 'usdc'
       ? 'ethereum-usdc'
       : values.chain;
-
-  const refreshRecentReceipts = useCallback(async (): Promise<void> => {
-    try {
-      const entries = await listReceiptHistoryEntries();
-      setRecentReceipts(entries.slice(0, 5));
-    } catch {
-      setRecentReceipts([]);
-    }
-  }, []);
 
   useEffect(() => {
     const draft = loadGeneratorDraft();
@@ -125,23 +95,6 @@ export function GeneratorForm(): React.JSX.Element {
       globalThis.clearTimeout(saveTimer);
     };
   }, [values]);
-
-  useEffect(() => {
-    void refreshRecentReceipts();
-  }, [refreshRecentReceipts]);
-
-  useEffect(() => {
-    if (state !== 'success') {
-      return;
-    }
-    const refreshTimer = globalThis.setTimeout(() => {
-      void refreshRecentReceipts();
-    }, 300);
-
-    return () => {
-      globalThis.clearTimeout(refreshTimer);
-    };
-  }, [state, refreshRecentReceipts]);
 
   // Chain/asset mode changes reset tx hash + claimed amount to avoid stale-format claims.
   const handleChainModeChange = useCallback((mode: ChainModeValue) => {
@@ -238,20 +191,6 @@ export function GeneratorForm(): React.JSX.Element {
       // Clipboard permission denied — silently ignore; user can type manually
     }
   }, [handleTxHashChange]);
-
-  const handleCopyRecentVerifyUrl = useCallback(async (proof: string): Promise<void> => {
-    const verifyUrl = buildVerifyUrl(proof);
-    try {
-      await globalThis.navigator.clipboard.writeText(verifyUrl);
-      setRecentStatus('Copied verify URL from recent receipts.');
-    } catch {
-      setRecentStatus('Could not copy verify URL.');
-    }
-  }, []);
-
-  const handleOpenRecentReceipt = useCallback((proof: string): void => {
-    globalThis.location.href = buildVerifyUrl(proof);
-  }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -496,65 +435,6 @@ export function GeneratorForm(): React.JSX.Element {
           </div>
         )}
       </div>
-
-      {(state === 'idle' || state === 'error') && recentReceipts.length > 0 && (
-        <div className="rounded-lg border border-white/10 bg-black/15 p-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-white/75">Recent receipts</p>
-            <button
-              type="button"
-              className="text-[11px] text-cyan-300/90 hover:text-cyan-200"
-              onClick={() => {
-                globalThis.location.href = '/history';
-              }}
-            >
-              View all
-            </button>
-          </div>
-          <div className="space-y-2">
-            {recentReceipts.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded border border-white/10 bg-white/[0.03] px-2 py-1.5"
-              >
-                <div className="flex items-center justify-between gap-2 text-[11px] text-white/70">
-                  <span>
-                    {formatRecentChain(entry)} - {entry.receiptLabel || entry.receiptCategory || 'Unlabeled'}
-                  </span>
-                  <span className="font-mono text-white/55">{entry.claimedAmount}</span>
-                </div>
-                <div className="mt-1 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="py-1 text-[11px]"
-                    onClick={() => {
-                      handleOpenRecentReceipt(entry.proof);
-                    }}
-                  >
-                    Open Verify
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="py-1 text-[11px]"
-                    onClick={() => {
-                      void handleCopyRecentVerifyUrl(entry.proof);
-                    }}
-                  >
-                    Copy URL
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          {recentStatus && (
-            <p className="mt-2 text-[11px] text-cyan-300/85" aria-live="polite">
-              {recentStatus}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* ── Animated stepper while processing ── */}
       {isProcessing && (

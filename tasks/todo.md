@@ -1,5 +1,36 @@
 # Task Plan - 2026-03-26
 
+## Objective (Main-Page History Removal + Safer QR Fallback)
+
+Keep receipt history only on the dedicated `/history` page, and prevent invalid QR scans when compact pointer storage is unavailable.
+
+## Plan
+
+- [x] Remove history actions/widgets from main generator surfaces.
+- [x] Keep `/history` page intact while eliminating main-page "View history" affordances.
+- [x] Stop rendering QR when compact share links are unavailable (missing D1), and show explicit copy-link guidance.
+- [x] Validate with targeted tests, typecheck, and production build.
+
+## Review (Main-Page History Removal + Safer QR Fallback)
+
+- Status: Completed
+- Changes shipped:
+  - Removed main-page history entry points:
+    - [components/home-shell.tsx](/home/teycir/Repos/GhostReceipt/components/home-shell.tsx)
+    - [components/generator/receipt-success.tsx](/home/teycir/Repos/GhostReceipt/components/generator/receipt-success.tsx)
+    - [components/generator/generator-form.tsx](/home/teycir/Repos/GhostReceipt/components/generator/generator-form.tsx)
+  - Kept dedicated history page unchanged at `/history`.
+  - Added QR safety behavior in [lib/generator/use-receipt-share.ts](/home/teycir/Repos/GhostReceipt/lib/generator/use-receipt-share.ts):
+    - When compact links are unavailable (`SHARE_POINTERS_DB` missing), the app now avoids generating a long-proof QR and shows a clear fallback message to copy/open the verify URL directly.
+- Runtime verification note:
+  - Production `POST /api/share-pointer/create` currently returns:
+    - `INTERNAL_ERROR` with details `{ requiredBinding: "SHARE_POINTERS_DB", storageBackend: "memory" }`
+  - This confirms compact pointer storage is not yet configured in deployed Pages environment.
+- Validation:
+  - `npm test -- tests/unit/functions/share-pointer-pages.test.ts tests/unit/api/share-pointer-routes.test.ts tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+  - `npm run build` pass
+
 ## Objective (Prevent Non-Resolvable QR Share Pointers On Pages)
 
 Ensure compact `sid` QR links are only issued when durable storage is configured, so links opened from another device do not fail with "Share pointer was not found".

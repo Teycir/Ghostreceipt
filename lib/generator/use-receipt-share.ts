@@ -178,6 +178,9 @@ export function useReceiptShare({
       setVerifyUrl(preferredUrl);
       if (compactLinkWarning) {
         setShareStatus(compactLinkWarning);
+        setQrError('Compact QR links are unavailable on this deployment. Please use "Copy Verify URL" instead.');
+        setQrCode('');
+        return;
       }
 
       try {

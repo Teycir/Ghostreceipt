@@ -428,3 +428,11 @@
 - Never ship compact `sid` share links in Cloudflare Pages memory-only mode; they can resolve as "not found" across devices/requests.
 - For share-pointer endpoints, fail fast with an explicit configuration error when `SHARE_POINTERS_DB` (D1) is missing instead of silently issuing non-durable pointers.
 - Keep deployment docs explicit about D1 binding + schema setup for compact QR links so runtime behavior matches user expectations.
+
+## 2026-03-26 - Do Not Render Long-Proof QR As A Silent Fallback
+- If compact pointer links are unavailable in production, do not generate QR from full `proof=` URLs; scanner corruption risk is high and leads to confusing verification errors (for example oracle commitment mismatch).
+- Prefer explicit UX fallback: show a clear status/error and guide users to copy/open the verify URL directly until durable compact-link storage is configured.
+
+## 2026-03-26 - Keep History Surface Scoped To History Page
+- If the user asks to keep history on the dedicated page, remove history widgets/buttons from main generator/success surfaces rather than only hiding one entry point.
+- Preserve `/history` functionality while decluttering main flow to avoid mixed responsibilities.
