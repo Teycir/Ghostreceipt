@@ -4,10 +4,25 @@ const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 
 // Next.js intentionally ignores .env.local in NODE_ENV=test.
-// Hydrate provider key env vars for local test runs without overriding
+// Hydrate provider key + provider endpoint env vars for local test runs without overriding
 // already-injected CI/runtime secrets.
-const PROVIDER_KEY_PATTERN =
-  /^(ETHERSCAN_API_KEY(?:_[1-9][0-9]*)?|HELIUS_API_KEY(?:_[1-9][0-9]*)?|BLOCKCYPHER_API_TOKEN(?:_[1-9][0-9]*)?|BLOCKCYPHER_API_KEY(?:_[1-9][0-9]*)?)$/;
+const HYDRATED_ENV_PATTERN =
+  /^(ETHERSCAN_API_KEY(?:_[1-9][0-9]*)?|HELIUS_API_KEY(?:_[1-9][0-9]*)?|BLOCKCYPHER_API_TOKEN(?:_[1-9][0-9]*)?|BLOCKCYPHER_API_KEY(?:_[1-9][0-9]*)?|(?:BITCOIN|ETHEREUM|SOLANA)_(?:PUBLIC_RPC|PROVIDER)_[A-Z0-9_]+_URL)$/;
+
+const TEST_ENDPOINT_DEFAULTS = {
+  BITCOIN_PUBLIC_RPC_MEMPOOL_SPACE_MAINNET_URL: 'https://mempool.space/api',
+  BITCOIN_PUBLIC_RPC_MEMPOOL_EMZY_MAINNET_URL: 'https://mempool.emzy.de/api',
+  BITCOIN_PUBLIC_RPC_MEMPOOL_NINJA_MAINNET_URL: 'https://mempool.ninja/api',
+  BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL: 'https://api.blockcypher.com/v1/btc/main',
+  ETHEREUM_PUBLIC_RPC_PUBLICNODE_PRIMARY_URL: 'https://ethereum-rpc.publicnode.com',
+  ETHEREUM_PUBLIC_RPC_PUBLICNODE_SECONDARY_URL: 'https://ethereum.publicnode.com',
+  ETHEREUM_PUBLIC_RPC_FLASHBOTS_URL: 'https://rpc.flashbots.net',
+  ETHEREUM_PUBLIC_RPC_CLOUDFLARE_URL: 'https://cloudflare-eth.com',
+  ETHEREUM_PROVIDER_ETHERSCAN_V2_MAINNET_URL: 'https://api.etherscan.io/v2/api',
+  SOLANA_PUBLIC_RPC_MAINNET_BETA_PRIMARY_URL: 'https://api.mainnet-beta.solana.com',
+  SOLANA_PUBLIC_RPC_PUBLICNODE_URL: 'https://solana-rpc.publicnode.com',
+  SOLANA_PROVIDER_HELIUS_MAINNET_URL: 'https://mainnet.helius-rpc.com/',
+};
 
 function hydrateProviderKeysFromLocalEnv() {
   const envPaths = [
@@ -36,7 +51,7 @@ function hydrateProviderKeysFromLocalEnv() {
       }
 
       const key = normalizedLine.slice(0, separator).trim();
-      if (!PROVIDER_KEY_PATTERN.test(key)) {
+      if (!HYDRATED_ENV_PATTERN.test(key)) {
         continue;
       }
 
@@ -60,3 +75,9 @@ function hydrateProviderKeysFromLocalEnv() {
 }
 
 hydrateProviderKeysFromLocalEnv();
+
+for (const [key, value] of Object.entries(TEST_ENDPOINT_DEFAULTS)) {
+  if ((process.env[key] || '').trim().length === 0) {
+    process.env[key] = value;
+  }
+}

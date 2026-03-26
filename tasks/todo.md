@@ -1,5 +1,44 @@
 # Task Plan - 2026-03-26
 
+## Objective (Centralize Public RPC Endpoints + Apply Multi-Endpoint Hardening Across BTC/ETH/USDC/SOL)
+
+Eliminate scattered hardcoded public-RPC URLs, move endpoint definitions to a single named-config registry, and harden all public-RPC providers with consistent retry/failover behavior so consensus checks do not silently depend on one brittle endpoint.
+
+## Plan
+
+- [x] Create a centralized config module with named endpoint constants mapped to URLs.
+- [x] Refactor Solana, Ethereum/USDC, and Bitcoin public-RPC providers to resolve defaults by endpoint name and support runtime name-based overrides.
+- [x] Apply endpoint-level retry + fallback hardening consistently across these providers.
+- [x] Add/extend provider tests to lock null-result failover, retry behavior, and config-name resolution.
+- [x] Run targeted tests + typecheck and capture review outcomes.
+
+## Review (Centralize Public RPC Endpoints + Apply Multi-Endpoint Hardening Across BTC/ETH/USDC/SOL)
+
+- Status: Completed
+- Root causes addressed:
+  - Public-RPC fallback behavior was uneven across chains/providers (especially around null-result handling and retry depth).
+  - Endpoint URL defaults lived inline in provider files, making updates error-prone and scattered.
+- Changes shipped:
+  - Added centralized endpoint registry: `lib/config/public-rpc-endpoints.ts`
+    - Named constants for BTC, ETH/USDC, and SOL public RPC endpoints.
+    - Default endpoint-name lists per chain/asset.
+    - Shared helper to resolve endpoint URLs from constant names.
+  - Hardened providers:
+    - `lib/providers/solana/public-rpc.ts`
+    - `lib/providers/ethereum/public-rpc.ts`
+    - `lib/providers/bitcoin/mempool.ts`
+  - Consistent hardening pattern now applied:
+    - endpoint-level retries with configurable retry count/delay
+    - multi-endpoint failover for null/unusable RPC results
+    - runtime URL override support (existing) plus new runtime constant-name override support (no code recompile needed for endpoint selection changes)
+  - Added/extended tests:
+    - `tests/unit/providers/solana-public-rpc.test.ts`
+    - `tests/unit/providers/ethereum-public-rpc.test.ts`
+    - `tests/unit/providers/mempool.test.ts`
+- Validation:
+  - `npm test -- tests/unit/providers/mempool.test.ts tests/unit/providers/solana-public-rpc.test.ts tests/unit/providers/ethereum-public-rpc.test.ts tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+
 ## Objective (Fix Production KEY_UNKNOWN Verification Failures)
 
 Resolve production verify failures caused by oracle signatures minted with a key ID not present in transparency log (`KEY_UNKNOWN`), and prevent future key drift from silently reintroducing the issue.
@@ -1784,3 +1823,31 @@ Ship six high-ROI UX upgrades while keeping default API/provider usage flat so f
     - `npm run test:e2e -- tests/e2e/history-import.spec.ts tests/e2e/recent-receipts-panel.spec.ts` pass.
     - `npm run test:e2e -- tests/e2e/generator.spec.ts --grep "auto-detect chain from tx hash format"` pass.
     - `npm run typecheck` pass.
+
+## Objective (Env-Backed Endpoint Registry + Startup Config Validation)
+
+Eliminate URL literals from provider/config TS endpoint registries, make endpoint config env-backed and reusable, and fail fast with precise missing-config diagnostics at app/API load.
+
+## Plan
+
+- [x] Move provider/public endpoint URL values from TS literals to env-backed endpoint registry keys in config.
+- [x] Keep endpoint-name selection flow and strict name resolution while requiring resolved URLs to exist.
+- [x] Add runtime startup validation that reports exact missing/invalid config keys.
+- [x] Run typecheck and targeted provider/API route tests.
+
+## Review (Env-Backed Endpoint Registry + Startup Config Validation)
+
+- Status: Completed
+- Notes:
+  - `lib/config/public-rpc-endpoints.ts` now resolves endpoint URLs from env keys only (`*_URL` variables), with no URL literals.
+  - All provider modules now consume env-backed endpoint maps and fail fast when endpoint URL config is missing/invalid.
+  - Added runtime config validator `lib/config/runtime-config.ts` and wired checks at app/API load:
+    - `app/layout.tsx`
+    - `app/api/oracle/fetch-tx/route.ts`
+    - `app/api/oracle/verify-signature/route.ts`
+    - `app/api/oracle/check-nullifier/route.ts`
+  - Updated `.env.example` with endpoint registry URL env vars and strict startup validation toggle.
+  - Updated `jest.setup.js` to seed endpoint env vars for deterministic test execution.
+  - Validation:
+    - `npm run typecheck` pass.
+    - `npm test -- tests/unit/providers/mempool.test.ts tests/unit/providers/ethereum-public-rpc.test.ts tests/unit/providers/solana-public-rpc.test.ts tests/unit/providers/ssrf-enforcement.test.ts tests/unit/api/fetch-tx-route.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-check-nullifier-route.test.ts --runInBand --ci` pass.

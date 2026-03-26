@@ -49,8 +49,10 @@ echo ""
 SECRETS_SET=0
 declare -a etherscan_keys=()
 declare -a helius_keys=()
+declare -a blockcypher_keys=()
 declare -A seen_etherscan=()
 declare -A seen_helius=()
+declare -A seen_blockcypher=()
 
 add_etherscan_key() {
     local value="$1"
@@ -78,6 +80,20 @@ add_helius_key() {
 
     seen_helius["$value"]=1
     helius_keys+=("$value")
+}
+
+add_blockcypher_key() {
+    local value="$1"
+    if [ -z "$value" ]; then
+        return
+    fi
+
+    if [ -n "${seen_blockcypher[$value]:-}" ]; then
+        return
+    fi
+
+    seen_blockcypher["$value"]=1
+    blockcypher_keys+=("$value")
 }
 
 # Oracle key (must be explicit; do not silently rotate runtime signing identity)
@@ -156,6 +172,55 @@ else
         if [ "$index" -lt "${#helius_keys[@]}" ]; then
             secret_name="HELIUS_API_KEY_${i}"
             put_secret "$secret_name" "${helius_keys[$index]}"
+            echo "✓ $secret_name"
+            SECRETS_SET=$((SECRETS_SET + 1))
+        fi
+    done
+fi
+
+# Collect canonical BlockCypher env vars first
+add_blockcypher_key "${BLOCKCYPHER_API_TOKEN:-}"
+for i in 1 2 3 4 5 6; do
+    var_name="BLOCKCYPHER_API_TOKEN_${i}"
+    add_blockcypher_key "${!var_name:-}"
+done
+
+# Also collect supported aliases (for local key naming conventions)
+add_blockcypher_key "${BLOCKCYPHER_API_KEY:-}"
+for i in 1 2 3 4 5 6; do
+    var_name="BLOCKCYPHER_API_KEY_${i}"
+    add_blockcypher_key "${!var_name:-}"
+done
+
+# Collect additional prefix-based aliases without duplicating numbered canonical keys
+while IFS= read -r var_name; do
+    if [[ "$var_name" =~ ^BLOCKCYPHER_API_TOKEN_[0-9]+$ || "$var_name" =~ ^BLOCKCYPHER_API_KEY_[0-9]+$ ]]; then
+        continue
+    fi
+    add_blockcypher_key "${!var_name:-}"
+done < <(compgen -A variable BLOCKCYPHER_API_TOKEN_ | sort)
+
+while IFS= read -r var_name; do
+    if [[ "$var_name" =~ ^BLOCKCYPHER_API_TOKEN_[0-9]+$ || "$var_name" =~ ^BLOCKCYPHER_API_KEY_[0-9]+$ ]]; then
+        continue
+    fi
+    add_blockcypher_key "${!var_name:-}"
+done < <(compgen -A variable BLOCKCYPHER_API_KEY_ | sort)
+
+if [ "${#blockcypher_keys[@]}" -eq 0 ]; then
+    echo "⚠️  No BlockCypher API keys found in .env.local"
+else
+    # Primary key
+    put_secret "BLOCKCYPHER_API_TOKEN" "${blockcypher_keys[0]}"
+    echo "✓ BLOCKCYPHER_API_TOKEN"
+    SECRETS_SET=$((SECRETS_SET + 1))
+
+    # Fallback keys (populate _1 through _6 from remaining keys)
+    for i in 1 2 3 4 5 6; do
+        index="$i"
+        if [ "$index" -lt "${#blockcypher_keys[@]}" ]; then
+            secret_name="BLOCKCYPHER_API_TOKEN_${i}"
+            put_secret "$secret_name" "${blockcypher_keys[$index]}"
             echo "✓ $secret_name"
             SECRETS_SET=$((SECRETS_SET + 1))
         fi

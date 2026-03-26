@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   OracleFetchTxRequestSchema,
 } from '@/lib/validation/schemas';
+import { assertRuntimeConfigOnLoad } from '@/lib/config/runtime-config';
 import { secureError } from '@/lib/security/secure-logging';
 import {
   createJsonErrorResponse,
@@ -71,6 +72,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let anonymousSessionIdToSet: string | null = null;
 
   try {
+    assertRuntimeConfigOnLoad('app/api/oracle/fetch-tx/route.ts');
+
     const withSession = (response: NextResponse): NextResponse =>
       withFetchTxAnonymousSessionCookie(response, anonymousSessionIdToSet);
     const envelope = await parseRateLimitedOracleRouteBody({

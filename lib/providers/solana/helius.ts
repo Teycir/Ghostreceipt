@@ -16,6 +16,11 @@ import {
   resolveProviderThrottlePolicy,
   waitForProviderThrottleSlot,
 } from '@/lib/libraries/backend-core/providers/provider-throttle';
+import {
+  SOLANA_PROVIDER_API_ENDPOINT_ENV_KEYS,
+  SOLANA_PROVIDER_API_ENDPOINTS,
+  resolveRequiredEndpointUrl,
+} from '@/lib/config/public-rpc-endpoints';
 
 interface JsonRpcError {
   code?: number;
@@ -65,7 +70,6 @@ interface SignatureStatusesResult {
   value?: Array<SignatureStatusValue | null>;
 }
 
-const HELIUS_RPC_BASE_URL = 'https://mainnet.helius-rpc.com/';
 const HELIUS_METRICS_SCOPE = 'provider:helius';
 const HELIUS_KEY_ROTATION_ERROR_PATTERNS = [
   'rate limit',
@@ -103,6 +107,7 @@ export class HeliusProvider implements SolanaProvider {
   };
 
   private readonly keyCascade: ApiKeyCascade;
+  private readonly baseUrl: string;
   private readonly throttlePolicy = resolveProviderThrottlePolicy('helius', {
     hasApiKey: true,
   });
@@ -111,6 +116,19 @@ export class HeliusProvider implements SolanaProvider {
     this.keyCascade = new ApiKeyCascade(apiKeyConfig, {
       metricsScope: HELIUS_METRICS_SCOPE,
     });
+    this.baseUrl = resolveRequiredEndpointUrl(
+      SOLANA_PROVIDER_API_ENDPOINTS,
+      'HELIUS_MAINNET',
+      'SOLANA_PROVIDER_API_ENDPOINTS.HELIUS_MAINNET',
+      SOLANA_PROVIDER_API_ENDPOINT_ENV_KEYS
+    );
+
+    const urlValidation = validateUrl(this.baseUrl);
+    if (!urlValidation.valid) {
+      throw new Error(
+        `[Config] Invalid Helius API endpoint URL: ${this.baseUrl} (${urlValidation.error ?? 'invalid URL'})`
+      );
+    }
   }
 
   static getRuntimeMetrics(): ApiKeyCascadeMetricsSnapshot | null {
@@ -300,7 +318,7 @@ export class HeliusProvider implements SolanaProvider {
     params: unknown[],
     signal?: AbortSignal
   ): Promise<T> {
-    const endpoint = new URL(HELIUS_RPC_BASE_URL);
+    const endpoint = new URL(this.baseUrl);
     endpoint.searchParams.set('api-key', apiKey);
 
     const endpointString = endpoint.toString();

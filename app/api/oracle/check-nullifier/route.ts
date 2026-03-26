@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { assertRuntimeConfigOnLoad } from '@/lib/config/runtime-config';
 import { createJsonErrorResponse } from '@/lib/libraries/backend';
 import {
   CheckNullifierRequestSchema,
@@ -62,6 +63,16 @@ const nullifierRegistry = getSharedNullifierRegistry({
 });
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  try {
+    assertRuntimeConfigOnLoad('app/api/oracle/check-nullifier/route.ts');
+  } catch (error) {
+    return createJsonErrorResponse({
+      code: 'INTERNAL_ERROR',
+      message: error instanceof Error ? error.message : 'Runtime configuration validation failed',
+      status: 500,
+    });
+  }
+
   const envelope = await parseRateLimitedOracleRouteBody({
     invalidRequestMessage: 'Invalid nullifier check request',
     maxBodySizeBytes: 1024 * 5,

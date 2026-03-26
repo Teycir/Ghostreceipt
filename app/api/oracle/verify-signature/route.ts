@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { assertRuntimeConfigOnLoad } from '@/lib/config/runtime-config';
 import {
   createJsonErrorResponse,
   resetCachedOracleSignerForTests,
@@ -73,6 +74,16 @@ const verifyReplayRegistry = getSharedOracleAuthReplayRegistry({
 });
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  try {
+    assertRuntimeConfigOnLoad('app/api/oracle/verify-signature/route.ts');
+  } catch (error) {
+    return createJsonErrorResponse({
+      code: 'INTERNAL_ERROR',
+      message: error instanceof Error ? error.message : 'Runtime configuration validation failed',
+      status: 500,
+    });
+  }
+
   const envelope = await parseRateLimitedOracleRouteBody({
     invalidRequestMessage: 'Invalid signature verification request',
     maxBodySizeBytes: 1024 * 5,

@@ -459,3 +459,12 @@
 ## 2026-03-26 - Share Actions Must Wait For Stable Verify URL
 - Do not allow `Copy Verify URL`, social share, `Open Receipt`, or PDF export while compact-link creation is still in-flight.
 - Gate share actions behind a prepared verify URL state to avoid opening/copying transient fallback URLs that can lead to verification mismatches.
+
+## 2026-03-26 - Public RPC Endpoints Need Centralized Named Config + Uniform Failover
+- Do not leave public RPC defaults hardcoded across multiple provider files; define them once in a central config module and reference by constant name.
+- Support runtime endpoint selection by constant-name env vars (for example `*_PUBLIC_RPC_NAME(S)`), so endpoint rotation does not require source edits.
+- Apply the same endpoint hardening pattern to every public-RPC provider (retry, null-result failover, multi-endpoint cascade), not chain-by-chain piecemeal.
+
+## 2026-03-26 - Endpoint Registry Must Be Env-Backed, Not URL-Literal TS
+- Keep endpoint registry modules as env-key resolvers; do not hardcode URL literals in TypeScript source.
+- Treat `.env`/deployment variables as the reusable source of endpoint URLs, and use constant names only for selection/order.

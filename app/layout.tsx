@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { assertRuntimeConfigOnLoad } from '@/lib/config/runtime-config';
 import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
+
+assertRuntimeConfigOnLoad('app/layout.tsx');
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ghostreceipt.pages.dev'),
