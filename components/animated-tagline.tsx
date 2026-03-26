@@ -17,7 +17,7 @@ export function AnimatedTagline({ text }: AnimatedTaglineProps): React.JSX.Eleme
       whileHover={{
         scale: 1.04,
         textShadow: '0 0 20px rgba(255,255,255,0.7), 0 0 40px rgba(96,165,250,0.4)',
-        transition: { duration: 0.3 },
+        transition: { duration: 0.24 },
       }}
     >
       {chars.map((item, i) => (
@@ -27,15 +27,15 @@ export function AnimatedTagline({ text }: AnimatedTaglineProps): React.JSX.Eleme
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            duration: 0.25,
-            delay: i * 0.03,
+            duration: 0.2,
+            delay: i * 0.024,
             ease: 'easeOut',
           }}
           whileHover={{
             y: -2,
             color: '#ffffff',
             textShadow: '0 0 10px rgba(255,255,255,0.9)',
-            transition: { duration: 0.15 },
+            transition: { duration: 0.12 },
           }}
         >
           {item.char === ' ' ? '\u00A0' : item.char}

@@ -98,7 +98,7 @@ export function ReceiptSuccess({
   // Stagger-reveal the card on mount
   const [revealed, setRevealed] = useState(false);
   useEffect(() => {
-    const t = globalThis.setTimeout(() => setRevealed(true), 60);
+    const t = globalThis.setTimeout(() => setRevealed(true), 48);
     return () => globalThis.clearTimeout(t);
   }, []);
 
@@ -134,11 +134,11 @@ export function ReceiptSuccess({
   }, [copyLink]);
 
   const receiptFields = [
-    { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.15s' },
-    { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.25s' },
-    { label: 'Min Date', value: minDate,                                                  delay: '0.35s' },
-    ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.45s' }] : []),
-    ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.55s' }] : []),
+    { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.12s' },
+    { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.2s' },
+    { label: 'Min Date', value: minDate,                                                  delay: '0.28s' },
+    ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.36s' }] : []),
+    ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.44s' }] : []),
   ] as const;
 
   return (
@@ -186,7 +186,7 @@ export function ReceiptSuccess({
             </div>
           ))}
           {(oracleValidationStatus || oracleValidationLabel) && (
-            <div className="receipt-field" style={{ animationDelay: '0.45s' }}>
+            <div className="receipt-field" style={{ animationDelay: '0.36s' }}>
               <span className="receipt-field__label">Validation</span>
               <ValidationStrengthBadge
                 status={oracleValidationStatus}

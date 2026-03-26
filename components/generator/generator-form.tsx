@@ -79,7 +79,7 @@ export function GeneratorForm(): React.JSX.Element {
     setDraftStatus('Restored your saved draft from this browser.');
     const clearTimer = globalThis.setTimeout(() => {
       setDraftStatus('');
-    }, 3500);
+    }, 2800);
 
     return () => {
       globalThis.clearTimeout(clearTimer);
@@ -89,7 +89,7 @@ export function GeneratorForm(): React.JSX.Element {
   useEffect(() => {
     const saveTimer = globalThis.setTimeout(() => {
       saveGeneratorDraft(values);
-    }, 250);
+    }, 200);
 
     return () => {
       globalThis.clearTimeout(saveTimer);
@@ -318,7 +318,7 @@ export function GeneratorForm(): React.JSX.Element {
             </label>
             {humanAmount && (
               <span
-                className="tabular-nums text-[10px] font-mono text-cyan-300/85 transition-all duration-300"
+                className="tabular-nums text-[10px] font-mono text-cyan-300/85 transition-all duration-240"
                 aria-live="polite"
               >
                 {humanAmount}
