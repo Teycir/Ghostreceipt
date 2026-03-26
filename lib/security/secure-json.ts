@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { sanitizeAndValidateJsonInput } from './json-input-sanitizer';
 
 /**
  * Secure JSON parsing configuration
@@ -15,53 +16,12 @@ const DEFAULT_ALLOWED_CONTENT_TYPES = ['application/json', 'text/plain'];
 const DEFAULT_MAX_DEPTH = 40;
 const DEFAULT_MAX_NODES = 10000;
 
-function isDangerousKey(key: string): boolean {
-  return key === '__proto__' || key === 'constructor' || key === 'prototype';
-}
-
-function validateParsedJsonShape(
-  parsed: unknown,
-  maxDepth: number,
-  maxNodes: number
-): void {
-  const stack: Array<{ value: unknown; depth: number }> = [{ value: parsed, depth: 0 }];
-  let visitedNodes = 0;
-
-  while (stack.length > 0) {
-    const current = stack.pop();
-    if (!current) {
-      continue;
-    }
-
-    const { value, depth } = current;
-    if (value === null || typeof value !== 'object') {
-      continue;
-    }
-
-    if (depth > maxDepth) {
-      throw new Error(`JSON nesting too deep (max depth: ${maxDepth})`);
-    }
-
-    visitedNodes += 1;
-    if (visitedNodes > maxNodes) {
-      throw new Error(`JSON object too complex (max nodes: ${maxNodes})`);
-    }
-
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        stack.push({ value: item, depth: depth + 1 });
-      }
-      continue;
-    }
-
-    for (const [key, entryValue] of Object.entries(value)) {
-      if (isDangerousKey(key)) {
-        throw new Error('Potentially malicious JSON structure detected');
-      }
-
-      stack.push({ value: entryValue, depth: depth + 1 });
-    }
+function getUtf8ByteLength(value: string): number {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.byteLength(value, 'utf8');
   }
+
+  return new TextEncoder().encode(value).byteLength;
 }
 
 /**
@@ -103,7 +63,7 @@ export async function parseSecureJson(
   // Read body with size limit
   const text = await request.text();
   
-  const textByteLength = Buffer.byteLength(text, 'utf8');
+  const textByteLength = getUtf8ByteLength(text);
   if (textByteLength > maxSize) {
     throw new Error(`Payload too large: ${textByteLength} bytes (max: ${maxSize})`);
   }
@@ -115,9 +75,10 @@ export async function parseSecureJson(
   // Parse JSON safely
   try {
     const parsed = JSON.parse(text);
-    validateParsedJsonShape(parsed, maxDepth, maxNodes);
-
-    return parsed;
+    return sanitizeAndValidateJsonInput(parsed, {
+      maxDepth,
+      maxNodes,
+    });
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error('Invalid JSON syntax');

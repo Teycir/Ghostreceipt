@@ -15,6 +15,18 @@ describe('parseSecureJson', () => {
     expect(parsed).toEqual({ chain: 'bitcoin', txHash: 'a'.repeat(64) });
   });
 
+  it('rejects non-JSON content types', async () => {
+    const request = new NextRequest('http://localhost/api/test', {
+      method: 'POST',
+      body: JSON.stringify({ chain: 'bitcoin', txHash: 'a'.repeat(64) }),
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    await expect(parseSecureJson(request)).rejects.toThrow('Invalid Content-Type');
+  });
+
   it('rejects nested prototype-pollution keys', async () => {
     const request = new NextRequest('http://localhost/api/test', {
       method: 'POST',
@@ -62,5 +74,59 @@ describe('parseSecureJson', () => {
     await expect(parseSecureJson(request, { maxDepth: 10 })).rejects.toThrow(
       'JSON nesting too deep'
     );
+  });
+
+  it('rejects invisible Unicode characters in string values', async () => {
+    const request = new NextRequest('http://localhost/api/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        chain: 'bitcoin',
+        txHash: `a${'\u200B'.repeat(2)}${'b'.repeat(62)}`,
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    await expect(parseSecureJson(request)).rejects.toThrow(
+      'JSON string contains invisible Unicode characters'
+    );
+  });
+
+  it('rejects object keys with leading/trailing whitespace', async () => {
+    const request = new NextRequest('http://localhost/api/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ' txHash ': 'a'.repeat(64),
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    await expect(parseSecureJson(request)).rejects.toThrow(
+      'JSON key contains leading or trailing whitespace'
+    );
+  });
+
+  it('normalizes and trims string values', async () => {
+    const request = new NextRequest('http://localhost/api/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        chain: ' bitcoin ',
+        label: '\u212B',
+      }),
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    const parsed = (await parseSecureJson(request)) as {
+      chain: string;
+      label: string;
+    };
+
+    expect(parsed.chain).toBe('bitcoin');
+    expect(parsed.label).toBe('\u00C5');
   });
 });

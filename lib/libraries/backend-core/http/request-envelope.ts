@@ -10,6 +10,12 @@ const DEFAULT_PARSE_MESSAGE_PREFIXES = [
   'Empty request body',
   'JSON object too complex',
   'JSON nesting too deep',
+  'JSON string contains unsafe control characters',
+  'JSON string contains invisible Unicode characters',
+  'JSON key contains leading or trailing whitespace',
+  'JSON key contains unsafe control characters',
+  'JSON key contains invisible Unicode characters',
+  'Potentially malicious JSON structure detected',
 ];
 
 function mapParseErrorMessage(error: unknown, fallbackMessage: string): string {

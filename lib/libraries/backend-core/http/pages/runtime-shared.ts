@@ -1,5 +1,6 @@
 import { type ZodType } from 'zod';
 import { getClientIdentifier } from '../../../../security/rate-limit';
+import { sanitizeAndValidateJsonInput } from '../../../../security/json-input-sanitizer';
 import { type ErrorCode } from '../../../../validation/schemas';
 
 export interface PagesFunctionContextLike {
@@ -57,6 +58,27 @@ const CORS_HEADERS = {
 } as const;
 const MAX_JSON_DEPTH = 40;
 const MAX_JSON_NODES = 10000;
+const DEFAULT_PARSE_MESSAGE_PREFIXES = [
+  'Payload too large',
+  'Invalid Content-Type',
+  'Empty request body',
+  'JSON object too complex',
+  'JSON nesting too deep',
+  'JSON string contains unsafe control characters',
+  'JSON string contains invisible Unicode characters',
+  'JSON key contains leading or trailing whitespace',
+  'JSON key contains unsafe control characters',
+  'JSON key contains invisible Unicode characters',
+  'Potentially malicious JSON structure detected',
+] as const;
+
+function getUtf8ByteLength(value: string): number {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.byteLength(value, 'utf8');
+  }
+
+  return new TextEncoder().encode(value).byteLength;
+}
 
 class SimpleRateLimiter {
   private readonly maxRequests: number;
@@ -240,48 +262,16 @@ function syncEnvBindingsToProcessEnv(
   }
 }
 
-function isDangerousJsonKey(key: string): boolean {
-  return key === '__proto__' || key === 'constructor' || key === 'prototype';
-}
-
-function validateJsonShape(parsed: unknown): void {
-  const stack: Array<{ value: unknown; depth: number }> = [{ value: parsed, depth: 0 }];
-  let visitedNodes = 0;
-
-  while (stack.length > 0) {
-    const current = stack.pop();
-    if (!current) {
-      continue;
-    }
-
-    if (current.value === null || typeof current.value !== 'object') {
-      continue;
-    }
-
-    if (current.depth > MAX_JSON_DEPTH) {
-      throw new Error(`JSON nesting too deep (max depth: ${MAX_JSON_DEPTH})`);
-    }
-
-    visitedNodes += 1;
-    if (visitedNodes > MAX_JSON_NODES) {
-      throw new Error(`JSON object too complex (max nodes: ${MAX_JSON_NODES})`);
-    }
-
-    if (Array.isArray(current.value)) {
-      for (const item of current.value) {
-        stack.push({ value: item, depth: current.depth + 1 });
-      }
-      continue;
-    }
-
-    for (const [key, entryValue] of Object.entries(current.value)) {
-      if (isDangerousJsonKey(key)) {
-        throw new Error('Potentially malicious JSON structure detected');
-      }
-
-      stack.push({ value: entryValue, depth: current.depth + 1 });
-    }
+function mapParseErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'Invalid JSON request body';
   }
+
+  if (DEFAULT_PARSE_MESSAGE_PREFIXES.some((prefix) => error.message.startsWith(prefix))) {
+    return error.message;
+  }
+
+  return 'Invalid JSON request body';
 }
 
 export function parsePositiveIntEnv(key: string, fallback: number): number {
@@ -356,7 +346,7 @@ export async function parseJsonBodyWithLimits(
   }
 
   const text = await request.text();
-  const textByteLength = Buffer.byteLength(text, 'utf8');
+  const textByteLength = getUtf8ByteLength(text);
   if (textByteLength > maxSizeBytes) {
     return {
       ok: false,
@@ -380,14 +370,18 @@ export async function parseJsonBodyWithLimits(
 
   try {
     const parsed = JSON.parse(text);
-    validateJsonShape(parsed);
+    const sanitized = sanitizeAndValidateJsonInput(parsed, {
+      maxDepth: MAX_JSON_DEPTH,
+      maxNodes: MAX_JSON_NODES,
+    });
     return {
       ok: true,
-      data: parsed,
+      data: sanitized,
     };
   } catch (error) {
-    const message =
-      error instanceof SyntaxError ? 'Invalid JSON syntax' : 'Invalid JSON request body';
+    const message = error instanceof SyntaxError
+      ? 'Invalid JSON syntax'
+      : mapParseErrorMessage(error);
     return {
       ok: false,
       response: jsonErrorResponse({
