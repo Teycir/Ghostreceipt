@@ -257,7 +257,7 @@ export function ReceiptSuccess({
           variant={nativeShareAvailable ? 'primary' : 'secondary'}
           className="w-full"
         >
-          {nativeShareAvailable ? '↗ Share via Apps (Recommended)' : '↗ Share (copy fallback)'}
+          {nativeShareAvailable ? '↗ Share via Apps (Recommended)' : '↗ Share Link'}
         </Button>
         <Button type="button" onClick={exportPdf} variant="secondary" className="w-full">
           ↓ Export as PDF
