@@ -386,7 +386,6 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
 
     await new Promise<void>((resolve, reject) => {
       let settled = false;
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
       const finish = (callback: () => void) => {
         if (settled) {
@@ -403,7 +402,7 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
       };
 
       const onAbort = () => finish(() => reject(new Error('Request aborted')));
-      timeoutId = setTimeout(() => finish(resolve), ms);
+      const timeoutId = setTimeout(() => finish(resolve), ms);
 
       if (!signal) {
         return;
