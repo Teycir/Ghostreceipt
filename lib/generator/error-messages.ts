@@ -18,28 +18,28 @@ export function mapFetchTxApiError(
       typeof retryAfter === 'number' && retryAfter > 0
         ? Math.ceil(retryAfter)
         : 60;
-    const waitLabel = waitSeconds === 1 ? '1 second' : `${waitSeconds} seconds`;
-    return `Rate limit reached. Please wait ${waitLabel} and try again.`;
+    const waitLabel = waitSeconds === 1 ? '1 sec' : `${waitSeconds} secs`;
+    return `Rate limit. Wait ${waitLabel} and retry.`;
   }
 
   const code = payload?.error?.code;
   if (code === 'TRANSACTION_NOT_FOUND') {
-    return 'This transaction is not visible yet. If it was just sent, wait for confirmation and retry in about 5 minutes.';
+    return 'Transaction not visible yet. If just sent, wait ~5 min for confirmation.';
   }
   if (code === 'PROVIDER_TIMEOUT' || code === 'PROVIDER_ERROR') {
-    return 'Network providers are temporarily busy. Please retry in 30-60 seconds.';
+    return 'Network busy. Retry in 30-60 seconds.';
   }
   if (code === 'INVALID_HASH') {
-    return 'The transaction hash format does not match the selected chain. Check the hash/signature and try again.';
+    return 'Hash format doesn\'t match selected chain. Check and retry.';
   }
   if (code === 'TRANSACTION_REVERTED') {
-    return 'This transaction reverted on-chain and cannot be used as payment proof.';
+    return 'Transaction reverted on-chain. Cannot be used as proof.';
   }
   if (code === 'INSUFFICIENT_CONFIRMATIONS') {
-    return 'This transaction is still confirming. Wait for additional confirmations, then retry in about 5 minutes.';
+    return 'Still confirming. Wait ~5 min and retry.';
   }
   if (code === 'REPLAY_DETECTED') {
-    return 'Duplicate submission detected. Wait a moment and try once with a fresh request.';
+    return 'Duplicate detected. Wait a moment and retry.';
   }
 
   return payload?.error?.message ?? 'Failed to fetch transaction';
@@ -56,9 +56,9 @@ export function mapWitnessValidationErrors(validationErrors: string[]): string {
     if (match) {
       const realValue = match[1] ?? '0';
       const claimedAmount = match[2] ?? '0';
-      return `Claim amount (${claimedAmount}) exceeds transaction value (${realValue}). Did you mean ${realValue}?`;
+      return `Claim (${claimedAmount}) > tx value (${realValue}). Try ${realValue}?`;
     }
-    return 'Claim amount exceeds the transaction value. Lower the claimed amount and try again.';
+    return 'Claim exceeds tx value. Lower amount and retry.';
   }
 
   if (normalizedFirstError.includes('before minimum date')) {
@@ -68,9 +68,9 @@ export function mapWitnessValidationErrors(validationErrors: string[]): string {
     if (match) {
       const realTimestamp = match[1] ?? '0';
       const minDate = match[2] ?? '0';
-      return `Transaction date (${formatUnixDate(realTimestamp)}) is earlier than your minimum date (${formatUnixDate(minDate)}). Choose an earlier minimum date.`;
+      return `Tx date (${formatUnixDate(realTimestamp)}) < min date (${formatUnixDate(minDate)}). Choose earlier date.`;
     }
-    return 'Transaction happened before your selected minimum date. Choose an earlier date and retry.';
+    return 'Tx before min date. Choose earlier date and retry.';
   }
   return `Validation failed: ${validationErrors.join(', ')}`;
 }

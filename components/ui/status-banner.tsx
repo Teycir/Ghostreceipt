@@ -34,7 +34,7 @@ export function StatusBanner({
     <div
       role="status"
       aria-live={aria}
-      className={`rounded-lg border p-4 text-sm ${VARIANT_STYLES[variant]}`}
+      className={`rounded-lg border px-2.5 py-2 text-xs leading-snug sm:px-4 sm:py-3 sm:text-sm ${VARIANT_STYLES[variant]}`}
     >
       {message}
     </div>
