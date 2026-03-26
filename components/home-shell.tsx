@@ -139,6 +139,11 @@ export function HomeShell(): React.JSX.Element {
         centerContent
         srTitle="GhostReceipt"
         tagline="Prove the payment.  Keep the privacy."
+        rightNavLink={{
+          href: '/history',
+          label: 'History',
+          ariaLabel: 'Open receipt history page',
+        }}
         titleMinFontSize={34}
         maxWidthClassName="max-w-4xl"
         mainClassName="justify-start pt-2 pb-40 sm:justify-center sm:pt-0 sm:pb-24"
