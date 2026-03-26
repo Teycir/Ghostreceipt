@@ -1,5 +1,40 @@
 # Task Plan - 2026-03-26
 
+## Objective (Short Verify Pointer Links For QR Scanability)
+
+Replace long proof-in-query share URLs with compact pointer-based verify links so QR codes remain easily decodable by camera scanners (including Google Lens).
+
+## Plan
+
+- [x] Add share-pointer create/resolve APIs with storage-manager-backed persistence (D1 when available, in-memory fallback).
+- [x] Update receipt share flow to prefer short `sid` verify URLs for QR/social/clipboard and keep long-link fallback on API failure.
+- [x] Extend verify client to resolve `sid` before proof verification while preserving existing `proof` query compatibility.
+- [x] Add route-level unit tests and run targeted tests + typecheck.
+
+## Review (Short Verify Pointer Links For QR Scanability)
+
+- Status: Completed
+- Root cause:
+  - QR encoded a full proof payload URL (`/verify?proof=...`) which produced very dense matrices; Google Lens often failed to decode and therefore showed no clickable link.
+- Fixes shipped:
+  - Added short-pointer API routes:
+    - `POST /api/share-pointer/create`
+    - `GET /api/share-pointer/:id`
+  - Added Cloudflare Pages parity routes:
+    - `functions/api/share-pointer/create.ts`
+    - `functions/api/share-pointer/[id].ts`
+  - Added shared pointer service using existing storage manager:
+    - D1-backed persistence when `SHARE_POINTERS_DB` binding exists.
+    - In-memory fallback otherwise.
+  - Updated generator share flow to prefer compact verify URLs (`/verify?sid=<pointerId>`) for QR/social/clipboard while preserving long-link fallback.
+  - Updated verify client to resolve `sid` then run existing proof verification flow.
+  - Added route unit tests for create/resolve behavior.
+- Validation:
+  - `npm test -- tests/unit/api/share-pointer-routes.test.ts tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+- Residual risk:
+  - When running without persistent backing storage (no D1 binding), short links are process-local and may not survive restarts or multi-instance routing.
+
 ## Objective (Scanner-Safe Classic QR Styling)
 
 Make receipt QR output strictly scanner-friendly by using classic black-on-white rendering and removing decorative cyan framing that can hurt camera recognition.

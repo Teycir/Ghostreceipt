@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-26 - QR Scan Success Requires Compact URL Payloads, Not Only Visual Contrast
+- Even with scanner-safe black/white styling, embedding very long query payloads can produce QR density that camera scanners fail to decode silently.
+- For shareable verify flows, prefer short pointer-based URLs (for example `sid`) and resolve payload server-side.
+- Keep backward compatibility for existing long links during rollout (`proof` query still supported).
+
 ## 2026-03-26 - Scanner Reliability Beats Theme Styling For QR Codes
 - When a user reports scanner/Lens failures, treat visual theming as secondary and enforce classic QR defaults first (black modules on white background, adequate quiet zone).
 - Do not rely on generation success alone as proof of usability; optimize rendered size and contrast for real camera decoding.
