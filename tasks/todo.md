@@ -1,5 +1,35 @@
 # Task Plan - 2026-03-26
 
+## Objective (Fix Production KEY_UNKNOWN Verification Failures)
+
+Resolve production verify failures caused by oracle signatures minted with a key ID not present in transparency log (`KEY_UNKNOWN`), and prevent future key drift from silently reintroducing the issue.
+
+## Plan
+
+- [x] Confirm production signer key mismatch against transparency-log key IDs.
+- [x] Rotate Pages secret to a transparency-log-approved key and redeploy production.
+- [x] Validate live `/api/oracle/fetch-tx` and `/api/oracle/verify-signature` behavior post-deploy.
+- [x] Add guardrails so misconfigured signing keys fail at generation time instead of producing unverifiable receipts.
+
+## Review (Fix Production KEY_UNKNOWN Verification Failures)
+
+- Status: Completed
+- Root cause:
+  - Production signing key ID was `03bf5b42b55d2077`, which was not present in `config/oracle/transparency-log.json`.
+  - Verify path correctly rejected signatures with `KEY_UNKNOWN`, causing all newly generated receipts to fail verification.
+- Production remediation executed:
+  - Updated Pages secret `ORACLE_PRIVATE_KEY` (production + preview) to the local key whose ID is already transparency-approved (`fb799d7d5cee5079`).
+  - Redeployed Pages (`main`) so runtime picked up updated secret bindings.
+- Live validation:
+  - `POST https://ghostreceipt.pages.dev/api/oracle/fetch-tx` now returns `oraclePubKeyId=fb799d7d5cee5079`.
+  - `POST https://ghostreceipt.pages.dev/api/oracle/verify-signature` on fresh payload now returns `{"valid":true}`.
+- Preventive code hardening shipped:
+  - `lib/libraries/backend-core/http/fetch-tx.ts` now enforces signing-key transparency validity before returning signed oracle payloads (default on outside tests).
+  - `scripts/sync-secrets.sh` no longer auto-generates random `ORACLE_PRIVATE_KEY` when missing; it fails fast with explicit guidance.
+- Validation:
+  - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+
 ## Objective (Fix "Open Verify" False Invalid Receipt Regressions)
 
 Resolve the current regression where freshly generated receipts open the verify page and fail with `Oracle commitment mismatch detected`, even though receipt generation succeeds.

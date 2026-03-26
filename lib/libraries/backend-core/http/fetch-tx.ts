@@ -15,6 +15,7 @@ import { HeliusProvider } from '@/lib/providers/solana/helius';
 import { SolanaPublicRpcProvider } from '@/lib/providers/solana/public-rpc';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
+import { checkOracleKeyTransparencyValidity } from './oracle-transparency-log';
 import { ProviderCascade } from '../providers/cascade';
 import type { CascadeConfig, Provider, ProviderError } from '../providers/types';
 import { deriveNullifier } from './oracle-nullifier';
@@ -116,6 +117,21 @@ function parsePositiveIntEnv(key: string, fallback: number): number {
   }
 
   return parsed;
+}
+
+function shouldEnforceSigningKeyTransparency(env: NodeJS.ProcessEnv = process.env): boolean {
+  const rawToggle = env['ORACLE_ENFORCE_SIGNING_KEY_TRANSPARENCY'];
+  if (rawToggle) {
+    const normalized = rawToggle.trim().toLowerCase();
+    if (normalized === '0' || normalized === 'false' || normalized === 'off') {
+      return false;
+    }
+    if (normalized === '1' || normalized === 'true' || normalized === 'on') {
+      return true;
+    }
+  }
+
+  return env['NODE_ENV'] !== 'test';
 }
 
 function resolveMaxOracleAuthTtlSeconds(options: OracleFetchOptions): number {
@@ -869,6 +885,17 @@ export async function fetchAndSignOracleTransaction(
     nonce,
     signedAt,
   });
+
+  if (shouldEnforceSigningKeyTransparency()) {
+    const transparencyCheck = checkOracleKeyTransparencyValidity({
+      keyId: authSignature.envelope.oraclePubKeyId,
+      signedAt,
+    });
+
+    if (!transparencyCheck.valid) {
+      throw new Error(`Oracle signing key rejected by transparency log: ${transparencyCheck.message}`);
+    }
+  }
 
   return {
     cached: canonicalResult.cached,

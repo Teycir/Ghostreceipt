@@ -80,17 +80,17 @@ add_helius_key() {
     helius_keys+=("$value")
 }
 
-# Oracle key (generate one if missing locally)
-if [ -n "${ORACLE_PRIVATE_KEY:-}" ]; then
-    put_secret "ORACLE_PRIVATE_KEY" "$ORACLE_PRIVATE_KEY"
-    echo "✓ ORACLE_PRIVATE_KEY"
-    SECRETS_SET=$((SECRETS_SET + 1))
-else
-    GENERATED_ORACLE_KEY="$(openssl rand -hex 32)"
-    put_secret "ORACLE_PRIVATE_KEY" "$GENERATED_ORACLE_KEY"
-    echo "✓ ORACLE_PRIVATE_KEY (generated because .env.local had none)"
-    SECRETS_SET=$((SECRETS_SET + 1))
+# Oracle key (must be explicit; do not silently rotate runtime signing identity)
+if [ -z "${ORACLE_PRIVATE_KEY:-}" ]; then
+    echo "❌ ORACLE_PRIVATE_KEY is missing in .env.local"
+    echo "   Refusing to generate a random key because that breaks transparency-log parity."
+    echo "   Set ORACLE_PRIVATE_KEY explicitly, then re-run this script."
+    exit 1
 fi
+
+put_secret "ORACLE_PRIVATE_KEY" "$ORACLE_PRIVATE_KEY"
+echo "✓ ORACLE_PRIVATE_KEY"
+SECRETS_SET=$((SECRETS_SET + 1))
 
 # Collect canonical Etherscan env vars first
 add_etherscan_key "${ETHERSCAN_API_KEY:-}"

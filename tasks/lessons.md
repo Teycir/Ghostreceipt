@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-26 - Oracle Signing Key Must Never Drift From Transparency Log
+- Do not auto-generate `ORACLE_PRIVATE_KEY` in deployment secret sync paths; fail fast when missing instead of silently rotating trust identity.
+- If production verify shows `KEY_UNKNOWN`, treat it as a signing-identity drift incident: reconcile key secret + transparency log before debugging proof logic.
+- Add generation-time guardrails so fetch/sign routes reject unlogged signing keys early, preventing issuance of receipts that later fail verify.
+
 ## 2026-03-26 - Prefer One Deterministic Verification Contract Over Mixed Signal Guesswork
 - When users report repeated false-invalid verification, treat mixed signal-shape assumptions as architecture debt and move to one deterministic decode contract.
 - In verifier logic, choose signal layout using explicit oracle-commitment matching instead of brittle fixed-slot assumptions.
