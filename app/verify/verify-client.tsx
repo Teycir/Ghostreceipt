@@ -18,17 +18,12 @@ function VerifyPageChrome({ children }: Readonly<VerifyPageChromeProps>): React.
     <UnifiedPageShell
       srTitle="GhostReceipt Verification"
       tagline="Payment Receipt Verification"
-      leftNavLink={{
-        href: '/',
-        label: 'Generator',
-        ariaLabel: 'Back to receipt generator',
-      }}
-      rightNavLink={{
-        href: '/history',
-        label: 'History',
-        ariaLabel: 'Open local receipt history',
-      }}
     >
+      <div className="mb-4">
+        <a href="/" className="inline-flex items-center text-sm text-white/60 hover:text-white/90 transition-colors">
+          ← Back to GhostReceipt
+        </a>
+      </div>
       {children}
     </UnifiedPageShell>
   );

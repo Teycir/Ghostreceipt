@@ -236,17 +236,12 @@ export default function HistoryClientPage(): React.JSX.Element {
       tagline="Local Receipt History"
       description="Stored entirely on this device. No external sync."
       maxWidthClassName="max-w-4xl"
-      leftNavLink={{
-        href: '/',
-        label: 'Generator',
-        ariaLabel: 'Back to receipt generator',
-      }}
-      rightNavLink={{
-        href: '/verify',
-        label: 'Verify',
-        ariaLabel: 'Open receipt verification page',
-      }}
     >
+      <div className="mb-4">
+        <a href="/" className="inline-flex items-center text-sm text-white/60 hover:text-white/90 transition-colors">
+          ← Back to GhostReceipt
+        </a>
+      </div>
       <section className="glass-card rounded-xl p-5 space-y-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <Input
