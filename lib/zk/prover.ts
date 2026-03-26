@@ -423,8 +423,11 @@ export class ProofGenerator {
           const workerResult = await proveInWorker(witness, this.wasmPath, this.zkeyPath);
           this.lastExecutionMode = 'worker';
           return workerResult;
-        } catch {
+        } catch (error) {
           // Fall through to main-thread proving when worker path is unavailable.
+          if (error instanceof Error) {
+            console.warn('[ProofGenerator] Worker proof failed, falling back to main thread:', error.message);
+          }
         }
       }
 

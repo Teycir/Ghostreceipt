@@ -278,8 +278,11 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
     let payload: JsonRpcResponse<T>;
     try {
       payload = (await response.json()) as JsonRpcResponse<T>;
-    } catch {
-      throw new Error('Invalid JSON response from Solana public RPC');
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON response from Solana public RPC');
+      }
+      throw error;
     }
 
     if (payload.error && typeof payload.error === 'object') {

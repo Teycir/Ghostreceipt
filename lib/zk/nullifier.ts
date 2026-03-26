@@ -76,8 +76,11 @@ function parseStoredRegistry(raw: string | null): Record<string, StoredNullifier
   try {
     const parsed = JSON.parse(raw) as Record<string, StoredNullifierClaim>;
     return typeof parsed === 'object' && parsed !== null ? parsed : {};
-  } catch {
-    return {};
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return {};
+    }
+    throw error;
   }
 }
 

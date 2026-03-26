@@ -206,8 +206,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
 
       try {
         return total + BigInt(valueData);
-      } catch {
-        return total;
+      } catch (error) {
+        if (error instanceof RangeError || error instanceof SyntaxError) {
+          return total;
+        }
+        throw error;
       }
     }, BigInt(0));
   }
@@ -269,8 +272,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
     let payload: JsonRpcResponse<T>;
     try {
       payload = (await response.json()) as JsonRpcResponse<T>;
-    } catch {
-      throw new Error('Invalid JSON response from Ethereum public RPC');
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid JSON response from Ethereum public RPC');
+      }
+      throw error;
     }
 
     if (payload.error && typeof payload.error === 'object') {
@@ -334,8 +340,11 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
 
     try {
       return BigInt(value);
-    } catch {
-      throw new Error(`Invalid ${fieldName} value from Ethereum public RPC`);
+    } catch (error) {
+      if (error instanceof RangeError || error instanceof SyntaxError || error instanceof TypeError) {
+        throw new Error(`Invalid ${fieldName} value from Ethereum public RPC`);
+      }
+      throw error;
     }
   }
 
