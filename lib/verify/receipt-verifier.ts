@@ -2,6 +2,7 @@ import {
   decodeLegacyReceiptPublicSignals,
   decodeReceiptPublicSignals,
   deriveSelectiveClaimDigest,
+  type DecodedReceiptPublicSignals,
   type ReceiptClaimDisclosureState,
   type ReceiptSignalContract,
 } from '@/lib/zk/share';
@@ -66,6 +67,10 @@ function rateLimitMessage(retryAfterSeconds?: number): string {
       : 60;
   const waitLabel = waitSeconds === 1 ? '1 second' : `${waitSeconds} seconds`;
   return `Rate limit reached. Please wait ${waitLabel} and try again.`;
+}
+
+function isOracleCommitmentMismatchError(error: unknown): boolean {
+  return error instanceof Error && error.message === 'Oracle commitment mismatch detected';
 }
 
 export async function verifyOracleSignatureViaApi(
@@ -156,10 +161,38 @@ export async function verifySharedReceiptProof(
       };
     }
 
-    const decodedSignals = decodeReceiptPublicSignals(
-      proofData.publicSignals,
-      oracleAuth.messageHash
-    );
+    let decodedSignals: DecodedReceiptPublicSignals;
+    try {
+      decodedSignals = decodeReceiptPublicSignals(
+        proofData.publicSignals,
+        oracleAuth.messageHash
+      );
+    } catch (error) {
+      const canFallbackToVerificationSignals =
+        isOracleCommitmentMismatchError(error) &&
+        Array.isArray(proofData.proofPublicSignals) &&
+        proofData.proofPublicSignals.length > 0;
+      if (!canFallbackToVerificationSignals) {
+        throw error;
+      }
+
+      decodedSignals = decodeReceiptPublicSignals(
+        proofSignalsForVerification,
+        oracleAuth.messageHash
+      );
+    }
+
+    if (decodedSignals.contract === 'selective-disclosure-v1') {
+      if (!Array.isArray(proofData.proofPublicSignals) || proofData.proofPublicSignals.length === 0) {
+        return {
+          valid: false,
+          claimedAmount: '',
+          minDate: '',
+          error: 'Invalid proof: missing legacy verification signals for selective-disclosure payload',
+        };
+      }
+    }
+
     const provenClaims = decodeLegacyReceiptPublicSignals(proofSignalsForVerification);
 
     if (provenClaims.oracleCommitment !== oracleAuth.messageHash) {

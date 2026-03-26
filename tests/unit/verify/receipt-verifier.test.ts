@@ -176,6 +176,35 @@ describe('verifySharedReceiptProof', () => {
     expect(result.error).toBe('Invalid proof: claim digest mismatch detected');
   });
 
+  it('falls back to verified legacy signals when selective envelope commitment mismatches', async () => {
+    const messageHash = 'oracle-selective-fallback';
+    const nullifier = await deriveNullifierFromMessageHash(messageHash);
+    const payload = buildProofPayload(
+      ['oracle-mismatch', '0', '0', '0', 'claim-digest-999'],
+      messageHash,
+      nullifier
+    );
+    payload.proofPublicSignals = ['123450000', '1700000000', messageHash];
+
+    const result = await verifySharedReceiptProof('mock-proof', {
+      createProofGenerator: () => ({
+        importProof: () => payload,
+        verifyProof: async () => ({ valid: true }),
+      }),
+      signatureVerifier,
+      storage: new InMemoryStorage(),
+    });
+
+    expect(result).toEqual({
+      valid: true,
+      claimedAmount: '123450000',
+      claimedAmountDisclosure: 'disclosed',
+      minDate: '2023-11-14',
+      minDateDisclosure: 'disclosed',
+      signalContract: 'legacy-v1',
+    });
+  });
+
   it('fails when oracle commitment does not match supported signal slots', async () => {
     const messageHash = 'oracle-expected';
     const nullifier = await deriveNullifierFromMessageHash(messageHash);
@@ -196,5 +225,32 @@ describe('verifySharedReceiptProof', () => {
 
     expect(result.valid).toBe(false);
     expect(result.error).toBe('Oracle commitment mismatch detected');
+  });
+
+  it('fails selective payloads without legacy verification signals', async () => {
+    const messageHash = 'oracle-selective-missing-v';
+    const nullifier = await deriveNullifierFromMessageHash(messageHash);
+    const claimDigest = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 0,
+      minDateUnix: 1700000000,
+    });
+    const payload = buildProofPayload(
+      [messageHash, '0', '0', '0', claimDigest],
+      messageHash,
+      nullifier
+    );
+
+    const result = await verifySharedReceiptProof('mock-proof', {
+      createProofGenerator: () => ({
+        importProof: () => payload,
+        verifyProof: async () => ({ valid: true }),
+      }),
+      signatureVerifier,
+      storage: new InMemoryStorage(),
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe('Invalid proof: missing legacy verification signals for selective-disclosure payload');
   });
 });

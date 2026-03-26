@@ -1,5 +1,41 @@
 # Task Plan - 2026-03-26
 
+## Objective (Receipt Delivery Reliability: Remove Share-Link CTA + Fix PDF + Fix Open-Receipt Validity)
+
+Address current production UX breakages by removing the ambiguous share-link CTA, making PDF export fail loudly and reliably open print flow, and hardening verify-path proof decoding so valid receipts do not surface false `Oracle commitment mismatch`.
+
+## Plan
+
+- [x] Remove the share-link action from receipt success UI while keeping copy/open verification actions.
+- [x] Make PDF export robust (gesture-safe print flow + explicit runtime errors surfaced to UI).
+- [x] Harden verify logic to avoid false oracle-mismatch failures when compact pointer payload resolves correctly but selective/legacy signal decode path is brittle.
+- [x] Add/adjust targeted tests for the new behavior and run test/build verification.
+
+## Review (Receipt Delivery Reliability: Remove Share-Link CTA + Fix PDF + Fix Open-Receipt Validity)
+
+- Status: Completed
+- Changes shipped:
+  - Removed share-link CTA button from success panel in `components/generator/receipt-success.tsx`.
+  - Tightened share hook in `lib/generator/use-receipt-share.ts`:
+    - removed native-share branch and related state
+    - retains copy/open/social actions
+    - improved unavailable-link and PDF guidance messages
+  - Hardened PDF export in `lib/generator/pdf-export.ts`:
+    - safer popup capability checks
+    - explicit render failures
+    - print trigger now load-driven with guarded timer fallback
+  - Hardened verification in `lib/verify/receipt-verifier.ts`:
+    - oracle-commitment mismatch fallback to verified legacy signal set when available
+    - explicit failure when selective payload lacks required legacy verification signals
+  - Added/updated tests:
+    - `tests/unit/verify/receipt-verifier.test.ts`
+    - `tests/unit/generator/pdf-export.test.ts` (`jsdom` export flow checks)
+- Validation:
+  - `npm test -- tests/unit/verify/receipt-verifier.test.ts tests/unit/generator/pdf-export.test.ts tests/unit/generator/use-receipt-share.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+  - `npm run build` pass (required out-of-sandbox execution due Turbopack sandbox port restrictions)
+
+
 ## Objective (Provision Missing D1 Binding For Share Pointers)
 
 Fix production `503` on `/api/share-pointer/create` by provisioning and binding `SHARE_POINTERS_DB` in Wrangler/Pages and initializing schema.

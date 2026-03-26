@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-26 - Receipt UX Must Prefer Deterministic Actions And Loud Failure States
+- If users report "nothing happens" (for example PDF export), treat silent/ambiguous UX as a defect even when no exception is thrown.
+- Remove or defer ambiguous share actions when the core verification path is unstable; keep deterministic controls (`copy`, `open`, `export`) first.
+- For verifier upgrades, keep backward-tolerant signal decoding so older or partially migrated receipt payloads do not fail with false `Oracle commitment mismatch`.
+
 ## 2026-03-26 - Cloudflare Functions Must Avoid Barrel Imports With Global-Scope Side Effects
 - In Cloudflare Pages Functions, importing broad backend barrels can accidentally execute timer/random/network setup at module scope and break deploy with "Disallowed operation called within global scope".
 - For functions-facing modules, import only the minimal side-effect-free submodule needed (for example `.../share-pointer-storage`) rather than `.../http` barrel exports.

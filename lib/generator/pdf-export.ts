@@ -271,18 +271,41 @@ export function exportReceiptPdf(data: ReceiptPdfExportData): void {
     throw new Error('PDF export is only available in the browser.');
   }
 
-  const printWindow = globalThis.window.open('', '_blank', 'noopener,noreferrer');
+  const printWindow = globalThis.window.open(
+    '',
+    '_blank',
+    'popup=yes,width=980,height=760'
+  );
   if (!printWindow) {
     throw new Error('Unable to open print window. Please allow pop-ups and try again.');
   }
+  if (typeof printWindow.print !== 'function') {
+    printWindow.close();
+    throw new Error('This browser cannot open the print dialog from a new window.');
+  }
 
   const html = buildReceiptPdfHtml(data);
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  try {
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+  } catch {
+    printWindow.close();
+    throw new Error('Failed to render the printable receipt document.');
+  }
 
-  globalThis.setTimeout(() => {
+  let printTriggered = false;
+  const triggerPrint = (): void => {
+    if (printTriggered) {
+      return;
+    }
+    printTriggered = true;
     printWindow.focus();
     printWindow.print();
-  }, 140);
+  };
+
+  // Prefer event-driven print (keeps behavior reliable across browsers),
+  // with a short fallback timer for engines that skip load events.
+  printWindow.addEventListener('load', triggerPrint, { once: true });
+  globalThis.setTimeout(triggerPrint, 320);
 }

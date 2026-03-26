@@ -1,4 +1,6 @@
-import { buildReceiptPdfHtml } from '@/lib/generator/pdf-export';
+/** @jest-environment jsdom */
+
+import { buildReceiptPdfHtml, exportReceiptPdf } from '@/lib/generator/pdf-export';
 
 describe('buildReceiptPdfHtml', () => {
   const baseData = {
@@ -55,5 +57,69 @@ describe('buildReceiptPdfHtml', () => {
     );
 
     expect(html).toContain('QR code unavailable. Use the verification URL below.');
+  });
+});
+
+describe('exportReceiptPdf', () => {
+  const baseData = {
+    chain: 'bitcoin' as const,
+    ethereumAsset: 'native' as const,
+    claimedAmount: '100000000',
+    claimedAmountHuman: '1 BTC',
+    minDate: '2026-03-24',
+    proof: 'proof_payload_abcdefghijklmnopqrstuvwxyz0123456789',
+    qrCodeDataUrl: 'data:image/png;base64,ABC123',
+    verifyUrl: 'https://ghostreceipt.example/verify?sid=r_ABCDEF1234567890',
+  };
+
+  it('throws when popup cannot be opened', () => {
+    const openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+
+    expect(() => exportReceiptPdf(baseData)).toThrow(
+      'Unable to open print window. Please allow pop-ups and try again.'
+    );
+
+    openSpy.mockRestore();
+  });
+
+  it('writes html and prints once after load/timer race', () => {
+    jest.useFakeTimers();
+    try {
+      const onLoadRef: { current: (() => void) | null } = { current: null };
+      const print = jest.fn();
+      const focus = jest.fn();
+      const addEventListener = jest.fn((event: string, callback: () => void): void => {
+        if (event === 'load') {
+          onLoadRef.current = callback;
+        }
+      });
+      const documentMock = {
+        close: jest.fn(),
+        open: jest.fn(),
+        write: jest.fn(),
+      };
+      const popup = {
+        addEventListener,
+        close: jest.fn(),
+        document: documentMock,
+        focus,
+        print,
+      } as unknown as Window;
+      const openSpy = jest.spyOn(window, 'open').mockReturnValue(popup);
+
+      exportReceiptPdf(baseData);
+      expect(documentMock.open).toHaveBeenCalledTimes(1);
+      expect(documentMock.write).toHaveBeenCalledTimes(1);
+      expect(documentMock.close).toHaveBeenCalledTimes(1);
+
+      onLoadRef.current?.();
+      jest.advanceTimersByTime(400);
+
+      expect(print).toHaveBeenCalledTimes(1);
+      expect(focus).toHaveBeenCalledTimes(1);
+      openSpy.mockRestore();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

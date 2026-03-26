@@ -79,11 +79,9 @@ export function ReceiptSuccess({
     shareStatus,
     copied,
     copyFlavor,
-    nativeShareAvailable,
     copyLink,
     copyShareBundle,
     shareToNetwork,
-    shareNatively,
     downloadQR,
     openReceipt,
     exportPdf,
@@ -270,15 +268,6 @@ export function ReceiptSuccess({
           disabled={isPreparingVerifyUrl}
         >
           👁 Open Receipt
-        </Button>
-        <Button
-          type="button"
-          onClick={() => { void shareNatively(); }}
-          variant={nativeShareAvailable ? 'primary' : 'secondary'}
-          className="w-full"
-          disabled={isPreparingVerifyUrl}
-        >
-          {nativeShareAvailable ? '↗ Share via Apps (Recommended)' : '↗ Share Link'}
         </Button>
         <Button
           type="button"
