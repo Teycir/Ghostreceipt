@@ -6,6 +6,7 @@ import { UnifiedPageShell } from '@/components/unified-page-shell';
 import { Button } from '@/components/ui/button';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { ValidationStrengthBadge } from '@/components/ui/validation-strength-badge';
+import { resolveSharePointerLink } from '@/lib/share/share-pointer-client';
 import { verifySharedReceiptProof, type ReceiptVerificationResult } from '@/lib/verify/receipt-verifier';
 
 interface VerifyPageChromeProps {
@@ -43,9 +44,18 @@ function VerifyContent(): React.JSX.Element {
   }, [searchParams]);
 
   const verifyReceipt = async (): Promise<void> => {
+    setLoading(true);
     try {
-      const proof = searchParams.get('proof');
-      const verificationResult = await verifySharedReceiptProof(proof ?? '');
+      const proofQuery = searchParams.get('proof')?.trim() ?? '';
+      const sidQuery = searchParams.get('sid')?.trim() ?? '';
+
+      let proofPayload = proofQuery;
+      if (!proofPayload && sidQuery) {
+        const resolved = await resolveSharePointerLink(sidQuery);
+        proofPayload = resolved.proof;
+      }
+
+      const verificationResult = await verifySharedReceiptProof(proofPayload);
       setResult(verificationResult);
     } catch (error) {
       setResult({
