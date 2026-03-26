@@ -27,6 +27,7 @@ export interface FetchTxMappedError {
 
 export interface OracleFetchOptions {
   authTtlSeconds?: number;
+  maxAuthTtlSeconds?: number;
   bitcoinConsensusMode?: ConsensusMode;
   ethereumConsensusMode?: ConsensusMode;
   solanaConsensusMode?: ConsensusMode;
@@ -55,6 +56,7 @@ const DEFAULT_CASCADE_CONFIG: CascadeConfig = {
 };
 
 const DEFAULT_ORACLE_AUTH_TTL_SECONDS = 5 * 60;
+const DEFAULT_ORACLE_AUTH_MAX_TTL_SECONDS = 10 * 60;
 const DEFAULT_CANONICAL_TX_CACHE_TTL_MS = 15_000;
 const MAX_CANONICAL_TX_CACHE_ENTRIES = 1_000;
 const DEFAULT_PRODUCTION_CONSENSUS_MODE: ConsensusMode = 'best_effort';
@@ -100,6 +102,36 @@ function parseNonNegativeIntEnv(key: string, fallback: number): number {
   }
 
   return parsed;
+}
+
+function parsePositiveIntEnv(key: string, fallback: number): number {
+  const rawValue = process.env[key];
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function resolveMaxOracleAuthTtlSeconds(options: OracleFetchOptions): number {
+  const requestedMax = options.maxAuthTtlSeconds;
+  if (requestedMax !== undefined) {
+    if (!Number.isFinite(requestedMax) || requestedMax <= 0) {
+      return DEFAULT_ORACLE_AUTH_MAX_TTL_SECONDS;
+    }
+
+    return Math.floor(requestedMax);
+  }
+
+  return parsePositiveIntEnv(
+    'ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS',
+    DEFAULT_ORACLE_AUTH_MAX_TTL_SECONDS
+  );
 }
 
 function resolveCanonicalCacheTtlMs(options: OracleFetchOptions): number {
@@ -819,10 +851,14 @@ export async function fetchAndSignOracleTransaction(
   const signedAt = Math.floor(signedAtMs / 1000);
   const requestedTtlSeconds =
     options.authTtlSeconds ?? DEFAULT_ORACLE_AUTH_TTL_SECONDS;
-  const authTtlSeconds =
+  const requestedTtlNormalized =
     Number.isFinite(requestedTtlSeconds) && requestedTtlSeconds > 0
       ? Math.floor(requestedTtlSeconds)
       : DEFAULT_ORACLE_AUTH_TTL_SECONDS;
+  const authTtlSeconds = Math.min(
+    requestedTtlNormalized,
+    resolveMaxOracleAuthTtlSeconds(options)
+  );
   const expiresAt = signedAt + authTtlSeconds;
   const nonce =
     options.nonceHex ??

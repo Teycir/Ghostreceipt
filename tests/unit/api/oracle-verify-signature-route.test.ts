@@ -11,10 +11,12 @@ describe('POST /api/oracle/verify-signature', () => {
   const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
   const originalOraclePublicKey = process.env['ORACLE_PUBLIC_KEY'];
   const originalTrustProxyHeaders = process.env['TRUST_PROXY_HEADERS'];
+  const originalMaxSignatureLifetime = process.env['ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS'];
 
   beforeEach(() => {
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
     process.env['TRUST_PROXY_HEADERS'] = 'true';
+    process.env['ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS'] = '600';
     __resetOracleTransparencyLogCacheForTests();
   });
 
@@ -35,6 +37,12 @@ describe('POST /api/oracle/verify-signature', () => {
       delete process.env['ORACLE_PUBLIC_KEY'];
     } else {
       process.env['ORACLE_PUBLIC_KEY'] = originalOraclePublicKey;
+    }
+
+    if (originalMaxSignatureLifetime === undefined) {
+      delete process.env['ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS'];
+    } else {
+      process.env['ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS'] = originalMaxSignatureLifetime;
     }
 
     __resetOracleTransparencyLogCacheForTests();
@@ -289,6 +297,34 @@ describe('POST /api/oracle/verify-signature', () => {
     expect(response.status).toBe(409);
     expect(body.error?.code).toBe('REPLAY_DETECTED');
     expect(body.error?.details?.reasonCode).toBe('SIGNED_AT_IN_FUTURE');
+  });
+
+  it('returns 409 when signature lifetime exceeds configured maximum', async () => {
+    const signer = new OracleSigner('1'.repeat(64));
+    const nowUnix = Math.floor(Date.now() / 1000);
+    const payload = buildSignedAuthPayload(signer, {
+      signedAt: nowUnix,
+      expiresAt: nowUnix + 1200,
+    });
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/oracle/verify-signature', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+    const body = (await response.json()) as {
+      error?: {
+        code?: string;
+        details?: {
+          reasonCode?: string;
+        };
+      };
+    };
+
+    expect(response.status).toBe(409);
+    expect(body.error?.code).toBe('REPLAY_DETECTED');
+    expect(body.error?.details?.reasonCode).toBe('SIGNATURE_TTL_TOO_LONG');
   });
 
   it('returns valid=false when oraclePubKeyId does not match configured signer', async () => {

@@ -108,6 +108,27 @@ describe('OracleAuthReplayRegistry', () => {
     });
   });
 
+  it('rejects signatures whose lifetime exceeds allowed maximum', async () => {
+    const registry = new OracleAuthReplayRegistry({
+      adapter: new InMemoryOracleAuthReplayAdapter(),
+      maxSignatureLifetimeSeconds: 120,
+    });
+    const result = await registry.check({
+      nowMs: 1700000000 * 1000,
+      payload: createPayload({
+        signedAt: 1700000000,
+        expiresAt: 1700000400,
+      }),
+      scope: 'oracle',
+    });
+
+    expect(result).toEqual({
+      allowed: false,
+      message: 'Signature lifetime exceeds maximum allowed window',
+      reason: 'SIGNATURE_TTL_TOO_LONG',
+    });
+  });
+
   it('rejects expired signatures', async () => {
     const registry = new OracleAuthReplayRegistry({
       adapter: new InMemoryOracleAuthReplayAdapter(),

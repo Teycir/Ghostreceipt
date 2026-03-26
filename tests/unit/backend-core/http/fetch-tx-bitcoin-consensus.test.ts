@@ -191,4 +191,21 @@ describe('oracle consensus gating and labeling', () => {
     expect(result.data.oracleValidationStatus).toBe('single_source_fallback');
     expect(result.data.oracleValidationLabel).toContain('Single-source fallback');
   });
+
+  it('caps auth signature lifetime to configured maximum', async () => {
+    const txHash = '9'.repeat(64);
+    jest
+      .spyOn(BlockCypherProvider.prototype, 'fetchTransaction')
+      .mockResolvedValue(buildCanonicalBitcoinTx(txHash));
+
+    const result = await fetchAndSignOracleTransaction('bitcoin', txHash, {
+      authTtlSeconds: 3600,
+      bitcoinConsensusMode: 'off',
+      maxAuthTtlSeconds: 120,
+      nowMs: 1700000000000,
+      nonceHex: 'a'.repeat(32),
+    });
+
+    expect(result.data.expiresAt - result.data.signedAt).toBe(120);
+  });
 });

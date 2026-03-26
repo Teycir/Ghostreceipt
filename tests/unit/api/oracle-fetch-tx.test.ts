@@ -134,6 +134,23 @@ describe('Oracle API - /api/oracle/fetch-tx', () => {
       expect(data.error.code).toBe('INVALID_HASH');
     });
 
+    it('should reject txHash values containing invisible Unicode characters', async () => {
+      const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
+        method: 'POST',
+        body: JSON.stringify({
+          chain: 'bitcoin',
+          txHash: `a${'\u200B'}${'b'.repeat(63)}`,
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error.code).toBe('INVALID_HASH');
+      expect(data.error.message).toBe('JSON string contains invisible Unicode characters');
+    });
+
     it('should reject ethereumAsset for non-ethereum chain requests', async () => {
       const request = new NextRequest('http://localhost:3000/api/oracle/fetch-tx', {
         method: 'POST',

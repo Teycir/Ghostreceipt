@@ -62,6 +62,10 @@ const verifyReplayRegistry = getSharedOracleAuthReplayRegistry({
     'ORACLE_VERIFY_REPLAY_MAX_ENTRIES',
     2_000
   ),
+  maxSignatureLifetimeSeconds: parsePositiveIntEnv(
+    'ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS',
+    10 * 60
+  ),
   maxFutureSkewSeconds: parsePositiveIntEnv(
     'ORACLE_VERIFY_REPLAY_MAX_FUTURE_SKEW_SECONDS',
     30

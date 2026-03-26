@@ -114,12 +114,14 @@ export class InMemoryOracleAuthReplayAdapter implements OracleAuthReplayAdapter 
 
 export interface OracleAuthReplayRegistryOptions {
   adapter: OracleAuthReplayAdapter;
+  maxSignatureLifetimeSeconds?: number;
   maxFutureSkewSeconds?: number;
 }
 
 export type OracleAuthReplayRejectReason =
   | 'SIGNED_AT_IN_FUTURE'
   | 'SIGNATURE_EXPIRED'
+  | 'SIGNATURE_TTL_TOO_LONG'
   | 'NONCE_REUSE_CONFLICT';
 
 export type OracleAuthReplayDecision =
@@ -141,10 +143,12 @@ export interface CheckOracleAuthReplayInput {
 
 export class OracleAuthReplayRegistry {
   private readonly adapter: OracleAuthReplayAdapter;
+  private readonly maxSignatureLifetimeSeconds: number;
   private readonly maxFutureSkewSeconds: number;
 
   constructor(options: OracleAuthReplayRegistryOptions) {
     this.adapter = options.adapter;
+    this.maxSignatureLifetimeSeconds = options.maxSignatureLifetimeSeconds ?? 10 * 60;
     this.maxFutureSkewSeconds = options.maxFutureSkewSeconds ?? 30;
   }
 
@@ -170,6 +174,15 @@ export class OracleAuthReplayRegistry {
         allowed: false,
         message: 'Signature expired',
         reason: 'SIGNATURE_EXPIRED',
+      };
+    }
+
+    const signatureLifetimeSeconds = expiresAt - signedAt;
+    if (signatureLifetimeSeconds > this.maxSignatureLifetimeSeconds) {
+      return {
+        allowed: false,
+        message: 'Signature lifetime exceeds maximum allowed window',
+        reason: 'SIGNATURE_TTL_TOO_LONG',
       };
     }
 
@@ -224,6 +237,7 @@ let sharedOracleAuthReplayRegistry: OracleAuthReplayRegistry | null = null;
 export interface SharedOracleAuthReplayRegistryOptions {
   cleanupIntervalMs?: number;
   maxEntries?: number;
+  maxSignatureLifetimeSeconds?: number;
   maxFutureSkewSeconds?: number;
 }
 
@@ -241,6 +255,9 @@ export function getSharedOracleAuthReplayRegistry(
     };
     const registryOptions: OracleAuthReplayRegistryOptions = {
       adapter: new InMemoryOracleAuthReplayAdapter(adapterOptions),
+      ...(options.maxSignatureLifetimeSeconds !== undefined
+        ? { maxSignatureLifetimeSeconds: options.maxSignatureLifetimeSeconds }
+        : {}),
       ...(options.maxFutureSkewSeconds !== undefined
         ? { maxFutureSkewSeconds: options.maxFutureSkewSeconds }
         : {}),
