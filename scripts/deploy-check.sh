@@ -29,6 +29,45 @@ echo ""
 echo "🔐 Checking environment configuration..."
 if [ -f ".env.local" ]; then
     echo -e "${GREEN}✓${NC} .env.local exists"
+
+    # shellcheck disable=SC1091
+    source .env.local
+
+    REQUIRED_RUNTIME_ENV=(
+        "ORACLE_PRIVATE_KEY"
+        "ETHERSCAN_API_KEY"
+        "HELIUS_API_KEY"
+        "BLOCKCYPHER_API_TOKEN"
+        "BITCOIN_PUBLIC_RPC_MEMPOOL_SPACE_MAINNET_URL"
+        "BITCOIN_PUBLIC_RPC_MEMPOOL_EMZY_MAINNET_URL"
+        "BITCOIN_PUBLIC_RPC_MEMPOOL_NINJA_MAINNET_URL"
+        "BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL"
+        "ETHEREUM_PUBLIC_RPC_PUBLICNODE_PRIMARY_URL"
+        "ETHEREUM_PUBLIC_RPC_PUBLICNODE_SECONDARY_URL"
+        "ETHEREUM_PUBLIC_RPC_FLASHBOTS_URL"
+        "ETHEREUM_PUBLIC_RPC_CLOUDFLARE_URL"
+        "ETHEREUM_PROVIDER_ETHERSCAN_V2_MAINNET_URL"
+        "SOLANA_PUBLIC_RPC_MAINNET_BETA_PRIMARY_URL"
+        "SOLANA_PUBLIC_RPC_PUBLICNODE_URL"
+        "SOLANA_PROVIDER_HELIUS_MAINNET_URL"
+    )
+
+    MISSING_RUNTIME_ENV=()
+    for var_name in "${REQUIRED_RUNTIME_ENV[@]}"; do
+        if [ -z "${!var_name:-}" ]; then
+            MISSING_RUNTIME_ENV+=("$var_name")
+        fi
+    done
+
+    if [ "${#MISSING_RUNTIME_ENV[@]}" -eq 0 ]; then
+        echo -e "${GREEN}✓${NC} Required runtime env keys present"
+    else
+        echo -e "${RED}✗${NC} Missing required runtime env keys:"
+        for var_name in "${MISSING_RUNTIME_ENV[@]}"; do
+            echo "   - $var_name"
+        done
+        exit 1
+    fi
 else
     echo -e "${YELLOW}⚠${NC} .env.local not found (required for local testing)"
 fi
@@ -122,28 +161,25 @@ echo "1. Go to: https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pag
 echo ""
 echo "2. Create new project or select 'ghostreceipt'"
 echo ""
-echo "3. Set environment variables in Pages dashboard:"
+echo "3. Sync server runtime config from .env.local (recommended):"
+echo "   - npm run cf:sync"
+echo "   This uploads required API keys + provider/public RPC endpoint URLs."
+echo ""
+echo "4. Set public environment variables in Pages dashboard:"
 echo "   - NEXT_PUBLIC_APP_URL=https://ghostreceipt.pages.dev"
 echo "   - NEXT_PUBLIC_APP_NAME=GhostReceipt"
 echo "   - NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE=<optional_edge_backup_base>/api/oracle"
-echo "   - ORACLE_PRIVATE_KEY=<your_key>"
-echo "   - ETHERSCAN_API_KEY=<your_key>"
-echo "   - ETHERSCAN_API_KEY_2=<your_key>"
-echo "   - ETHERSCAN_API_KEY_3=<your_key>"
-echo "   - TRUST_PROXY_HEADERS=true"
-echo "   - LOG_LEVEL=info"
-echo "   - DEBUG=false"
 echo ""
-echo "4. Configure build settings:"
+echo "5. Configure build settings:"
 echo "   - Build command: npm run build"
 echo "   - Build output directory: out"
 echo "   - Root directory: /"
 echo ""
-echo "5. Deploy:"
+echo "6. Deploy:"
 echo "   - Push to 'main' branch for automatic deployment"
 echo "   - Or click 'Create deployment' in dashboard"
 echo ""
-echo "6. Verify deployment:"
+echo "7. Verify deployment:"
 echo "   - Check https://ghostreceipt.pages.dev"
 echo "   - Test API: https://ghostreceipt.pages.dev/api/oracle/fetch-tx"
 echo "   - Run failover drill: npm run test:drill:oracle-failover"

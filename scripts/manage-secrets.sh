@@ -37,7 +37,8 @@ show_menu() {
     echo "8) Set fallback BlockCypher keys"
     echo "9) List all secrets"
     echo "10) Delete a secret"
-    echo "11) Exit"
+    echo "11) Run strict full sync from .env.local (recommended)"
+    echo "12) Exit"
     echo ""
     read -p "Choice: " choice
     echo ""
@@ -265,6 +266,13 @@ set_all_secrets() {
     list_secrets
 }
 
+run_strict_sync() {
+    echo "🔁 Running strict full sync from .env.local"
+    echo ""
+    bash scripts/sync-secrets.sh
+    echo ""
+}
+
 while true; do
     show_menu
     
@@ -300,6 +308,9 @@ while true; do
             delete_secret
             ;;
         11)
+            run_strict_sync
+            ;;
+        12)
             echo "👋 Goodbye!"
             exit 0
             ;;

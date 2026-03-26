@@ -57,10 +57,19 @@ Set in: Repository → Settings → Secrets and variables → Actions
 - [ ] `NEXT_PUBLIC_APP_URL` - Production URL (optional)
 
 ### Verify CI/CD
-- [ ] Push to `main` triggers deployment automatically
+- [ ] CI (`Quality Gate`) passes on `main`
+- [ ] Deploy workflow runs only after CI success (`workflow_run` gate)
 - [ ] PRs run CI only (no Cloudflare deploy on PR events)
 - [ ] Check Actions tab for workflow status
 - [ ] Verify deployment in Cloudflare dashboard
+- [ ] Branch protection enabled on `main` with required checks:
+  - `Quality Gate`
+  - `Dependency Review`
+
+Apply/refresh branch protection via script:
+```bash
+npm run github:protect-main
+```
 
 ### Fix CI/CD Break (Missing `apiToken`)
 1. [ ] Add required GitHub Actions secrets:

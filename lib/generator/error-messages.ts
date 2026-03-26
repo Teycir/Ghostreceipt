@@ -12,6 +12,9 @@ export function mapFetchTxApiError(
   responseStatus: number,
   payload: ApiErrorPayload | null
 ): string {
+  const rawMessage = payload?.error?.message;
+  const normalizedRawMessage = rawMessage?.toLowerCase() ?? '';
+
   if (responseStatus === 429) {
     const retryAfter = payload?.error?.details?.retryAfterSeconds;
     const waitSeconds =
@@ -20,6 +23,14 @@ export function mapFetchTxApiError(
         : 60;
     const waitLabel = waitSeconds === 1 ? '1 sec' : `${waitSeconds} secs`;
     return `Rate limit. Wait ${waitLabel} and retry.`;
+  }
+
+  if (
+    normalizedRawMessage.includes('[config]') ||
+    normalizedRawMessage.includes('runtime validation failed') ||
+    normalizedRawMessage.includes('set env var')
+  ) {
+    return rawMessage ?? 'Server configuration error. Check runtime environment variables.';
   }
 
   const code = payload?.error?.code;

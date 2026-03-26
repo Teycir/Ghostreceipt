@@ -1,5 +1,110 @@
 # Task Plan - 2026-03-26
 
+## Objective (Lock CI/CD End-To-End: No Green CI, No Main Merge, No Deploy)
+
+Enforce strict repository-level branch protection in addition to workflow-level deploy gating so production cannot receive code unless required CI checks pass and PR rules are satisfied.
+
+## Plan
+
+- [x] Confirm current GitHub branch protection state for `main`.
+- [x] Apply strict branch protection policy via GitHub API (required checks, PR reviews, admin enforcement, no force push/deletion, linear history, conversation resolution).
+- [x] Add reproducible repo script to re-apply protection policy (`npm run github:protect-main`).
+- [x] Update deployment docs/checklists to reflect the hard gate and operational command.
+
+## Review (Lock CI/CD End-To-End: No Green CI, No Main Merge, No Deploy)
+
+- Status: Completed
+- GitHub live state before fix:
+  - `main` branch was not protected (`Branch not protected` from GitHub API).
+- Enforcement applied:
+  - Required status checks (strict): `Quality Gate`, `Dependency Review`
+  - PR reviews required: `1`
+  - Dismiss stale reviews: enabled
+  - Conversation resolution: enabled
+  - Linear history: enabled
+  - Force pushes: disabled
+  - Branch deletion: disabled
+  - Admin enforcement: enabled
+- Repo automation added:
+  - New script: [scripts/enforce-branch-protection.sh](/home/teycir/Repos/GhostReceipt/scripts/enforce-branch-protection.sh)
+  - New npm command: `npm run github:protect-main` in [package.json](/home/teycir/Repos/GhostReceipt/package.json)
+- Docs updated:
+  - [docs/DEPLOYMENT_CHECKLIST.md](/home/teycir/Repos/GhostReceipt/docs/DEPLOYMENT_CHECKLIST.md)
+  - [docs/runbooks/QUICK_DEPLOY.md](/home/teycir/Repos/GhostReceipt/docs/runbooks/QUICK_DEPLOY.md)
+  - [docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md](/home/teycir/Repos/GhostReceipt/docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
+- Verification:
+  - `npm run github:protect-main` executed successfully and confirmed active policy values.
+
+## Objective (Strict CI-Gated Deploy: No Green CI, No Deploy)
+
+Ensure production deployment cannot run unless CI has already completed successfully on `main`, removing direct deploy bypass paths.
+
+## Plan
+
+- [x] Audit existing GitHub workflows for deploy bypass paths.
+- [x] Refactor deploy workflow trigger to run only after successful CI completion on `main`.
+- [x] Ensure deploy uses the exact CI-tested commit SHA.
+- [x] Update deployment messaging to reflect strict gating policy.
+
+## Review (Strict CI-Gated Deploy: No Green CI, No Deploy)
+
+- Status: Completed
+- Root cause:
+  - Deploy workflow was independently triggered on `push main` (and manual dispatch), so it was not strictly chained to CI result.
+- Changes shipped:
+  - Updated [.github/workflows/deploy.yml](/home/teycir/Repos/GhostReceipt/.github/workflows/deploy.yml):
+    - Trigger switched to `workflow_run` for workflow `"CI"` with `types: [completed]` and `branches: [main]`.
+    - Added job-level guard: deploy runs only when `workflow_run.conclusion == 'success'` and branch is `main`.
+    - Checkout now pins `ref` to `${{ github.event.workflow_run.head_sha }}` (deploy exact tested commit).
+    - Removed independent push/manual deploy entrypoints.
+    - Kept build + Cloudflare secret validation before deploy.
+    - Deployment summary now explicitly states CI gate + deployed SHA.
+- Outcome:
+  - Production deployment is now blocked unless CI is green on `main`.
+
+## Objective (Fix Live 502 Receipt Generation From Missing Endpoint URL Runtime Config)
+
+Restore production receipt generation by enforcing critical runtime endpoint URL config in deployment sync paths, surfacing precise config failures, and validating the fix against the failing live BTC transaction hash.
+
+## Plan
+
+- [x] Reproduce production `/api/oracle/fetch-tx` failure and capture concrete missing-config root cause.
+- [x] Harden Cloudflare secret sync flow to fail fast on missing critical runtime keys/endpoints and upload all required endpoint URL vars.
+- [x] Update deployment/runbook guidance so release steps use the strict sync path and include endpoint URL env vars.
+- [x] Validate locally (typecheck + targeted tests), sync/deploy to production, and re-test the failing live hash.
+
+## Review (Fix Live 502 Receipt Generation From Missing Endpoint URL Runtime Config)
+
+- Status: Completed
+- Root cause:
+  - Production had provider API keys but was missing required endpoint URL vars (for example `BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL`).
+  - This caused live `/api/oracle/fetch-tx` to return `502` during provider initialization.
+- Changes shipped:
+  - Hardened `scripts/sync-secrets.sh`:
+    - Added strict preflight for required runtime keys and endpoint URL vars.
+    - Added upload of all required endpoint URL vars for BTC/ETH/USDC/SOL.
+    - Added upload of optional runtime selection vars (RPC name lists / consensus toggles / validation flag).
+    - Converted key-pool “warn-only” behavior to fail-fast.
+  - Updated deployment guidance:
+    - `scripts/deploy-check.sh` now validates required runtime env keys from `.env.local` and points operators to `npm run cf:sync`.
+    - `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md` now documents required endpoint URL env vars and strict sync recommendation.
+  - Improved error clarity in runtime path:
+    - `lib/libraries/backend-core/http/fetch-tx.ts` maps config failures to `INTERNAL_ERROR` (500) instead of generic provider error.
+    - `lib/generator/error-messages.ts` now preserves precise `[Config] ... Set env var ...` messages.
+  - Updated support script:
+    - `scripts/manage-secrets.sh` gained “Run strict full sync from .env.local (recommended)” option.
+- Production remediation executed:
+  - Synced runtime config with `npm run cf:sync`.
+  - Deployed production with `npx wrangler pages deploy out --project-name=ghostreceipt --branch=main --commit-dirty=true`.
+- Live verification:
+  - `POST https://ghostreceipt.pages.dev/api/oracle/fetch-tx` with hash `e35832f21a165077c3e8e94a97e57916558d7e3a66e56febbfa15eb8a6f638e1` now returns `200`.
+  - Response includes:
+    - `oracleValidationStatus: "consensus_verified"`
+    - `oracleValidationLabel: "Dual-source consensus verified (blockcypher + mempool.space)"`
+- Validation:
+  - `npm run typecheck` pass.
+  - `npm test -- tests/unit/api/fetch-tx-route.test.ts tests/unit/generator/error-messages.test.ts tests/unit/functions/oracle-pages-wrappers.test.ts --runInBand --ci` pass.
+
 ## Objective (Centralize Public RPC Endpoints + Apply Multi-Endpoint Hardening Across BTC/ETH/USDC/SOL)
 
 Eliminate scattered hardcoded public-RPC URLs, move endpoint definitions to a single named-config registry, and harden all public-RPC providers with consistent retry/failover behavior so consensus checks do not silently depend on one brittle endpoint.

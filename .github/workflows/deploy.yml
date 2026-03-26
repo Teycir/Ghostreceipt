@@ -1,36 +1,43 @@
 name: Deploy to Cloudflare Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
     branches:
       - main
-  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    if: >
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
     
     steps:
-      - name: Checkout
+      - name: Checkout tested commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.9.0'
+          node-version-file: '.node-version'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Run security checks
-        run: npm run check:secrets
-
-      - name: Run tests
-        run: npm test
 
       - name: Build
         run: npm run build
@@ -52,15 +59,13 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=ghostreceipt --branch=${{ github.ref_name }}
+          command: pages deploy out --project-name=ghostreceipt --branch=${{ github.event.workflow_run.head_branch }}
 
       - name: Deployment summary
         run: |
           echo "✅ Deployment complete!"
           echo "🔗 URL: https://ghostreceipt.pages.dev"
           echo ""
-          echo "⚠️  Remember to set secrets in Cloudflare Pages dashboard:"
-          echo "   - ORACLE_PRIVATE_KEY"
-          echo "   - ETHERSCAN_API_KEY"
-          echo "   - ETHERSCAN_API_KEY_2 (optional)"
-          echo "   - ETHERSCAN_API_KEY_3 (optional)"
+          echo "🔒 Deploy hard-gated by CI success on main."
+          echo "🧪 Deployed commit: ${{ github.event.workflow_run.head_sha }}"
+          echo "⚙️ Runtime config sync reminder: run npm run cf:sync for endpoint/key changes."

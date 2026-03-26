@@ -618,6 +618,18 @@ export function mapFetchTxErrorToResponse(error: unknown): FetchTxMappedError {
   }
 
   if (
+    normalizedMessage.includes('[config]') ||
+    normalizedMessage.includes('runtime validation failed') ||
+    normalizedMessage.includes('missing endpoint url')
+  ) {
+    return {
+      code: 'INTERNAL_ERROR',
+      message,
+      status: 500,
+    };
+  }
+
+  if (
     normalizedMessage.includes('invalid') &&
     (
       normalizedMessage.includes('transaction hash') ||

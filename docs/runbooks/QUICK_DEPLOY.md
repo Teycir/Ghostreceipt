@@ -18,7 +18,14 @@
    git push origin main
    ```
 
-3. **Done!** GitHub Actions will automatically deploy to `ghostreceipt.pages.dev`
+3. **CI gate then deploy**
+   - `CI` workflow must pass (`Quality Gate` + `Dependency Review` on PRs).
+   - Deploy workflow starts only after successful CI on `main`.
+
+4. **(One-time hardening) enforce branch protection**
+   ```bash
+   npm run github:protect-main
+   ```
 
 ### Option 2: Manual Deployment via Dashboard
 

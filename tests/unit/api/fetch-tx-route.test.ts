@@ -72,6 +72,21 @@ describe('mapErrorToResponse', () => {
       status: 502,
     });
   });
+
+  it('maps runtime config errors to INTERNAL_ERROR response', () => {
+    const mapped = mapErrorToResponse(
+      new Error(
+        '[Config] Missing endpoint URL for BITCOIN_PROVIDER_API_ENDPOINTS.BLOCKCYPHER_MAINNET (name="BLOCKCYPHER_MAINNET").'
+      )
+    );
+
+    expect(mapped).toEqual({
+      code: 'INTERNAL_ERROR',
+      message:
+        '[Config] Missing endpoint URL for BITCOIN_PROVIDER_API_ENDPOINTS.BLOCKCYPHER_MAINNET (name="BLOCKCYPHER_MAINNET").',
+      status: 500,
+    });
+  });
 });
 
 describe('POST /api/oracle/fetch-tx', () => {

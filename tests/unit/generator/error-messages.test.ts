@@ -50,6 +50,19 @@ describe('generator smart error messages', () => {
     expect(message).toContain('7 secs');
   });
 
+  it('preserves precise config failures instead of generic network guidance', () => {
+    const message = mapFetchTxApiError(502, {
+      error: {
+        code: 'PROVIDER_ERROR',
+        message:
+          '[Config] Missing endpoint URL for BITCOIN_PROVIDER_API_ENDPOINTS.BLOCKCYPHER_MAINNET (name="BLOCKCYPHER_MAINNET"). Set env var BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL.',
+      },
+    });
+
+    expect(message).toContain('Missing endpoint URL');
+    expect(message).toContain('BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL');
+  });
+
   it('maps witness amount/date violations to user-readable text', () => {
     const amountMessage = mapWitnessValidationErrors([
       'Real value (100) is less than claimed amount (200)',

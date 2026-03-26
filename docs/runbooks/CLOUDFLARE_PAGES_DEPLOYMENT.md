@@ -41,11 +41,39 @@ ETHERSCAN_API_KEY_2=<your_fallback_key_2>
 HELIUS_API_KEY=<your_primary_helius_key>
 HELIUS_API_KEY_1=<your_fallback_helius_key_1>
 HELIUS_API_KEY_2=<your_fallback_helius_key_2>
+BLOCKCYPHER_API_TOKEN=<your_primary_blockcypher_token>
+BLOCKCYPHER_API_TOKEN_1=<your_fallback_blockcypher_token_1>
+
+BITCOIN_PUBLIC_RPC_MEMPOOL_SPACE_MAINNET_URL=https://mempool.space/api
+BITCOIN_PUBLIC_RPC_MEMPOOL_EMZY_MAINNET_URL=https://mempool.emzy.de/api
+BITCOIN_PUBLIC_RPC_MEMPOOL_NINJA_MAINNET_URL=https://mempool.ninja/api
+BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL=https://api.blockcypher.com/v1/btc/main
+
+ETHEREUM_PUBLIC_RPC_PUBLICNODE_PRIMARY_URL=https://ethereum-rpc.publicnode.com
+ETHEREUM_PUBLIC_RPC_PUBLICNODE_SECONDARY_URL=https://ethereum.publicnode.com
+ETHEREUM_PUBLIC_RPC_FLASHBOTS_URL=https://rpc.flashbots.net
+ETHEREUM_PUBLIC_RPC_CLOUDFLARE_URL=https://cloudflare-eth.com
+ETHEREUM_PROVIDER_ETHERSCAN_V2_MAINNET_URL=https://api.etherscan.io/v2/api
+
+SOLANA_PUBLIC_RPC_MAINNET_BETA_PRIMARY_URL=https://api.mainnet-beta.solana.com
+SOLANA_PUBLIC_RPC_PUBLICNODE_URL=https://solana-rpc.publicnode.com
+SOLANA_PROVIDER_HELIUS_MAINNET_URL=https://mainnet.helius-rpc.com/
+
+ETHEREUM_PUBLIC_RPC_NAMES=PUBLICNODE_PRIMARY,PUBLICNODE_SECONDARY,FLASHBOTS,CLOUDFLARE
+ETHEREUM_USDC_PUBLIC_RPC_NAMES=PUBLICNODE_PRIMARY,PUBLICNODE_SECONDARY,FLASHBOTS,CLOUDFLARE
+SOLANA_PUBLIC_RPC_NAMES=MAINNET_BETA_PRIMARY,PUBLICNODE
+BITCOIN_PUBLIC_RPC_NAMES=MEMPOOL_SPACE_MAINNET,MEMPOOL_EMZY_MAINNET,MEMPOOL_NINJA_MAINNET
+
+ORACLE_VALIDATE_CONFIG_ON_LOAD=true
 TRUST_PROXY_HEADERS=true
 LOG_LEVEL=info
 DEBUG=false
 ORACLE_RATE_LIMIT_BACKEND=legacy
 ```
+
+Recommended deployment path:
+- Run `npm run cf:sync` from a fully configured `.env.local`.
+- The sync script fails fast if required runtime keys/endpoints are missing.
 
 Optional (only for durable backend rollout tests):
 ```
@@ -91,6 +119,18 @@ DEBUG=true
 
 - **Automatic**: Push to `main` branch triggers production deployment
 - **Manual**: Click "Create deployment" in Pages dashboard
+
+### GitHub Protection Baseline (Required)
+
+Enforce strict branch protection on `main` so merge/deploy requires green CI:
+
+```bash
+npm run github:protect-main
+```
+
+Default required checks enforced by script:
+- `Quality Gate`
+- `Dependency Review`
 
 ### 4. Custom Domain (Optional)
 

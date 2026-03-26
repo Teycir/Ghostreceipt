@@ -50,9 +50,47 @@ SECRETS_SET=0
 declare -a etherscan_keys=()
 declare -a helius_keys=()
 declare -a blockcypher_keys=()
+declare -a missing_required_env=()
 declare -A seen_etherscan=()
 declare -A seen_helius=()
 declare -A seen_blockcypher=()
+
+REQUIRED_ENDPOINT_URL_VARS=(
+    "BITCOIN_PUBLIC_RPC_MEMPOOL_SPACE_MAINNET_URL"
+    "BITCOIN_PUBLIC_RPC_MEMPOOL_EMZY_MAINNET_URL"
+    "BITCOIN_PUBLIC_RPC_MEMPOOL_NINJA_MAINNET_URL"
+    "BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL"
+    "ETHEREUM_PUBLIC_RPC_PUBLICNODE_PRIMARY_URL"
+    "ETHEREUM_PUBLIC_RPC_PUBLICNODE_SECONDARY_URL"
+    "ETHEREUM_PUBLIC_RPC_FLASHBOTS_URL"
+    "ETHEREUM_PUBLIC_RPC_CLOUDFLARE_URL"
+    "ETHEREUM_PROVIDER_ETHERSCAN_V2_MAINNET_URL"
+    "SOLANA_PUBLIC_RPC_MAINNET_BETA_PRIMARY_URL"
+    "SOLANA_PUBLIC_RPC_PUBLICNODE_URL"
+    "SOLANA_PROVIDER_HELIUS_MAINNET_URL"
+)
+
+OPTIONAL_SERVER_CONFIG_VARS=(
+    "ETHEREUM_PUBLIC_RPC_NAMES"
+    "ETHEREUM_USDC_PUBLIC_RPC_NAMES"
+    "SOLANA_PUBLIC_RPC_NAMES"
+    "BITCOIN_PUBLIC_RPC_NAMES"
+    "ETHEREUM_PUBLIC_RPC_NAME"
+    "ETHEREUM_USDC_PUBLIC_RPC_NAME"
+    "SOLANA_PUBLIC_RPC_NAME"
+    "BITCOIN_PUBLIC_RPC_NAME"
+    "ETHEREUM_PUBLIC_RPC_URLS"
+    "ETHEREUM_USDC_PUBLIC_RPC_URLS"
+    "SOLANA_PUBLIC_RPC_URLS"
+    "BITCOIN_PUBLIC_RPC_URLS"
+    "ETHEREUM_PUBLIC_RPC_URL"
+    "SOLANA_PUBLIC_RPC_URL"
+    "ORACLE_VALIDATE_CONFIG_ON_LOAD"
+    "ORACLE_BTC_CONSENSUS_MODE"
+    "ORACLE_ETH_CONSENSUS_MODE"
+    "ORACLE_SOL_CONSENSUS_MODE"
+    "TRUST_PROXY_HEADERS"
+)
 
 add_etherscan_key() {
     local value="$1"
@@ -96,35 +134,126 @@ add_blockcypher_key() {
     blockcypher_keys+=("$value")
 }
 
-# Oracle key (must be explicit; do not silently rotate runtime signing identity)
+collect_etherscan_keys() {
+    add_etherscan_key "${ETHERSCAN_API_KEY:-}"
+    for i in 1 2 3 4 5 6; do
+        var_name="ETHERSCAN_API_KEY_${i}"
+        add_etherscan_key "${!var_name:-}"
+    done
+
+    while IFS= read -r var_name; do
+        if [[ "$var_name" =~ ^ETHERSCAN_API_KEY_[0-9]+$ ]]; then
+            continue
+        fi
+        add_etherscan_key "${!var_name:-}"
+    done < <(compgen -A variable ETHERSCAN_API_KEY_ | sort)
+}
+
+collect_helius_keys() {
+    add_helius_key "${HELIUS_API_KEY:-}"
+    for i in 1 2 3 4 5 6; do
+        var_name="HELIUS_API_KEY_${i}"
+        add_helius_key "${!var_name:-}"
+    done
+
+    while IFS= read -r var_name; do
+        if [[ "$var_name" =~ ^HELIUS_API_KEY_[0-9]+$ ]]; then
+            continue
+        fi
+        add_helius_key "${!var_name:-}"
+    done < <(compgen -A variable HELIUS_API_KEY_ | sort)
+}
+
+collect_blockcypher_keys() {
+    add_blockcypher_key "${BLOCKCYPHER_API_TOKEN:-}"
+    for i in 1 2 3 4 5 6; do
+        var_name="BLOCKCYPHER_API_TOKEN_${i}"
+        add_blockcypher_key "${!var_name:-}"
+    done
+
+    add_blockcypher_key "${BLOCKCYPHER_API_KEY:-}"
+    for i in 1 2 3 4 5 6; do
+        var_name="BLOCKCYPHER_API_KEY_${i}"
+        add_blockcypher_key "${!var_name:-}"
+    done
+
+    while IFS= read -r var_name; do
+        if [[ "$var_name" =~ ^BLOCKCYPHER_API_TOKEN_[0-9]+$ || "$var_name" =~ ^BLOCKCYPHER_API_KEY_[0-9]+$ ]]; then
+            continue
+        fi
+        add_blockcypher_key "${!var_name:-}"
+    done < <(compgen -A variable BLOCKCYPHER_API_TOKEN_ | sort)
+
+    while IFS= read -r var_name; do
+        if [[ "$var_name" =~ ^BLOCKCYPHER_API_TOKEN_[0-9]+$ || "$var_name" =~ ^BLOCKCYPHER_API_KEY_[0-9]+$ ]]; then
+            continue
+        fi
+        add_blockcypher_key "${!var_name:-}"
+    done < <(compgen -A variable BLOCKCYPHER_API_KEY_ | sort)
+}
+
+collect_etherscan_keys
+collect_helius_keys
+collect_blockcypher_keys
+
 if [ -z "${ORACLE_PRIVATE_KEY:-}" ]; then
-    echo "❌ ORACLE_PRIVATE_KEY is missing in .env.local"
-    echo "   Refusing to generate a random key because that breaks transparency-log parity."
-    echo "   Set ORACLE_PRIVATE_KEY explicitly, then re-run this script."
+    missing_required_env+=("ORACLE_PRIVATE_KEY")
+fi
+
+for var_name in "${REQUIRED_ENDPOINT_URL_VARS[@]}"; do
+    if [ -z "${!var_name:-}" ]; then
+        missing_required_env+=("$var_name")
+    fi
+done
+
+if [ "${#etherscan_keys[@]}" -eq 0 ]; then
+    missing_required_env+=("ETHERSCAN_API_KEY (or ETHERSCAN_API_KEY_1..N)")
+fi
+
+if [ "${#helius_keys[@]}" -eq 0 ]; then
+    missing_required_env+=("HELIUS_API_KEY (or HELIUS_API_KEY_1..N)")
+fi
+
+if [ "${#blockcypher_keys[@]}" -eq 0 ]; then
+    missing_required_env+=("BLOCKCYPHER_API_TOKEN (or BLOCKCYPHER_API_TOKEN_1..N)")
+fi
+
+if [ "${#missing_required_env[@]}" -gt 0 ]; then
+    echo "❌ Missing required runtime config in .env.local:"
+    for missing_var in "${missing_required_env[@]}"; do
+        echo "   - $missing_var"
+    done
+    echo ""
+    echo "Set the missing values above, then re-run scripts/sync-secrets.sh."
     exit 1
 fi
 
+# Oracle key (must be explicit; do not silently rotate runtime signing identity)
 put_secret "ORACLE_PRIVATE_KEY" "$ORACLE_PRIVATE_KEY"
 echo "✓ ORACLE_PRIVATE_KEY"
 SECRETS_SET=$((SECRETS_SET + 1))
 
-# Collect canonical Etherscan env vars first
-add_etherscan_key "${ETHERSCAN_API_KEY:-}"
-for i in 1 2 3 4 5 6; do
-    var_name="ETHERSCAN_API_KEY_${i}"
-    add_etherscan_key "${!var_name:-}"
+echo ""
+echo "🌐 Syncing required provider/public RPC endpoint URLs:"
+for var_name in "${REQUIRED_ENDPOINT_URL_VARS[@]}"; do
+    put_secret "$var_name" "${!var_name}"
+    echo "✓ $var_name"
+    SECRETS_SET=$((SECRETS_SET + 1))
 done
 
-# Also collect provider-specific aliases (for local key naming conventions)
-while IFS= read -r var_name; do
-    if [[ "$var_name" =~ ^ETHERSCAN_API_KEY_[0-9]+$ ]]; then
-        continue
+echo ""
+echo "⚙️  Syncing optional server runtime config (if set):"
+for var_name in "${OPTIONAL_SERVER_CONFIG_VARS[@]}"; do
+    if [ -n "${!var_name:-}" ]; then
+        put_secret "$var_name" "${!var_name}"
+        echo "✓ $var_name"
+        SECRETS_SET=$((SECRETS_SET + 1))
     fi
-    add_etherscan_key "${!var_name:-}"
-done < <(compgen -A variable ETHERSCAN_API_KEY_ | sort)
+done
 
 if [ "${#etherscan_keys[@]}" -eq 0 ]; then
-    echo "⚠️  No Etherscan API keys found in .env.local"
+    echo "❌ No Etherscan API keys found in .env.local"
+    exit 1
 else
     # Primary key
     put_secret "ETHERSCAN_API_KEY" "${etherscan_keys[0]}"
@@ -143,23 +272,9 @@ else
     done
 fi
 
-# Collect canonical Helius env vars first
-add_helius_key "${HELIUS_API_KEY:-}"
-for i in 1 2 3 4 5 6; do
-    var_name="HELIUS_API_KEY_${i}"
-    add_helius_key "${!var_name:-}"
-done
-
-# Also collect provider-specific aliases (for local key naming conventions)
-while IFS= read -r var_name; do
-    if [[ "$var_name" =~ ^HELIUS_API_KEY_[0-9]+$ ]]; then
-        continue
-    fi
-    add_helius_key "${!var_name:-}"
-done < <(compgen -A variable HELIUS_API_KEY_ | sort)
-
 if [ "${#helius_keys[@]}" -eq 0 ]; then
-    echo "⚠️  No Helius API keys found in .env.local"
+    echo "❌ No Helius API keys found in .env.local"
+    exit 1
 else
     # Primary key
     put_secret "HELIUS_API_KEY" "${helius_keys[0]}"
@@ -178,37 +293,9 @@ else
     done
 fi
 
-# Collect canonical BlockCypher env vars first
-add_blockcypher_key "${BLOCKCYPHER_API_TOKEN:-}"
-for i in 1 2 3 4 5 6; do
-    var_name="BLOCKCYPHER_API_TOKEN_${i}"
-    add_blockcypher_key "${!var_name:-}"
-done
-
-# Also collect supported aliases (for local key naming conventions)
-add_blockcypher_key "${BLOCKCYPHER_API_KEY:-}"
-for i in 1 2 3 4 5 6; do
-    var_name="BLOCKCYPHER_API_KEY_${i}"
-    add_blockcypher_key "${!var_name:-}"
-done
-
-# Collect additional prefix-based aliases without duplicating numbered canonical keys
-while IFS= read -r var_name; do
-    if [[ "$var_name" =~ ^BLOCKCYPHER_API_TOKEN_[0-9]+$ || "$var_name" =~ ^BLOCKCYPHER_API_KEY_[0-9]+$ ]]; then
-        continue
-    fi
-    add_blockcypher_key "${!var_name:-}"
-done < <(compgen -A variable BLOCKCYPHER_API_TOKEN_ | sort)
-
-while IFS= read -r var_name; do
-    if [[ "$var_name" =~ ^BLOCKCYPHER_API_TOKEN_[0-9]+$ || "$var_name" =~ ^BLOCKCYPHER_API_KEY_[0-9]+$ ]]; then
-        continue
-    fi
-    add_blockcypher_key "${!var_name:-}"
-done < <(compgen -A variable BLOCKCYPHER_API_KEY_ | sort)
-
 if [ "${#blockcypher_keys[@]}" -eq 0 ]; then
-    echo "⚠️  No BlockCypher API keys found in .env.local"
+    echo "❌ No BlockCypher API keys found in .env.local"
+    exit 1
 else
     # Primary key
     put_secret "BLOCKCYPHER_API_TOKEN" "${blockcypher_keys[0]}"
@@ -243,4 +330,3 @@ echo ""
 echo "⚠️  Remember to set public variables in Cloudflare dashboard:"
 echo "   - NEXT_PUBLIC_APP_URL"
 echo "   - NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE (optional)"
-echo "   - TRUST_PROXY_HEADERS"

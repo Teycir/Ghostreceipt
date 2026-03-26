@@ -37,6 +37,7 @@
     "security:audit": "bash scripts/security-audit.sh",
     "deploy": "bash deploy.sh",
     "deploy:preview": "npm run build && npx wrangler pages deploy out --project-name=ghostreceipt --branch=preview",
+    "github:protect-main": "bash scripts/enforce-branch-protection.sh",
     "pages:dev": "npx wrangler pages dev out",
     "cf:setup": "bash scripts/setup-cloudflare.sh",
     "cf:secrets": "bash scripts/manage-secrets.sh",

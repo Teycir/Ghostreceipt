@@ -1,5 +1,20 @@
 # Lessons Learned
 
+## 2026-03-26 - CI-Gated Deploy Is Necessary But Not Sufficient Without Branch Protection
+- Workflow-level deploy gating (`workflow_run` on CI success) must be paired with repository branch protection, otherwise risky direct merges/push patterns can still bypass intended controls.
+- Keep branch protection as code/automation (script + runbook command) so policy can be re-applied quickly and audited.
+- Require both core quality checks and security/dependency review checks on `main` to prevent partial-green merges.
+
+## 2026-03-26 - Deploy Workflow Must Be Chained To CI Success, Not Parallel To It
+- A separate deploy trigger on `push main` is not a strict gate; it can run independently from CI outcomes.
+- Use `workflow_run` on workflow `"CI"` and require `conclusion == success` to enforce "no green CI, no deploy."
+- Deploy should check out `workflow_run.head_sha` so production receives exactly the commit that passed CI.
+
+## 2026-03-26 - Cloudflare Secret Sync Must Include Endpoint URL Vars, Not Only API Keys
+- Provider/API key pools being present is insufficient once endpoint URLs are env-driven; deployment sync must upload both key vars and all required `*_URL` endpoint vars.
+- Treat missing endpoint URL vars as release blockers via fail-fast preflight in sync scripts (no warn-only mode for critical runtime config).
+- When production config changes in Pages, run sync and redeploy before concluding the fix failed, because live functions may continue using previous bindings until a fresh deployment.
+
 ## 2026-03-26 - Oracle Signing Key Must Never Drift From Transparency Log
 - Do not auto-generate `ORACLE_PRIVATE_KEY` in deployment secret sync paths; fail fast when missing instead of silently rotating trust identity.
 - If production verify shows `KEY_UNKNOWN`, treat it as a signing-identity drift incident: reconcile key secret + transparency log before debugging proof logic.
