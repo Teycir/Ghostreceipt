@@ -30,7 +30,11 @@ export function hasDangerousObjectKeys(value: unknown): boolean {
 
 export function encodeSharePayload(jsonPayload: string): string {
   if (typeof Buffer !== 'undefined') {
-    return Buffer.from(jsonPayload, 'utf8').toString('base64url');
+    return Buffer.from(jsonPayload, 'utf8')
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/u, '');
   }
 
   const bytes = new TextEncoder().encode(jsonPayload);

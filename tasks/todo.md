@@ -1,5 +1,37 @@
 # Task Plan - 2026-03-26
 
+## Objective (Browser `base64url` Runtime Error + Manifest Icon 404)
+
+Fix the UI runtime failure (`Unknown encoding: base64url`) and remove manifest icon fetch errors (`/icon-192.png` 404) observed in production.
+
+## Plan
+
+- [x] Make share-payload base64url encoding/decoding runtime-safe in browser environments.
+- [x] Ensure manifest icon entries point to files that actually exist in `public/`.
+- [x] Run targeted verification and capture a review summary with residual risk.
+
+## Review (Browser `base64url` Runtime Error + Manifest Icon 404)
+
+- Status: Completed
+- Root causes:
+  - `lib/libraries/zk/share-payload.ts` used `Buffer.toString('base64url')`, which is not universally supported in browser Buffer polyfills.
+  - `public/manifest.json` referenced `/icon-192.png` and `/icon-512.png` that were missing from `public/`.
+  - `app/layout.tsx` also referenced missing `/favicon.ico` and `/apple-touch-icon.png`.
+- Fixes shipped:
+  - Replaced `base64url` Buffer encoding with base64 + URL-safe normalization in `lib/libraries/zk/share-payload.ts`.
+  - Updated PWA manifest icon entry to use existing `/favicon.svg`.
+  - Removed missing icon metadata references in `app/layout.tsx`, keeping only `/favicon.svg`.
+- Validation:
+  - `npm test -- tests/unit/zk/prover.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+  - Repo scan confirms no remaining references to:
+    - `/icon-192.png`
+    - `/icon-512.png`
+    - `/favicon.ico`
+    - `/apple-touch-icon.png`
+- Residual risk:
+  - Installability icon quality for strict PWA platforms may be lower with SVG-only icons; adding real `192x192` and `512x512` PNG assets would be the durable follow-up.
+
 ## Objective (Fraud + Error Hardening Sweep)
 
 Perform a deep hardening pass focused on fraud-resistance and operational-error resilience across oracle request intake, signature validation, and provider URL safety.
