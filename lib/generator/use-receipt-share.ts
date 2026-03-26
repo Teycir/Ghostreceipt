@@ -18,6 +18,7 @@ import {
   openSocialShare,
   nativeShare,
 } from '@/lib/share/social';
+import { createSharePointerLink } from '@/lib/share/share-pointer-client';
 import type { SocialNetwork } from '@/lib/share/social';
 import type { Chain, EthereumAsset } from '@/lib/generator/types';
 
@@ -58,7 +59,7 @@ export interface UseReceiptShareReturn {
 }
 
 /** Builds the verify URL from the current origin */
-function buildVerifyUrl(proof: string): string {
+function buildProofVerifyUrl(proof: string): string {
   const params = new URLSearchParams({ proof });
   return `${globalThis.location.origin}/verify?${params.toString()}`;
 }
@@ -139,16 +140,41 @@ export function useReceiptShare({
 
   // Build URL + QR whenever proof changes
   useEffect(() => {
-    const url = buildVerifyUrl(proof);
-    setVerifyUrl(url);
+    let cancelled = false;
+    const fallbackUrl = buildProofVerifyUrl(proof);
+    setVerifyUrl(fallbackUrl);
     setQrCode('');
     setQrError('');
 
-    void generateQRDataUrl(url)
-      .then(setQrCode)
-      .catch(() => {
-        setQrError('Could not generate QR code. You can still copy the verification link.');
-      });
+    void (async () => {
+      let preferredUrl = fallbackUrl;
+      try {
+        const pointer = await createSharePointerLink(proof);
+        preferredUrl = pointer.verifyUrl;
+      } catch {
+        preferredUrl = fallbackUrl;
+      }
+
+      if (cancelled) {
+        return;
+      }
+      setVerifyUrl(preferredUrl);
+
+      try {
+        const generatedQrCode = await generateQRDataUrl(preferredUrl);
+        if (!cancelled) {
+          setQrCode(generatedQrCode);
+        }
+      } catch {
+        if (!cancelled) {
+          setQrError('Could not generate QR code. You can still copy the verification link.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [proof]);
 
   const copyLink = useCallback(async (): Promise<void> => {
