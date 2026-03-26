@@ -1,3 +1,58 @@
+# Task Plan - 2026-03-26
+
+## Objective (Fraud + Error Hardening Sweep)
+
+Perform a deep hardening pass focused on fraud-resistance and operational-error resilience across oracle request intake, signature validation, and provider URL safety.
+
+## Plan
+
+- [x] Complete threat-surface review and prioritize concrete fraud/error vectors in runtime paths.
+- [x] Integrate shared JSON input sanitization into Next routes and Cloudflare Pages wrappers.
+- [x] Close SSRF gaps for bracketed/IPv6 literal hosts and add regression tests.
+- [x] Enforce oracle auth-envelope lifetime bounds to prevent overly long-lived signatures.
+- [x] Run targeted tests + typecheck and record findings/residual risk.
+
+## Review (Fraud + Error Hardening Sweep)
+
+- Status: Completed
+- High-risk findings prioritized:
+  - Hidden/control-character JSON payload abuse window in route parsing paths.
+  - Bracketed IPv6/private host SSRF bypass class in URL safety checks.
+  - Missing signature TTL ceiling allowed overly long-lived auth envelopes.
+- Hardening shipped:
+  - JSON sanitizer integrated in:
+    - `lib/security/secure-json.ts`
+    - `lib/libraries/backend-core/http/pages/runtime-shared.ts`
+    - parse-error passthrough updated in `lib/libraries/backend-core/http/request-envelope.ts`
+  - SSRF protections expanded in `lib/security/ssrf.ts`:
+    - bracketed IPv6 handling,
+    - private IPv6 range blocking (`fc00::/7`, `fe80::/10`, `fec0::/10`, loopback/unspecified),
+    - credentialed URL rejection (`user:pass@host`).
+  - Signature-lifetime bounds enforced:
+    - replay validator checks `SIGNATURE_TTL_TOO_LONG` in `lib/libraries/backend-core/http/oracle-auth-replay.ts`
+    - route wiring in:
+      - `app/api/oracle/verify-signature/route.ts`
+      - `lib/libraries/backend-core/http/pages/verify-signature-pages.ts`
+    - signer-side TTL clamp in `lib/libraries/backend-core/http/fetch-tx.ts`
+  - Env template additions in `.env.example`:
+    - `ORACLE_VERIFY_REPLAY_MAX_ENTRIES`
+    - `ORACLE_VERIFY_REPLAY_MAX_FUTURE_SKEW_SECONDS`
+    - `ORACLE_VERIFY_MAX_SIGNATURE_LIFETIME_SECONDS`
+- Added/updated tests:
+  - `tests/unit/security/secure-json.test.ts`
+  - `tests/unit/backend-core/http/pages/runtime-shared.test.ts` (new)
+  - `tests/unit/security/ssrf.test.ts`
+  - `tests/unit/backend-core/http/oracle-auth-replay.test.ts`
+  - `tests/unit/api/oracle-verify-signature-route.test.ts`
+  - `tests/unit/api/oracle-fetch-tx.test.ts`
+  - `tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts`
+- Validation:
+  - `npm test -- tests/unit/security/secure-json.test.ts tests/unit/security/ssrf.test.ts tests/unit/backend-core/http/oracle-auth-replay.test.ts tests/unit/backend-core/http/pages/runtime-shared.test.ts tests/unit/api/oracle-verify-signature-route.test.ts tests/unit/api/oracle-fetch-tx.test.ts --runInBand --ci` pass
+  - `npm test -- tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+- Residual risk:
+  - Rate-limit/replay registries remain in-memory per-instance; multi-instance strict global replay/rate control still requires shared backend coordination.
+
 # Task Plan - 2026-03-25
 
 ## Objective (Manual Testing Runbook)
@@ -33,11 +88,11 @@ Strengthen JSON request sanitization for both Next API routes and Cloudflare Pag
 
 ## Plan
 
-- [ ] Add a shared JSON input sanitizer utility for key validation and string sanitization/rejection rules.
-- [ ] Integrate sanitizer into `parseSecureJson` and `parseJsonBodyWithLimits`.
-- [ ] Expose sanitizer parse errors through route envelope mapping.
-- [ ] Add unit tests for sanitizer behavior and parser integration.
-- [ ] Run targeted tests + typecheck and capture review notes.
+- [x] Add a shared JSON input sanitizer utility for key validation and string sanitization/rejection rules.
+- [x] Integrate sanitizer into `parseSecureJson` and `parseJsonBodyWithLimits`.
+- [x] Expose sanitizer parse errors through route envelope mapping.
+- [x] Add unit tests for sanitizer behavior and parser integration.
+- [x] Run targeted tests + typecheck and capture review notes.
 
 ## Objective (Investigate x5 Matrix Warning Noise)
 
