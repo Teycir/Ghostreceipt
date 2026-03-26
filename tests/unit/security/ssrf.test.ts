@@ -17,6 +17,9 @@ describe('SSRF Protection', () => {
       expect(isPrivateOrLocalhost('100.64.10.1')).toBe(true);
       expect(isPrivateOrLocalhost('127.10.20.30')).toBe(true);
       expect(isPrivateOrLocalhost('169.254.1.5')).toBe(true);
+      expect(isPrivateOrLocalhost('[::1]')).toBe(true);
+      expect(isPrivateOrLocalhost('[fd00::1]')).toBe(true);
+      expect(isPrivateOrLocalhost('[fe80::1]')).toBe(true);
     });
 
     it('should block cloud metadata endpoints', () => {
@@ -70,6 +73,12 @@ describe('SSRF Protection', () => {
       expect(result.error).toContain('private or localhost');
     });
 
+    it('should block bracketed IPv6 localhost/private URLs', () => {
+      expect(validateUrl('https://[::1]/api').valid).toBe(false);
+      expect(validateUrl('https://[fd00::1234]/api').valid).toBe(false);
+      expect(validateUrl('https://[fe80::1]/api').valid).toBe(false);
+    });
+
     it('should block metadata endpoints', () => {
       const result = validateUrl('https://169.254.169.254/latest/meta-data');
       expect(result.valid).toBe(false);
@@ -92,6 +101,12 @@ describe('SSRF Protection', () => {
       const result = validateUrl('file:///etc/passwd');
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Protocol');
+    });
+
+    it('should block URLs with embedded credentials', () => {
+      const result = validateUrl('https://user:pass@example.com/api');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Username/password');
     });
   });
 });

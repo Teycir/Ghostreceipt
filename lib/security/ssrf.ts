@@ -18,12 +18,61 @@ const PRIVATE_IP_RANGES = [
   /^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\./,
   /^127\./,
   /^169\.254\./,
-  /^fc00:/,
-  /^fe80:/,
 ];
 
 function normalizeHostname(hostname: string): string {
   return hostname.trim().toLowerCase().replace(/\.$/, '');
+}
+
+function stripIpv6Brackets(hostname: string): string {
+  if (hostname.startsWith('[') && hostname.endsWith(']')) {
+    return hostname.slice(1, -1);
+  }
+
+  return hostname;
+}
+
+function isPrivateIpv6(ipv6: string): boolean {
+  const normalized = ipv6.trim().toLowerCase();
+  if (
+    normalized === '::' ||
+    normalized === '::1' ||
+    normalized === '0:0:0:0:0:0:0:0' ||
+    normalized === '0:0:0:0:0:0:0:1'
+  ) {
+    return true;
+  }
+
+  if (normalized.startsWith('::ffff:')) {
+    return true;
+  }
+
+  const firstHextetToken = normalized.split(':')[0] ?? '';
+  if (!firstHextetToken) {
+    return false;
+  }
+
+  const firstHextet = Number.parseInt(firstHextetToken, 16);
+  if (!Number.isFinite(firstHextet) || firstHextet < 0 || firstHextet > 0xffff) {
+    return false;
+  }
+
+  // Unique local addresses fc00::/7 (fc00 + fd00).
+  if ((firstHextet & 0xfe00) === 0xfc00) {
+    return true;
+  }
+
+  // Link-local addresses fe80::/10.
+  if ((firstHextet & 0xffc0) === 0xfe80) {
+    return true;
+  }
+
+  // Site-local addresses fec0::/10 (deprecated but still non-public).
+  if ((firstHextet & 0xffc0) === 0xfec0) {
+    return true;
+  }
+
+  return false;
 }
 
 function isObfuscatedIpLiteral(hostname: string): boolean {
@@ -70,7 +119,12 @@ function isObfuscatedIpLiteral(hostname: string): boolean {
 
 export function isPrivateOrLocalhost(hostname: string): boolean {
   const normalizedHostname = normalizeHostname(hostname);
-  if (BLOCKED_HOSTS.includes(normalizedHostname)) {
+  const normalizedWithoutBrackets = stripIpv6Brackets(normalizedHostname);
+
+  if (
+    BLOCKED_HOSTS.includes(normalizedHostname) ||
+    BLOCKED_HOSTS.includes(normalizedWithoutBrackets)
+  ) {
     return true;
   }
 
@@ -78,23 +132,24 @@ export function isPrivateOrLocalhost(hostname: string): boolean {
     return true;
   }
 
-  if (isObfuscatedIpLiteral(normalizedHostname)) {
+  if (isObfuscatedIpLiteral(normalizedWithoutBrackets)) {
     return true;
   }
 
   // Use canonical IP parser first to reject valid non-public literals.
-  if (isIP(normalizedHostname) !== 0) {
-    if (
-      PRIVATE_IP_RANGES.some((range) => range.test(normalizedHostname)) ||
-      normalizedHostname === '::1' ||
-      normalizedHostname === '0:0:0:0:0:0:0:1'
-    ) {
+  const ipType = isIP(normalizedWithoutBrackets);
+  if (ipType !== 0) {
+    if (ipType === 4 && PRIVATE_IP_RANGES.some((range) => range.test(normalizedWithoutBrackets))) {
+      return true;
+    }
+
+    if (ipType === 6 && isPrivateIpv6(normalizedWithoutBrackets)) {
       return true;
     }
   }
 
   for (const range of PRIVATE_IP_RANGES) {
-    if (range.test(normalizedHostname)) {
+    if (range.test(normalizedWithoutBrackets)) {
       return true;
     }
   }
@@ -118,6 +173,13 @@ export function validateUrl(url: string, allowedProtocols: string[] = ['https'])
     return {
       valid: false,
       error: `Protocol ${parsed.protocol} not allowed. Allowed: ${allowedProtocols.join(', ')}`,
+    };
+  }
+
+  if (parsed.username || parsed.password) {
+    return {
+      valid: false,
+      error: 'Username/password in URLs is not allowed',
     };
   }
 
