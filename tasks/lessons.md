@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-26 - Prefer One Deterministic Verification Contract Over Mixed Signal Guesswork
+- When users report repeated false-invalid verification, treat mixed signal-shape assumptions as architecture debt and move to one deterministic decode contract.
+- In verifier logic, choose signal layout using explicit oracle-commitment matching instead of brittle fixed-slot assumptions.
+- Add regression tests that cover real runtime signal variants (for example prefixed validity outputs) so “generated then verify” stays green.
+
 ## 2026-03-26 - Receipt UX Must Prefer Deterministic Actions And Loud Failure States
 - If users report "nothing happens" (for example PDF export), treat silent/ambiguous UX as a defect even when no exception is thrown.
 - Remove or defer ambiguous share actions when the core verification path is unstable; keep deterministic controls (`copy`, `open`, `export`) first.

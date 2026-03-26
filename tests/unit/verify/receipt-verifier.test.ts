@@ -113,6 +113,40 @@ describe('verifySharedReceiptProof', () => {
     });
   });
 
+  it('verifies selective proofs when verification signals include a leading validity output', async () => {
+    const messageHash = 'oracle-selective-prefixed';
+    const nullifier = await deriveNullifierFromMessageHash(messageHash);
+    const claimDigest = await deriveSelectiveClaimDigest({
+      claimedAmount: '123450000',
+      disclosureMask: 0,
+      minDateUnix: 1700000000,
+    });
+    const payload = buildProofPayload(
+      [messageHash, '0', '0', '0', claimDigest],
+      messageHash,
+      nullifier
+    );
+    payload.proofPublicSignals = ['1', '123450000', '1700000000', messageHash];
+
+    const result = await verifySharedReceiptProof('mock-proof', {
+      createProofGenerator: () => ({
+        importProof: () => payload,
+        verifyProof: async () => ({ valid: true }),
+      }),
+      signatureVerifier,
+      storage: new InMemoryStorage(),
+    });
+
+    expect(result).toEqual({
+      valid: true,
+      claimedAmount: 'Hidden',
+      claimedAmountDisclosure: 'hidden',
+      minDate: 'Hidden',
+      minDateDisclosure: 'hidden',
+      signalContract: 'selective-disclosure-v1',
+    });
+  });
+
   it('includes validation-strength metadata when present in receipt meta payload', async () => {
     const messageHash = 'oracle-selective-meta';
     const nullifier = await deriveNullifierFromMessageHash(messageHash);

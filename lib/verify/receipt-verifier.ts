@@ -193,7 +193,9 @@ export async function verifySharedReceiptProof(
       }
     }
 
-    const provenClaims = decodeLegacyReceiptPublicSignals(proofSignalsForVerification);
+    const provenClaims = decodeLegacyReceiptPublicSignals(proofSignalsForVerification, {
+      expectedOracleCommitment: oracleAuth.messageHash,
+    });
 
     if (provenClaims.oracleCommitment !== oracleAuth.messageHash) {
       return {

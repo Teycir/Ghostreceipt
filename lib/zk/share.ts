@@ -50,6 +50,10 @@ export type DecodedReceiptPublicSignals =
   | DecodedLegacyReceiptPublicSignals
   | DecodedSelectiveDisclosureReceiptPublicSignals;
 
+interface DecodeLegacyReceiptPublicSignalsOptions {
+  expectedOracleCommitment?: string;
+}
+
 interface LegacyReceiptPublicSignalIndex {
   claimedAmount: number;
   minDate: number;
@@ -69,6 +73,7 @@ const LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX: Readonly<LegacyReceiptPublicSignalInde
   minDate: 1,
   oracleCommitment: 2,
 });
+const LEGACY_VALID_PREFIX_OFFSET = 1;
 
 const SELECTIVE_DISCLOSURE_PUBLIC_SIGNAL_INDEX: Readonly<SelectiveDisclosurePublicSignalIndex> =
   Object.freeze({
@@ -129,16 +134,18 @@ function toHex(buffer: ArrayBuffer): string {
   return hex;
 }
 
-export function decodeLegacyReceiptPublicSignals(
-  publicSignals: string[]
+function decodeLegacyReceiptPublicSignalsAtOffset(
+  publicSignals: string[],
+  offset: number
 ): DecodedLegacyReceiptPublicSignals {
-  if (publicSignals.length <= LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment) {
+  const oracleIndex = LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment + offset;
+  if (publicSignals.length <= oracleIndex) {
     throw new Error('Invalid proof: insufficient public signals');
   }
 
-  const claimedAmount = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.claimedAmount];
-  const minDateRaw = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.minDate];
-  const oracleCommitment = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment];
+  const claimedAmount = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.claimedAmount + offset];
+  const minDateRaw = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.minDate + offset];
+  const oracleCommitment = publicSignals[oracleIndex];
 
   if (!claimedAmount || !minDateRaw) {
     throw new Error('Invalid proof: missing claim fields in public signals');
@@ -161,6 +168,27 @@ export function decodeLegacyReceiptPublicSignals(
     minDateIsoUtc,
     minDateDisclosure: 'disclosed',
   };
+}
+
+export function decodeLegacyReceiptPublicSignals(
+  publicSignals: string[],
+  options: DecodeLegacyReceiptPublicSignalsOptions = {}
+): DecodedLegacyReceiptPublicSignals {
+  const expectedOracleCommitment = options.expectedOracleCommitment?.trim();
+  if (expectedOracleCommitment) {
+    const directOracleSignal = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment];
+    if (directOracleSignal === expectedOracleCommitment) {
+      return decodeLegacyReceiptPublicSignalsAtOffset(publicSignals, 0);
+    }
+
+    const prefixedOracleSignal =
+      publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment + LEGACY_VALID_PREFIX_OFFSET];
+    if (prefixedOracleSignal === expectedOracleCommitment) {
+      return decodeLegacyReceiptPublicSignalsAtOffset(publicSignals, LEGACY_VALID_PREFIX_OFFSET);
+    }
+  }
+
+  return decodeLegacyReceiptPublicSignalsAtOffset(publicSignals, 0);
 }
 
 export function decodeSelectiveDisclosureReceiptPublicSignals(
@@ -232,17 +260,28 @@ export function decodeReceiptPublicSignals(
     throw new Error('Invalid proof: missing oracle commitment signal');
   }
 
+  const hasSelectiveShape =
+    publicSignals.length > SELECTIVE_DISCLOSURE_PUBLIC_SIGNAL_INDEX.claimDigest;
   const selectiveOracleSignal = publicSignals[SELECTIVE_DISCLOSURE_PUBLIC_SIGNAL_INDEX.oracleCommitment];
-  if (selectiveOracleSignal && selectiveOracleSignal === expectedOracleCommitment) {
+  if (hasSelectiveShape && selectiveOracleSignal && selectiveOracleSignal === expectedOracleCommitment) {
     return decodeSelectiveDisclosureReceiptPublicSignals(publicSignals);
   }
 
   const legacyOracleSignal = publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment];
   if (legacyOracleSignal && legacyOracleSignal === expectedOracleCommitment) {
-    return decodeLegacyReceiptPublicSignals(publicSignals);
+    return decodeLegacyReceiptPublicSignals(publicSignals, { expectedOracleCommitment });
   }
 
-  const hasOracleSignal = Boolean(selectiveOracleSignal) || Boolean(legacyOracleSignal);
+  const prefixedLegacyOracleSignal =
+    publicSignals[LEGACY_RECEIPT_PUBLIC_SIGNAL_INDEX.oracleCommitment + LEGACY_VALID_PREFIX_OFFSET];
+  if (prefixedLegacyOracleSignal && prefixedLegacyOracleSignal === expectedOracleCommitment) {
+    return decodeLegacyReceiptPublicSignals(publicSignals, { expectedOracleCommitment });
+  }
+
+  const hasOracleSignal =
+    Boolean(selectiveOracleSignal) ||
+    Boolean(legacyOracleSignal) ||
+    Boolean(prefixedLegacyOracleSignal);
   if (!hasOracleSignal) {
     throw new Error('Invalid proof: missing oracle commitment signal');
   }

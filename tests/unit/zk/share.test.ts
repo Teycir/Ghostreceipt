@@ -86,6 +86,25 @@ describe('decodeLegacyReceiptPublicSignals', () => {
       minDateDisclosure: 'disclosed',
     });
   });
+
+  it('decodes legacy claims when proof public signals include a leading validity output', () => {
+    const decoded = decodeLegacyReceiptPublicSignals(
+      ['1', '123450000', '1700000000', 'oracle-commitment'],
+      { expectedOracleCommitment: 'oracle-commitment' }
+    );
+
+    expect(decoded).toEqual({
+      contract: 'legacy-v1',
+      oracleCommitment: 'oracle-commitment',
+      disclosureMask: 3,
+      claimDigest: null,
+      claimedAmount: '123450000',
+      claimedAmountDisclosure: 'disclosed',
+      minDateUnix: 1700000000,
+      minDateIsoUtc: '2023-11-14',
+      minDateDisclosure: 'disclosed',
+    });
+  });
 });
 
 describe('decodeSelectiveDisclosureReceiptPublicSignals', () => {
@@ -155,6 +174,17 @@ describe('decodeReceiptPublicSignals', () => {
     );
 
     expect(decoded.contract).toBe('legacy-v1');
+  });
+
+  it('resolves legacy contract when expected commitment is in the fourth signal slot', () => {
+    const decoded = decodeReceiptPublicSignals(
+      ['1', '123450000', '1700000000', 'oracle-legacy'],
+      'oracle-legacy'
+    );
+
+    expect(decoded.contract).toBe('legacy-v1');
+    expect(decoded.claimedAmount).toBe('123450000');
+    expect(decoded.minDateIsoUtc).toBe('2023-11-14');
   });
 
   it('resolves selective contract when expected commitment matches selective slot', () => {

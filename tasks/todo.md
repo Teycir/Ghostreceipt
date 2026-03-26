@@ -1,5 +1,36 @@
 # Task Plan - 2026-03-26
 
+## Objective (Fix "Open Verify" False Invalid Receipt Regressions)
+
+Resolve the current regression where freshly generated receipts open the verify page and fail with `Oracle commitment mismatch detected`, even though receipt generation succeeds.
+
+## Plan
+
+- [x] Reproduce/confirm the mismatch path with targeted verification instrumentation and tests.
+- [x] Patch verifier signal decoding/normalization to support the runtime proof signal shape without weakening validation guarantees.
+- [x] Add regression coverage that exercises exported share payloads through verify flow (including compact pointer-style payload round-trip assumptions).
+- [x] Run targeted tests/typecheck and document review findings.
+
+## Review (Fix "Open Verify" False Invalid Receipt Regressions)
+
+- Status: Completed
+- Root cause:
+  - Verifier assumed legacy oracle commitment always lived in signal slot `2`.
+  - Some runtime proof signal arrays include a leading validity output, shifting legacy claim slots to `[1,2,3]`.
+  - That deterministic offset mismatch surfaced as false `Oracle commitment mismatch detected` for valid receipts.
+- Changes shipped:
+  - Updated legacy signal decoding in `lib/zk/share.ts` to support commitment-guided decoding for both legacy layouts:
+    - canonical: `[claimedAmount, minDate, oracleCommitment, ...]`
+    - prefixed: `[valid, claimedAmount, minDate, oracleCommitment]`
+  - Updated `decodeReceiptPublicSignals` to detect both legacy commitment positions deterministically.
+  - Updated `lib/verify/receipt-verifier.ts` to decode proven claims using expected-commitment-aware legacy decoding.
+  - Added regression tests:
+    - `tests/unit/zk/share.test.ts` (legacy decode + contract detection with prefixed signals)
+    - `tests/unit/verify/receipt-verifier.test.ts` (selective payload verification with prefixed proof verification signals)
+- Validation:
+  - `npm test -- tests/unit/zk/share.test.ts tests/unit/verify/receipt-verifier.test.ts --runInBand --ci` pass
+  - `npm run typecheck` pass
+
 ## Objective (Receipt Delivery Reliability: Remove Share-Link CTA + Fix PDF + Fix Open-Receipt Validity)
 
 Address current production UX breakages by removing the ambiguous share-link CTA, making PDF export fail loudly and reliably open print flow, and hardening verify-path proof decoding so valid receipts do not surface false `Oracle commitment mismatch`.
