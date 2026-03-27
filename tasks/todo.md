@@ -1,5 +1,33 @@
 # Task Plan - 2026-03-26
 
+## Objective (Add Assets Images To README)
+
+Show the newly added product screenshots from `assets/` in the root README so visitors can quickly see the UI and generated output.
+
+## Plan
+
+- [x] Audit image files in `assets/` and avoid duplicate/branding-only entries already shown in README.
+- [x] Add a dedicated screenshots section in `README.md` with clear labels and relative asset paths.
+- [x] Update README table of contents with the screenshots section link.
+- [x] Validate the markdown links/paths and document results.
+
+## Review (Add Assets Images To README)
+
+- Status: Completed
+- README updates:
+  - Added `Screenshots` entry to the table of contents.
+  - Added `## Screenshots` section with preview images from:
+    - `assets/landingpage.png`
+    - `assets/mainpage.png`
+    - `assets/receiptgenerated.png`
+    - `assets/qrcode.png`
+    - `assets/pdfreceipt.png`
+    - `assets/history.png`
+- Existing brand/support visuals already present in README were kept unchanged:
+  - `assets/ghostreceipt_ascii.svg`
+  - `assets/publiceth.svg`
+  - `assets/infographicGhostReceipt.png`
+
 ## Objective (Lock CI/CD End-To-End: No Green CI, No Main Merge, No Deploy)
 
 Enforce strict repository-level branch protection in addition to workflow-level deploy gating so production cannot receive code unless required CI checks pass and PR rules are satisfied.

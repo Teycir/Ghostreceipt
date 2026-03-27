@@ -45,6 +45,7 @@ Status:
 
 ## Table of Contents
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [The Problem GhostReceipt Solves](#the-problem-ghostreceipt-solves)
 - [Key Features](#key-features)
 - [Use Cases](#use-cases)
@@ -87,6 +88,20 @@ You can share a cryptographic receipt that proves:
 3. Generate a cryptographic proof in your browser
 4. Share the proof link or QR code
 5. Anyone can verify the proof without seeing your private details
+
+## Screenshots
+
+<div align="center">
+  <img src="assets/landingpage.png" alt="GhostReceipt landing page" width="900" />
+</div>
+
+| Main Generator | Receipt Generated |
+| --- | --- |
+| ![GhostReceipt main generator view](assets/mainpage.png) | ![GhostReceipt generated receipt result](assets/receiptgenerated.png) |
+
+| QR Share | PDF Export | History |
+| --- | --- | --- |
+| ![GhostReceipt QR share view](assets/qrcode.png) | ![GhostReceipt PDF receipt export](assets/pdfreceipt.png) | ![GhostReceipt receipt history panel](assets/history.png) |
 
 ## The Problem GhostReceipt Solves
 
