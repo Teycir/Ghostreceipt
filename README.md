@@ -4,6 +4,12 @@
   </a>
 </div>
 
+<div align="center">
+  <a href="https://youtu.be/Dj2BSDsNJC4" target="_blank" rel="noopener noreferrer">
+    <strong>📺 Watch Explainer Video</strong>
+  </a>
+</div>
+
 <!-- donation:eth:start -->
 <div align="center">
 
