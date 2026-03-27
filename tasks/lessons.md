@@ -1,5 +1,10 @@
 # Lessons Learned
 
+## 2026-03-27 - Consensus Fallback Order Must Be Explicit, And Env-Backed Endpoints Need Import-Time Test Defaults
+- If the user asks for a specific verifier order (for example Chainstack first, public RPC second), implement an explicit ordered verifier list rather than a single verifier switch.
+- In this codebase, endpoint registries are env-hydrated at module import time; tests that set endpoint env vars after import can silently fail with missing config.
+- Keep deterministic test defaults for new endpoint keys in `jest.setup.js`, or load env before importing provider modules.
+
 ## 2026-03-27 - Solana Consensus Needs Pass-Level Retries, Not Only Per-Endpoint Retries
 - Public Solana peers can fail in mixed modes: one endpoint returns transient rate limits while another returns permanent null-history responses.
 - Per-endpoint retries alone are insufficient in this pattern; add cross-pass retries that keep retrying transient endpoints and drop null-history endpoints for subsequent passes.

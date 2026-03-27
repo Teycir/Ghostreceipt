@@ -21,6 +21,7 @@ const TEST_ENDPOINT_DEFAULTS = {
   ETHEREUM_PROVIDER_ETHERSCAN_V2_MAINNET_URL: 'https://api.etherscan.io/v2/api',
   SOLANA_PUBLIC_RPC_MAINNET_BETA_PRIMARY_URL: 'https://api.mainnet-beta.solana.com',
   SOLANA_PUBLIC_RPC_PUBLICNODE_URL: 'https://solana-rpc.publicnode.com',
+  SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL: 'https://solana-mainnet.core.chainstack.com/test',
   SOLANA_PROVIDER_HELIUS_MAINNET_URL: 'https://mainnet.helius-rpc.com/',
 };
 

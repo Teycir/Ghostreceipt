@@ -12,6 +12,7 @@ import { BlockCypherProvider } from '@/lib/providers/bitcoin/blockcypher';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
+import { SolanaChainstackProvider } from '@/lib/providers/solana/chainstack';
 import { SolanaPublicRpcProvider } from '@/lib/providers/solana/public-rpc';
 import { computeOracleCommitment } from '@/lib/zk/oracle-commitment';
 import { getCachedOracleSignerFromEnv } from '@/lib/libraries/backend/oracle-signer-cache';
@@ -405,29 +406,53 @@ function createHeliusProvider(options: Pick<OracleFetchOptions, 'heliusKeys'>): 
   });
 }
 
-function createConsensusVerificationProvider(
+function createConsensusVerificationProviders(
   chain: Chain,
   primaryProvider: string,
   options: Pick<
     OracleFetchOptions,
     'blockCypherKeys' | 'etherscanKeys' | 'heliusKeys' | 'ethereumAsset'
   >
-): Provider {
+): Provider[] {
   if (chain === 'bitcoin') {
-    return primaryProvider === 'blockcypher'
+    return [
+      primaryProvider === 'blockcypher'
       ? new MempoolSpaceProvider()
-      : createBlockCypherProvider(options);
+      : createBlockCypherProvider(options),
+    ];
   }
 
   if (chain === 'ethereum') {
-    return primaryProvider === 'etherscan'
+    return [
+      primaryProvider === 'etherscan'
       ? new EthereumPublicRpcProvider(options.ethereumAsset ?? 'native')
-      : createEtherscanProvider(options);
+      : createEtherscanProvider(options),
+    ];
   }
 
-  return primaryProvider === 'helius'
-    ? new SolanaPublicRpcProvider()
-    : createHeliusProvider(options);
+  if (primaryProvider === 'helius') {
+    const solanaVerificationProviders: Provider[] = [];
+    if (SolanaChainstackProvider.isConfigured()) {
+      solanaVerificationProviders.push(new SolanaChainstackProvider());
+    }
+    solanaVerificationProviders.push(new SolanaPublicRpcProvider());
+    return solanaVerificationProviders;
+  }
+
+  if (primaryProvider === 'solana-chainstack') {
+    return [new SolanaPublicRpcProvider(), createHeliusProvider(options)];
+  }
+
+  if (primaryProvider === 'solana-public-rpc') {
+    const solanaVerificationProviders: Provider[] = [];
+    if (SolanaChainstackProvider.isConfigured()) {
+      solanaVerificationProviders.push(new SolanaChainstackProvider());
+    }
+    solanaVerificationProviders.push(createHeliusProvider(options));
+    return solanaVerificationProviders;
+  }
+
+  return [createHeliusProvider(options)];
 }
 
 function formatChainConsensusPrefix(chain: Chain): string {
@@ -512,55 +537,55 @@ async function validateConsensusForCanonicalData(
   }
 
   const chainPrefix = formatChainConsensusPrefix(chain);
-  const verificationProvider = createConsensusVerificationProvider(
+  const verificationProviders = createConsensusVerificationProviders(
     chain,
     primaryProvider,
     options
   );
+  const triedProviders = verificationProviders.map((provider) => provider.name).join(', ');
+  const verificationFailures: string[] = [];
 
-  let verificationData: CanonicalTxData;
-  try {
-    verificationData = await verificationProvider.fetchTransaction(txHash);
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    if (consensusMode === 'strict') {
+  for (const verificationProvider of verificationProviders) {
+    let verificationData: CanonicalTxData;
+    try {
+      verificationData = await verificationProvider.fetchTransaction(txHash);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      verificationFailures.push(`${verificationProvider.name}: ${reason}`);
+      continue;
+    }
+
+    const parsedVerification = CanonicalTxDataSchema.safeParse(verificationData);
+    if (!parsedVerification.success) {
+      verificationFailures.push(`${verificationProvider.name}: invalid canonical data`);
+      continue;
+    }
+
+    const mismatchReason = findCanonicalConsensusMismatch(primaryData, parsedVerification.data);
+    if (mismatchReason) {
       throw new Error(
-        `${chainPrefix} consensus unavailable: ${verificationProvider.name} verification failed (${reason})`
+        `${chainPrefix} consensus mismatch between ${primaryProvider} and ${verificationProvider.name}: ${mismatchReason}`
       );
     }
+
     return {
-      status: 'single_source_fallback',
-      label:
-        `Single-source fallback (${primaryProvider}); ` +
-        `consensus source unavailable (${verificationProvider.name})`,
+      status: 'consensus_verified',
+      label: `Dual-source consensus verified (${primaryProvider} + ${verificationProvider.name})`,
     };
   }
 
-  const parsedVerification = CanonicalTxDataSchema.safeParse(verificationData);
-  if (!parsedVerification.success) {
-    if (consensusMode === 'strict') {
-      throw new Error(
-        `${chainPrefix} consensus unavailable: ${verificationProvider.name} returned invalid canonical data`
-      );
-    }
-    return {
-      status: 'single_source_fallback',
-      label:
-        `Single-source fallback (${primaryProvider}); ` +
-        `consensus source returned invalid data (${verificationProvider.name})`,
-    };
-  }
-
-  const mismatchReason = findCanonicalConsensusMismatch(primaryData, parsedVerification.data);
-  if (mismatchReason) {
+  if (consensusMode === 'strict') {
+    const firstFailure = verificationFailures[0] ?? 'unknown verifier failure';
     throw new Error(
-      `${chainPrefix} consensus mismatch between ${primaryProvider} and ${verificationProvider.name}: ${mismatchReason}`
+      `${chainPrefix} consensus unavailable: tried ${triedProviders}. First failure: ${firstFailure}`
     );
   }
 
   return {
-    status: 'consensus_verified',
-    label: `Dual-source consensus verified (${primaryProvider} + ${verificationProvider.name})`,
+    status: 'single_source_fallback',
+    label:
+      `Single-source fallback (${primaryProvider}); ` +
+      `consensus source unavailable (${triedProviders})`,
   };
 }
 

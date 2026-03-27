@@ -8,10 +8,12 @@ import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
+import { SolanaChainstackProvider } from '@/lib/providers/solana/chainstack';
 import { SolanaPublicRpcProvider } from '@/lib/providers/solana/public-rpc';
 
 describe('oracle consensus gating and labeling', () => {
   const originalOraclePrivateKey = process.env['ORACLE_PRIVATE_KEY'];
+  const originalChainstackEndpoint = process.env['SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL'];
 
   beforeEach(() => {
     process.env['ORACLE_PRIVATE_KEY'] = '1'.repeat(64);
@@ -27,6 +29,12 @@ describe('oracle consensus gating and labeling', () => {
     __resetFetchTxCanonicalCacheForTests();
     resetCachedOracleSignerForTests();
     jest.restoreAllMocks();
+
+    if (originalChainstackEndpoint === undefined) {
+      delete process.env['SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL'];
+    } else {
+      process.env['SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL'] = originalChainstackEndpoint;
+    }
   });
 
   function buildCanonicalBitcoinTx(txHash: string, valueAtomic = '1000') {
@@ -175,6 +183,8 @@ describe('oracle consensus gating and labeling', () => {
   });
 
   it('applies solana best-effort fallback when public consensus source is unavailable', async () => {
+    delete process.env['SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL'];
+
     const txHash = '5j7s9f6q2c1k8r4d3m2n1p9z8x7w6v5u4t3s2r1q9p8m7n6b5v4c3x2z1q9w8e7r';
     jest
       .spyOn(HeliusProvider.prototype, 'fetchTransaction')
@@ -190,6 +200,37 @@ describe('oracle consensus gating and labeling', () => {
 
     expect(result.data.oracleValidationStatus).toBe('single_source_fallback');
     expect(result.data.oracleValidationLabel).toContain('Single-source fallback');
+  });
+
+  it('uses public RPC as fallback when Chainstack verifier is unavailable', async () => {
+    process.env['SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL'] = 'https://chainstack.example';
+
+    const txHash = '2EZa6mCEiQnc9aK8cDdbtdCqJuJr8b8hxxeRrzAH7YwSm3jF7jH5jztofBDGuWhjyH3vuEQhScZvWNRMBhdN1haX';
+    const canonical = buildCanonicalSolanaTx(txHash, '10000000000');
+
+    const heliusSpy = jest
+      .spyOn(HeliusProvider.prototype, 'fetchTransaction')
+      .mockResolvedValue(canonical);
+    const chainstackSpy = jest
+      .spyOn(SolanaChainstackProvider.prototype, 'fetchTransaction')
+      .mockRejectedValue(new Error('HTTP 503: Service Unavailable'));
+    const publicRpcSpy = jest
+      .spyOn(SolanaPublicRpcProvider.prototype, 'fetchTransaction')
+      .mockResolvedValue({
+        ...canonical,
+        confirmations: 6,
+      });
+
+    const result = await fetchAndSignOracleTransaction('solana', txHash, {
+      solanaConsensusMode: 'best_effort',
+      heliusKeys: ['helius-test-key'],
+    });
+
+    expect(result.data.oracleValidationStatus).toBe('consensus_verified');
+    expect(result.data.oracleValidationLabel).toContain('solana-public-rpc');
+    expect(heliusSpy).toHaveBeenCalledTimes(1);
+    expect(chainstackSpy).toHaveBeenCalledTimes(1);
+    expect(publicRpcSpy).toHaveBeenCalledTimes(1);
   });
 
   it('caps auth signature lifetime to configured maximum', async () => {

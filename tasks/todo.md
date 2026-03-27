@@ -2452,3 +2452,39 @@ Fix the immediate push blocker after single-branch migration by verifying and re
   - Removed protection using GitHub API `DELETE /repos/Teycir/Ghostreceipt/branches/main/protection` (`HTTP 204`).
   - Verified direct push succeeds:
     - `git push --no-verify origin main` -> success (`c470ae5..32c5531`).
+
+## Objective (Solana Consensus: Chainstack Verifier + Public RPC Fallback)
+
+Harden Solana consensus verification so we first verify against Chainstack, then fall back to public Solana RPC if Chainstack is unavailable.
+
+## Plan
+
+- [x] Add a dedicated Solana Chainstack provider and env-backed endpoint registry key.
+- [x] Update consensus verification flow to try Chainstack first, then Solana public RPC fallback.
+- [x] Update env/docs/sync scripts for optional Chainstack endpoint support.
+- [x] Add/adjust unit tests for verifier ordering and fallback behavior.
+- [x] Run targeted tests and type-check; capture verification results.
+
+## Review (Solana Consensus: Chainstack Verifier + Public RPC Fallback)
+
+- Status: Completed
+- Implementation:
+  - Added `lib/providers/solana/chainstack.ts` with canonical Solana JSON-RPC fetch/parse, retry, throttle, and health-check behavior.
+  - Added env-backed endpoint key `SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL` in `lib/config/public-rpc-endpoints.ts`.
+  - Updated consensus verifier routing in `lib/libraries/backend-core/http/fetch-tx.ts`:
+    - Solana primary `helius` now verifies with `solana-chainstack` first (when configured).
+    - If Chainstack verification is unavailable, verifier falls back to `solana-public-rpc`.
+  - Added optional runtime validation for Chainstack endpoint in `lib/config/runtime-config.ts`.
+  - Synced config/docs tooling:
+    - `.env.example`
+    - `scripts/sync-secrets.sh`
+    - `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md`
+  - Added test coverage:
+    - `tests/unit/providers/solana-chainstack.test.ts`
+    - `tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts` (new Solana Chainstack→public fallback case)
+    - `jest.setup.js` endpoint defaults include Chainstack key for deterministic provider tests.
+- Verification:
+  - `npm test -- tests/unit/providers/solana-chainstack.test.ts tests/unit/providers/solana-public-rpc.test.ts tests/unit/backend-core/http/fetch-tx-bitcoin-consensus.test.ts --runInBand --ci` (pass)
+  - `npm run typecheck` (pass)
+  - `LIVE_INTEGRATION=1 ORACLE_SOL_CONSENSUS_MODE=strict LIVE_SOL_TX_SIGNATURE=2EZa6mCEiQnc9aK8cDdbtdCqJuJr8b8hxxeRrzAH7YwSm3jF7jH5jztofBDGuWhjyH3vuEQhScZvWNRMBhdN1haX SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL=https://solana-mainnet.core.chainstack.com/bd168936a4de5ea0717eb19690ac5978 npx jest tests/integration/live-solana-e2e.test.ts --runInBand --ci --testTimeout=240000` (pass)
+  - `LIVE_INTEGRATION=1 ... SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL=https://solana-mainnet.core.chainstack.com/invalid npx jest tests/integration/live-consensus-flows.test.ts -t "live Solana consensus behavior" --runInBand --ci --testTimeout=300000` (pass, validates strict Solana consensus still succeeds when Chainstack is unavailable via public RPC fallback)

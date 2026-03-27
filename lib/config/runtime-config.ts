@@ -5,6 +5,7 @@ import { MempoolSpaceProvider } from '@/lib/providers/bitcoin/mempool';
 import { EtherscanProvider } from '@/lib/providers/ethereum/etherscan';
 import { EthereumPublicRpcProvider } from '@/lib/providers/ethereum/public-rpc';
 import { HeliusProvider } from '@/lib/providers/solana/helius';
+import { SolanaChainstackProvider } from '@/lib/providers/solana/chainstack';
 import { SolanaPublicRpcProvider } from '@/lib/providers/solana/public-rpc';
 import { OracleSigner } from '@/lib/oracle/signer';
 import { checkOracleKeyTransparencyValidity } from '@/lib/libraries/backend-core/http/oracle-transparency-log';
@@ -297,6 +298,14 @@ function validateProviderEndpointConfig(issues: RuntimeConfigIssue[]): void {
       key: 'SOLANA_PROVIDER_API_ENDPOINTS',
       build: () => {
         void new HeliusProvider(PROVIDER_PROBE_KEY_CONFIG);
+      },
+    },
+    {
+      key: 'SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL (optional)',
+      build: () => {
+        if (SolanaChainstackProvider.isConfigured()) {
+          void new SolanaChainstackProvider();
+        }
       },
     },
   ];
