@@ -20,7 +20,10 @@ export interface OraclePostJsonResult {
 
 interface OraclePostJsonOptions {
   signal?: AbortSignal;
+  timeoutMs?: number;
 }
+
+const DEFAULT_ORACLE_TIMEOUT_MS = 120_000;
 
 function normalizeRoutePath(route: OracleRoutePath): string {
   return route.replace(/^\/+/, '');
@@ -66,6 +69,14 @@ function logFailoverWarning(message: string): void {
   console.warn(message);
 }
 
+function resolveTimeoutMs(rawTimeoutMs?: number): number {
+  if (typeof rawTimeoutMs !== 'number' || !Number.isFinite(rawTimeoutMs) || rawTimeoutMs <= 0) {
+    return DEFAULT_ORACLE_TIMEOUT_MS;
+  }
+
+  return Math.floor(rawTimeoutMs);
+}
+
 export async function postOracleJson(
   route: OracleRoutePath,
   body: unknown,
@@ -83,6 +94,25 @@ export async function postOracleJson(
   for (const endpoint of endpoints) {
     attemptedEndpoints.push(endpoint);
     const isLastEndpoint = attemptedEndpoints.length === endpoints.length;
+    const timeoutMs = resolveTimeoutMs(options.timeoutMs);
+    const controller = new AbortController();
+    let timeoutTriggered = false;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+    const onParentAbort = (): void => {
+      controller.abort();
+    };
+
+    if (options.signal?.aborted) {
+      controller.abort();
+    } else if (options.signal) {
+      options.signal.addEventListener('abort', onParentAbort, { once: true });
+    }
+
+    timeoutHandle = setTimeout(() => {
+      timeoutTriggered = true;
+      controller.abort();
+    }, timeoutMs);
 
     try {
       const requestInit: RequestInit = {
@@ -91,7 +121,7 @@ export async function postOracleJson(
           'content-type': 'application/json',
         },
         method: 'POST',
-        ...(options.signal !== undefined ? { signal: options.signal } : {}),
+        signal: controller.signal,
       };
       const response = await fetch(endpoint, requestInit);
 
@@ -108,14 +138,37 @@ export async function postOracleJson(
         `[Oracle] Endpoint ${endpoint} returned HTTP ${response.status}. Trying backup endpoint.`
       );
     } catch (error) {
+      if (options.signal?.aborted) {
+        throw error;
+      }
+
+      if (timeoutTriggered && isLastEndpoint) {
+        throw new Error(
+          'We could not reach the transaction service in time. Please try again.'
+        );
+      }
+
       if (isLastEndpoint) {
         throw error;
       }
 
-      const message = error instanceof Error ? error.message : 'unknown error';
+      const timeoutSeconds = Math.ceil(timeoutMs / 1000);
+      const timeoutLabel = timeoutSeconds === 1 ? '1 second' : `${timeoutSeconds} seconds`;
+      const message = timeoutTriggered
+        ? `request timed out after ${timeoutLabel}`
+        : error instanceof Error
+          ? error.message
+          : 'unknown error';
       logFailoverWarning(
         `[Oracle] Endpoint ${endpoint} failed (${message}). Trying backup endpoint.`
       );
+    } finally {
+      if (timeoutHandle !== null) {
+        clearTimeout(timeoutHandle);
+      }
+      if (options.signal) {
+        options.signal.removeEventListener('abort', onParentAbort);
+      }
     }
   }
 

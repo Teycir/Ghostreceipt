@@ -1,5 +1,80 @@
 # Task Plan - 2026-03-26
 
+## Objective (Refine Post-Success UX + Clarity Labels)
+
+Improve post-generation usability by adding a `New Receipt` action, simplify minimum-field phrasing, shrink validation badge text, and adjust timeout threshold to 120 seconds.
+
+## Plan
+
+- [x] Raise default oracle client timeout to `120s` for extraordinary stalls only.
+- [x] Add `New Receipt` button after success flow (above history CTA).
+- [x] Simplify minimum amount/date helper wording and disclosure labels.
+- [x] Reduce validation badge size and shorten displayed validation title text.
+- [x] Run targeted tests/typecheck/build verification.
+
+## Review (Refine Post-Success UX + Clarity Labels)
+
+- Status: Completed
+- Updates shipped:
+  - `lib/oracle/client.ts`: default timeout raised to `120_000` ms (120s) so timeout triggers only on extraordinary stalls.
+  - `components/generator/generator-form.tsx`: added `New Receipt` button after success state (renders above the page-level `View Receipt History` button).
+  - `components/generator/generator-form.tsx`: simplified helper copy:
+    - amount: `Proves this payment was at least this amount.`
+    - date: `Proves this payment happened on or after this date.`
+  - `components/generator/generator-form.tsx`: simplified disclosure labels:
+    - `Show amount in receipt`
+    - `Show date in receipt`
+  - `components/ui/validation-strength-badge.tsx`: reduced badge typography and replaced long technical display labels with short user-facing titles while preserving full details in tooltip/aria text.
+- Verification:
+  - `npm test -- tests/unit/oracle/client.test.ts tests/unit/generator/error-messages.test.ts --runInBand --ci` (pass)
+  - `npm run typecheck` (pass)
+  - `npm run build` (pass outside sandbox)
+
+## Objective (Prevent Infinite "Find Transaction" Spinner)
+
+Stop generator sessions from hanging forever in `Find Transaction` when oracle fetch requests stall after refresh or provider/network issues.
+
+## Plan
+
+- [x] Add a bounded request timeout to `postOracleJson` (with fallback-safe behavior).
+- [x] Surface a plain-English timeout message in generator fetch flow.
+- [x] Add/update unit tests for timeout behavior and run targeted suites.
+
+## Review (Prevent Infinite "Find Transaction" Spinner)
+
+- Status: Completed
+- Fixes shipped:
+  - `lib/oracle/client.ts`: added per-endpoint timeout support (`timeoutMs`, default `120s`) for oracle POST calls.
+  - `lib/oracle/client.ts`: timeout on primary endpoint now fails over to backup endpoint when configured.
+  - `lib/oracle/client.ts`: when all endpoints time out, returns plain-English error: `We could not reach the transaction service in time. Please try again.`
+- Tests added/updated:
+  - `tests/unit/oracle/client.test.ts`: timeout rejection test for single endpoint.
+  - `tests/unit/oracle/client.test.ts`: timeout-triggered fallback test for primary → backup.
+- Verification:
+  - `npm test -- tests/unit/oracle/client.test.ts tests/unit/generator/error-messages.test.ts --runInBand --ci` (pass)
+  - `npm run typecheck` (pass)
+  - `npm run build` (pass outside sandbox)
+
+## Objective (Publish GitHub Release For v1)
+
+Publish an official GitHub Release for tag `v1` so the milestone is visible to users and contributors.
+
+## Plan
+
+- [x] Verify tag `v1` exists locally/remotely and confirm GitHub auth method.
+- [x] Create GitHub release `v1` with concise release notes.
+- [x] Verify release URL and capture result in review notes.
+
+## Review (Publish GitHub Release For v1)
+
+- Status: Completed
+- Published release:
+  - Tag: `v1`
+  - Name: `v1`
+  - URL: `https://github.com/Teycir/Ghostreceipt/releases/tag/v1`
+- Notes:
+  - `gh` CLI was unavailable in this environment, so release was created via GitHub REST API with repository token auth.
+
 ## Objective (Add Small Source Hint Under Transaction Hash)
 
 Help users know where to copy a valid transaction hash/signature by showing compact explorer examples under the hash input.

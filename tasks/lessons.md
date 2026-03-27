@@ -1,5 +1,22 @@
 # Lessons Learned
 
+## 2026-03-27 - Keep Timeout Generous But Add Clear Escape Hatch
+- For transaction fetch UX, timeout should be an exceptional guardrail (around 120 seconds), not an aggressive default.
+- Even with long timeout, always fail with plain-English recovery text rather than indefinite spinner states.
+
+## 2026-03-27 - Post-Success Flow Needs A One-Tap Restart
+- After showing a successful receipt, include a clear `New Receipt` action in the same screen flow.
+- Place restart action above secondary navigation actions (like history) so users can quickly continue.
+
+## 2026-03-27 - Validation Labels Must Be Short, Human, And Mobile-Friendly
+- Never render raw backend validation label strings directly when they are long/technical; map to short user-facing titles.
+- Keep compact status badges at very small typography on mobile and preserve full diagnostics in tooltip/aria text.
+
+## 2026-03-27 - Long "Find Transaction" Waits Need Explicit Timeout Guardrails
+- If the user reports being stuck on `Find Transaction`, treat it as a fetch-timeout UX bug even if a validation error eventually appears.
+- Add bounded client timeouts with failover support so users get actionable feedback in seconds, not indefinite waits.
+- Keep timeout errors plain-English and retry-oriented (`try again`) so non-technical users can recover quickly.
+
 ## 2026-03-27 - Put Source Examples Next To Hash Inputs
 - If users ask where to get a transaction hash, add a small inline helper near the hash field rather than only documenting it elsewhere.
 - Make source hints chain-aware (Bitcoin/Ethereum/Solana) so examples stay accurate.

@@ -338,7 +338,7 @@ export function GeneratorForm(): React.JSX.Element {
             )}
           </div>
           <p className="mb-1 text-[10px] leading-snug text-white/45">
-            The smallest amount this receipt will prove for this transaction.
+            Proves this payment was at least this amount.
           </p>
           <Input
             id={`${formId}-amount`}
@@ -356,7 +356,7 @@ export function GeneratorForm(): React.JSX.Element {
         <Input
           id={`${formId}-date`}
           label="Minimum Date"
-          description="The earliest date this receipt will prove the payment happened on or after."
+          description="Proves this payment happened on or after this date."
           type="date"
           value={values.minDate}
           onChange={(v) => setValues((prev) => ({ ...prev, minDate: v }))}
@@ -370,11 +370,11 @@ export function GeneratorForm(): React.JSX.Element {
       <div className="px-2 py-2 border rounded-lg border-white/10 bg-black/10">
         <p className="text-xs font-medium text-white/75">Selective disclosure</p>
         <p className="mt-1 text-[11px] text-white/45">
-          Choose which claim fields are visible in the shared receipt.
+          Choose what people can see in the shared receipt.
         </p>
         <div className="mt-2 grid grid-cols-1 gap-2 min-[540px]:grid-cols-2">
           <label className="flex items-center justify-between rounded border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white/80">
-            <span>Disclose minimum amount</span>
+            <span>Show amount in receipt</span>
             <input
               type="checkbox"
               checked={values.discloseAmount}
@@ -387,7 +387,7 @@ export function GeneratorForm(): React.JSX.Element {
             />
           </label>
           <label className="flex items-center justify-between rounded border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white/80">
-            <span>Disclose minimum date</span>
+            <span>Show date in receipt</span>
             <input
               type="checkbox"
               checked={values.discloseMinDate}
@@ -493,6 +493,12 @@ export function GeneratorForm(): React.JSX.Element {
           {...(proofResult.timings ? { timings: proofResult.timings } : {})}
           {...(proofResult.proofRuntime ? { proofRuntime: proofResult.proofRuntime } : {})}
         />
+      )}
+
+      {state === 'success' && (
+        <Button type="button" onClick={reset} variant="secondary" className="w-full py-1.5 text-[12px]">
+          New Receipt
+        </Button>
       )}
 
       {draftStatus && (
