@@ -1,5 +1,25 @@
 # Task Plan - 2026-03-26
 
+## Objective (Follow-Up Hash Visibility Fix After User Validation)
+
+Address user-reported "no visible change" by making the transaction hash field visibly wider on desktop and reducing hash font sizing further.
+
+## Plan
+
+- [x] Make transaction hash input span full width on medium+ layouts (`md:col-span-2`).
+- [x] Reduce hash input font and padding further for long-hash readability.
+- [x] Rebuild/deploy verification guidance captured for user confirmation.
+
+## Review (Follow-Up Hash Visibility Fix After User Validation)
+
+- Status: Completed
+- Changes shipped:
+  - Hash field now spans full width on medium+ screens.
+  - Hash field typography tightened further (`9px` base, `10px` on `sm/md`, `11px` on `lg`) with reduced horizontal padding.
+  - Witness amount failure message wording simplified further to avoid symbolic/cryptic phrasing and improve readability for non-technical users.
+- Verification:
+  - `npm test -- tests/unit/generator/error-messages.test.ts --runInBand --ci` (pass)
+
 ## Objective (Improve Generator Error Clarity + Show Full Transaction Hash)
 
 Make amount validation errors plain-English and adjust the transaction-hash input typography so long hashes are fully readable instead of appearing cropped.

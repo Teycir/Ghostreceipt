@@ -1,5 +1,12 @@
 import type { ApiErrorPayload } from '@/lib/generator/types';
 
+function formatAtomicInteger(value: string): string {
+  if (!/^\d+$/.test(value)) {
+    return value;
+  }
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 function formatUnixDate(value: string): string {
   const unix = Number(value);
   if (!Number.isFinite(unix) || unix <= 0) {
@@ -68,9 +75,9 @@ export function mapWitnessValidationErrors(validationErrors: string[]): string {
       const realValue = match[1] ?? '0';
       const claimedAmount = match[2] ?? '0';
       if (realValue === '0') {
-        return `This transaction sent 0 on-chain. Your minimum claim is ${claimedAmount}, so this proof cannot be generated. Paste the hash of a transaction that actually sent funds.`;
+        return `This transaction sent no funds (value is 0). Your minimum claim is ${formatAtomicInteger(claimedAmount)}. Use a transaction hash that actually sent funds.`;
       }
-      return `This transaction sent ${realValue}, but your minimum claim is ${claimedAmount}. Set the claim to ${realValue} or less, then try again.`;
+      return `This transaction sent ${formatAtomicInteger(realValue)}, but your minimum claim is ${formatAtomicInteger(claimedAmount)}. Set your minimum claim to ${formatAtomicInteger(realValue)} or less, then try again.`;
     }
     return 'Your claimed amount is higher than what this transaction sent. Lower the claim and retry.';
   }

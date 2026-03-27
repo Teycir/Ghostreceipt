@@ -83,8 +83,8 @@ describe('generator smart error messages', () => {
       'Real value (0) is less than claimed amount (50000000000000000)',
     ]);
 
-    expect(amountMessage).toContain('sent 0 on-chain');
-    expect(amountMessage).toContain('minimum claim is 50000000000000000');
+    expect(amountMessage).toContain('sent no funds');
+    expect(amountMessage).toContain('minimum claim is 50,000,000,000,000,000');
     expect(amountMessage).toContain('actually sent funds');
   });
 });

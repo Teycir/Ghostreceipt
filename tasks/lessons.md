@@ -4,6 +4,7 @@
 - If users see technical validation text like `Claim (...) > tx value (...)`, treat it as a UX bug even when the logic is correct.
 - For amount-claim failures, explicitly describe what happened in user terms (for example "this transaction sent 0") and what action fixes it.
 - When surfacing long identifiers (transaction hashes), prefer compact monospace typography so full values remain readable without apparent cropping.
+- Avoid symbolic comparison notation (`>`, parentheses-heavy tuples) in end-user errors; write full sentences with formatted numbers instead.
 
 ## 2026-03-26 - CI-Gated Deploy Is Necessary But Not Sufficient Without Branch Protection
 - Workflow-level deploy gating (`workflow_run` on CI success) must be paired with repository branch protection, otherwise risky direct merges/push patterns can still bypass intended controls.

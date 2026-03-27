@@ -266,7 +266,7 @@ export function GeneratorForm(): React.JSX.Element {
         </Select>
 
         {/* ── Transaction hash ── */}
-        <div>
+        <div className="md:col-span-2">
           <div className="flex items-center justify-between mb-1">
             <label htmlFor={`${formId}-txhash`} className="text-xs font-medium text-white/70">
               Transaction Hash
@@ -295,7 +295,7 @@ export function GeneratorForm(): React.JSX.Element {
             onChange={handleTxHashChange}
             disabled={isProcessing}
             error={errors.txHash}
-            className="h-8 px-2 py-1 font-mono text-[10px] tracking-tight sm:text-[11px] md:text-[12px]"
+            className="h-8 px-1.5 py-1 font-mono text-[9px] tracking-tight sm:text-[10px] md:text-[10px] lg:text-[11px]"
           />
           {txHashFeedback && !errors.txHash && (
             <p
