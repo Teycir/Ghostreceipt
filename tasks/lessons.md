@@ -1,5 +1,9 @@
 # Lessons Learned
 
+## 2026-03-27 - Never Use Browser System Tooltips In Premium UI Surfaces
+- Avoid `title` attributes for user-facing explanations on polished UI elements; they produce inconsistent system tooltips.
+- Prefer custom hover/focus tooltip components (`role="tooltip"`) so style and behavior match the app design language.
+
 ## 2026-03-27 - Keep Timeout Generous But Add Clear Escape Hatch
 - For transaction fetch UX, timeout should be an exceptional guardrail (around 120 seconds), not an aggressive default.
 - Even with long timeout, always fail with plain-English recovery text rather than indefinite spinner states.

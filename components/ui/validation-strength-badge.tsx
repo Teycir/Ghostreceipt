@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 export type ValidationStrengthStatus =
   | 'consensus_verified'
   | 'single_source_fallback'
@@ -93,24 +95,35 @@ export function ValidationStrengthBadge({
   showDescription = true,
   className = '',
 }: Readonly<ValidationStrengthBadgeProps>): React.JSX.Element | null {
+  const tooltipId = useId();
   const resolved = resolveValidationStrength(status, label);
   if (!resolved) {
     return null;
   }
 
   return (
-    <span
-      className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 !text-[9px] font-medium tracking-[0.02em] leading-tight ${resolved.tone.className} ${className}`}
-      title={resolved.details}
-      aria-label={resolved.details}
-    >
-      <span aria-hidden="true" className="text-[7px] leading-none">{resolved.tone.icon}</span>
-      <span className="truncate normal-case">{resolved.title}</span>
-      {showDescription && (
-        <span className="hidden whitespace-nowrap !text-[9px] font-normal normal-case tracking-normal opacity-80 md:inline">
-          {resolved.tone.description}
-        </span>
-      )}
+    <span className={`group relative inline-flex max-w-full ${className}`}>
+      <button
+        type="button"
+        aria-label={resolved.details}
+        aria-describedby={tooltipId}
+        className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 !text-[9px] font-medium tracking-[0.02em] leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${resolved.tone.className}`}
+      >
+        <span aria-hidden="true" className="text-[7px] leading-none">{resolved.tone.icon}</span>
+        <span className="truncate normal-case">{resolved.title}</span>
+        {showDescription && (
+          <span className="hidden whitespace-nowrap !text-[9px] font-normal normal-case tracking-normal opacity-80 md:inline">
+            {resolved.tone.description}
+          </span>
+        )}
+      </button>
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-72 max-w-[86vw] -translate-x-1/2 rounded-md border border-white/15 bg-slate-950/95 px-2.5 py-2 text-[11px] leading-relaxed text-white/85 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        {resolved.details}
+      </span>
     </span>
   );
 }

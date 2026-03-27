@@ -1,5 +1,24 @@
 # Task Plan - 2026-03-26
 
+## Objective (Replace System Tooltip With Premium UI Tooltip)
+
+Remove native browser tooltip styling from validation status and use app-styled tooltip visuals instead.
+
+## Plan
+
+- [x] Remove system `title` tooltip from validation badge.
+- [x] Add custom hover/focus tooltip with premium styling.
+- [x] Verify with typecheck.
+
+## Review (Replace System Tooltip With Premium UI Tooltip)
+
+- Status: Completed
+- Updated:
+  - `components/ui/validation-strength-badge.tsx`: removed native `title` usage that triggered OS/browser tooltips.
+  - `components/ui/validation-strength-badge.tsx`: added custom tooltip panel (`role="tooltip"`) shown on hover/focus with in-app glass styling.
+- Verification:
+  - `npm run typecheck` (pass)
+
 ## Objective (Refine Post-Success UX + Clarity Labels)
 
 Improve post-generation usability by adding a `New Receipt` action, simplify minimum-field phrasing, shrink validation badge text, and adjust timeout threshold to 120 seconds.
