@@ -1,3 +1,9 @@
+<div align="center">
+  <a href="https://youtu.be/Dj2BSDsNJC4" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.youtube.com/vi/Dj2BSDsNJC4/maxresdefault.jpg" alt="Watch the GhostReceipt explainer video on YouTube" width="900" />
+  </a>
+</div>
+
 <!-- donation:eth:start -->
 <div align="center">
 

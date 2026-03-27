@@ -1,5 +1,22 @@
 # Task Plan - 2026-03-26
 
+## Objective (Place Explainer Video At Top Of README)
+
+Show the GhostReceipt explainer video at the very top of the README using a GitHub-compatible embedded preview.
+
+## Plan
+
+- [x] Add a top-of-README video preview block linked to the YouTube explainer.
+- [x] Keep existing README structure intact and avoid breaking markdown rendering.
+- [x] Document completion in this task file.
+
+## Review (Place Explainer Video At Top Of README)
+
+- Status: Completed
+- Added a centered top-of-file video preview image linked to:
+  - `https://youtu.be/Dj2BSDsNJC4`
+- Used a GitHub-safe clickable thumbnail pattern (works where iframe embeds are stripped).
+
 ## Objective (Follow-Up Hash Visibility Fix After User Validation)
 
 Address user-reported "no visible change" by making the transaction hash field visibly wider on desktop and reducing hash font sizing further.
