@@ -29,7 +29,7 @@ export function mapFetchTxApiError(
         ? Math.ceil(retryAfter)
         : 60;
     const waitLabel = waitSeconds === 1 ? '1 sec' : `${waitSeconds} secs`;
-    return `Rate limit. Wait ${waitLabel} and retry.`;
+    return `Too many requests right now. Please wait ${waitLabel} and try again.`;
   }
 
   if (
@@ -42,22 +42,22 @@ export function mapFetchTxApiError(
 
   const code = payload?.error?.code;
   if (code === 'TRANSACTION_NOT_FOUND') {
-    return 'Transaction not visible yet. If just sent, wait ~5 min for confirmation.';
+    return 'We can\'t find this transaction yet. If you just sent it, wait about 5 minutes and try again.';
   }
   if (code === 'PROVIDER_TIMEOUT' || code === 'PROVIDER_ERROR') {
-    return 'Network busy. Retry in 30-60 seconds.';
+    return 'Network is busy right now. Please try again in 30 to 60 seconds.';
   }
   if (code === 'INVALID_HASH') {
-    return 'Hash format doesn\'t match selected chain. Check and retry.';
+    return 'This transaction hash does not match the selected chain. Check it and try again.';
   }
   if (code === 'TRANSACTION_REVERTED') {
-    return 'Transaction reverted on-chain. Cannot be used as proof.';
+    return 'This transaction failed on-chain, so it cannot be used for a receipt.';
   }
   if (code === 'INSUFFICIENT_CONFIRMATIONS') {
-    return 'Still confirming. Wait ~5 min and retry.';
+    return 'This transaction is still confirming. Wait about 5 minutes and try again.';
   }
   if (code === 'REPLAY_DETECTED') {
-    return 'Duplicate detected. Wait a moment and retry.';
+    return 'This request was already submitted. Wait a moment and try again.';
   }
 
   return payload?.error?.message ?? 'Failed to fetch transaction';
@@ -89,9 +89,9 @@ export function mapWitnessValidationErrors(validationErrors: string[]): string {
     if (match) {
       const realTimestamp = match[1] ?? '0';
       const minDate = match[2] ?? '0';
-      return `Tx date (${formatUnixDate(realTimestamp)}) < min date (${formatUnixDate(minDate)}). Choose earlier date.`;
+      return `This payment happened on ${formatUnixDate(realTimestamp)}, which is before your minimum date of ${formatUnixDate(minDate)}. Choose an earlier minimum date and try again.`;
     }
-    return 'Tx before min date. Choose earlier date and retry.';
+    return 'This payment happened before your minimum date. Choose an earlier minimum date and try again.';
   }
-  return `Validation failed: ${validationErrors.join(', ')}`;
+  return 'We could not validate this claim. Check the transaction hash, amount, and minimum date, then try again.';
 }

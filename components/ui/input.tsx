@@ -56,7 +56,7 @@ export function Input({
         `}
       />
       {error && (
-        <span className="text-xs text-red-400/90">
+        <span className="text-[11px] leading-snug break-words [overflow-wrap:anywhere] text-red-400/90 sm:text-xs">
           {error}
         </span>
       )}

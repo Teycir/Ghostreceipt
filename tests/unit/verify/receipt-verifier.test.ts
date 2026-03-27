@@ -207,7 +207,7 @@ describe('verifySharedReceiptProof', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('Invalid proof: claim digest mismatch detected');
+    expect(result.error).toBe('This receipt data is inconsistent and could not be verified.');
   });
 
   it('falls back to verified legacy signals when selective envelope commitment mismatches', async () => {
@@ -258,7 +258,7 @@ describe('verifySharedReceiptProof', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('Oracle commitment mismatch detected');
+    expect(result.error).toBe('This receipt does not match its verification signature.');
   });
 
   it('fails selective payloads without legacy verification signals', async () => {
@@ -285,6 +285,6 @@ describe('verifySharedReceiptProof', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('Invalid proof: missing legacy verification signals for selective-disclosure payload');
+    expect(result.error).toBe('This receipt is missing required verification data.');
   });
 });

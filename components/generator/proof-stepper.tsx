@@ -10,9 +10,9 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { id: 'fetching',   label: 'Fetch TX',      icon: '⬡', desc: 'Querying chain oracle…'    },
-  { id: 'validating', label: 'Validate',       icon: '◈', desc: 'Verifying oracle payload…' },
-  { id: 'generating', label: 'Generate Proof', icon: '⬟', desc: 'Running ZK circuit…'        },
+  { id: 'fetching',   label: 'Find Transaction', icon: '⬡', desc: 'Looking up your transaction on the blockchain…' },
+  { id: 'validating', label: 'Check Details',    icon: '◈', desc: 'Checking that the transaction matches your claim…' },
+  { id: 'generating', label: 'Create Proof',     icon: '⬟', desc: 'Creating your private cryptographic proof…' },
 ];
 
 const STATE_INDEX: Partial<Record<GeneratorState, number>> = {

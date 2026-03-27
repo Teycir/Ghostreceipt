@@ -5,6 +5,8 @@
 - For amount-claim failures, explicitly describe what happened in user terms (for example "this transaction sent 0") and what action fixes it.
 - When surfacing long identifiers (transaction hashes), prefer compact monospace typography so full values remain readable without apparent cropping.
 - Avoid symbolic comparison notation (`>`, parentheses-heavy tuples) in end-user errors; write full sentences with formatted numbers instead.
+- Apply the same plain-English rule to date checks: prefer "This payment happened on X, which is before your minimum date Y" over shorthand math-style text.
+- Audit adjacent copy paths too (form validation, progress steppers, and verify-failure messages), because cryptic language often appears in clusters across one flow.
 
 ## 2026-03-26 - CI-Gated Deploy Is Necessary But Not Sufficient Without Branch Protection
 - Workflow-level deploy gating (`workflow_run` on CI success) must be paired with repository branch protection, otherwise risky direct merges/push patterns can still bypass intended controls.

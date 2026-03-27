@@ -34,31 +34,31 @@ function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
   const category = values.receiptCategory.trim();
 
   if (!values.txHash.trim()) {
-    errors.txHash = 'Required';
+    errors.txHash = 'Transaction hash is required.';
   } else if (values.chain === 'bitcoin' && !/^[a-f0-9]{64}$/i.test(values.txHash)) {
-    errors.txHash = 'Invalid BTC hash (64 hex chars)';
+    errors.txHash = 'Enter a valid Bitcoin transaction hash (64 hex characters).';
   } else if (values.chain === 'ethereum' && !/^0x[a-f0-9]{64}$/i.test(values.txHash)) {
-    errors.txHash = 'Invalid ETH hash (0x + 64 hex)';
+    errors.txHash = 'Enter a valid Ethereum transaction hash (0x + 64 hex characters).';
   } else if (values.chain === 'solana' && !/^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(values.txHash)) {
-    errors.txHash = 'Invalid SOL sig (base58, 64-88)';
+    errors.txHash = 'Enter a valid Solana transaction signature (base58, 64 to 88 characters).';
   }
 
   if (!values.claimedAmount.trim()) {
-    errors.claimedAmount = 'Required';
+    errors.claimedAmount = 'Claimed amount is required.';
   } else if (Number.isNaN(Number(values.claimedAmount)) || Number(values.claimedAmount) <= 0) {
-    errors.claimedAmount = 'Must be positive number';
+    errors.claimedAmount = 'Enter an amount greater than 0.';
   }
 
   if (!values.minDate) {
-    errors.minDate = 'Required';
+    errors.minDate = 'Minimum date is required.';
   }
 
   if (label.length > 80) {
-    errors.receiptLabel = 'Max 80 chars';
+    errors.receiptLabel = 'Keep the label under 80 characters.';
   }
 
   if (category.length > 40) {
-    errors.receiptCategory = 'Max 40 chars';
+    errors.receiptCategory = 'Keep the category under 40 characters.';
   }
 
   return errors;
@@ -182,7 +182,7 @@ export function useProofGenerator(): UseProofGeneratorReturn {
         throw new Error(mapFetchTxApiError(response.status, data));
       }
 
-      if (!data?.data) throw new Error('Invalid response: missing oracle payload');
+      if (!data?.data) throw new Error('Unexpected server response. Please try again.');
 
       // 3. Build & validate witness
       setState('validating');

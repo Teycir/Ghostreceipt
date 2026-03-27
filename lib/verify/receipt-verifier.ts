@@ -73,6 +73,49 @@ function isOracleCommitmentMismatchError(error: unknown): boolean {
   return error instanceof Error && error.message === 'Oracle commitment mismatch detected';
 }
 
+function toPlainVerificationError(message: string): string {
+  const normalized = message.trim().toLowerCase();
+
+  if (normalized.includes('missing verification parameters')) {
+    return 'No receipt data was provided. Open the full verification link and try again.';
+  }
+  if (normalized.includes('proof verification failed') || normalized.includes('invalid proof format')) {
+    return 'We could not verify this receipt.';
+  }
+  if (normalized.includes('missing oracle authentication data')) {
+    return 'This receipt is missing required signature data.';
+  }
+  if (normalized.includes('missing legacy verification signals')) {
+    return 'This receipt is missing required verification data.';
+  }
+  if (normalized.includes('oracle commitment mismatch detected')) {
+    return 'This receipt does not match its verification signature.';
+  }
+  if (normalized.includes('disclosed amount does not match proven claim')) {
+    return 'The shared amount does not match the proven receipt data.';
+  }
+  if (normalized.includes('disclosed minimum date does not match proven claim')) {
+    return 'The shared minimum date does not match the proven receipt data.';
+  }
+  if (normalized.includes('claim digest mismatch detected')) {
+    return 'This receipt data is inconsistent and could not be verified.';
+  }
+  if (normalized.includes('oracle signature verification failed')) {
+    return 'We could not verify the receipt signature. Please try again.';
+  }
+  if (normalized.includes('oracle nullifier mismatch detected')) {
+    return 'This receipt failed an integrity check and cannot be verified.';
+  }
+  if (normalized.includes('nullifier conflict detected')) {
+    return 'This receipt appears to have been reused with different claim details.';
+  }
+  if (normalized.includes('rate limit reached')) {
+    return message;
+  }
+
+  return message;
+}
+
 export async function verifyOracleSignatureViaApi(
   oracleAuth: NonNullable<ShareableProofPayload['oracleAuth']>
 ): Promise<OracleSignatureVerificationResult> {
@@ -98,12 +141,12 @@ export async function verifyOracleSignatureViaApi(
 
       return {
         valid: false,
-        error: payload.error?.message ?? 'Oracle signature verification failed',
+        error: toPlainVerificationError(payload.error?.message ?? 'Oracle signature verification failed'),
       };
     } catch {
       return {
         valid: false,
-        error: 'Oracle signature verification failed',
+        error: toPlainVerificationError('Oracle signature verification failed'),
       };
     }
   }
@@ -117,7 +160,7 @@ export async function verifyOracleSignatureViaApi(
   }
   return {
     valid: false,
-    error: payload.message ?? 'Oracle signature verification failed',
+    error: toPlainVerificationError(payload.message ?? 'Oracle signature verification failed'),
   };
 }
 
@@ -131,7 +174,7 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: 'Missing verification parameters',
+        error: toPlainVerificationError('Missing verification parameters'),
       };
     }
 
@@ -147,7 +190,7 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: verification.error ?? 'Proof verification failed',
+        error: toPlainVerificationError(verification.error ?? 'Proof verification failed'),
       };
     }
 
@@ -157,7 +200,7 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: 'Missing oracle authentication data in shared receipt',
+        error: toPlainVerificationError('Missing oracle authentication data in shared receipt'),
       };
     }
 
@@ -188,7 +231,9 @@ export async function verifySharedReceiptProof(
           valid: false,
           claimedAmount: '',
           minDate: '',
-          error: 'Invalid proof: missing legacy verification signals for selective-disclosure payload',
+          error: toPlainVerificationError(
+            'Invalid proof: missing legacy verification signals for selective-disclosure payload'
+          ),
         };
       }
     }
@@ -202,7 +247,7 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: 'Oracle commitment mismatch detected',
+        error: toPlainVerificationError('Oracle commitment mismatch detected'),
       };
     }
 
@@ -215,7 +260,9 @@ export async function verifySharedReceiptProof(
           valid: false,
           claimedAmount: '',
           minDate: '',
-          error: 'Invalid proof: disclosed amount does not match proven claim',
+          error: toPlainVerificationError(
+            'Invalid proof: disclosed amount does not match proven claim'
+          ),
         };
       }
 
@@ -227,7 +274,9 @@ export async function verifySharedReceiptProof(
           valid: false,
           claimedAmount: '',
           minDate: '',
-          error: 'Invalid proof: disclosed minimum date does not match proven claim',
+          error: toPlainVerificationError(
+            'Invalid proof: disclosed minimum date does not match proven claim'
+          ),
         };
       }
 
@@ -241,7 +290,7 @@ export async function verifySharedReceiptProof(
           valid: false,
           claimedAmount: '',
           minDate: '',
-          error: 'Invalid proof: claim digest mismatch detected',
+          error: toPlainVerificationError('Invalid proof: claim digest mismatch detected'),
         };
       }
     }
@@ -253,7 +302,9 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: oracleSignatureVerification.error ?? 'Oracle signature verification failed',
+        error: toPlainVerificationError(
+          oracleSignatureVerification.error ?? 'Oracle signature verification failed'
+        ),
       };
     }
 
@@ -263,7 +314,7 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: 'Oracle nullifier mismatch detected',
+        error: toPlainVerificationError('Oracle nullifier mismatch detected'),
       };
     }
 
@@ -283,7 +334,7 @@ export async function verifySharedReceiptProof(
         valid: false,
         claimedAmount: '',
         minDate: '',
-        error: nullifierCheck.message ?? 'Nullifier conflict detected',
+        error: toPlainVerificationError(nullifierCheck.message ?? 'Nullifier conflict detected'),
       };
     }
 
@@ -310,7 +361,7 @@ export async function verifySharedReceiptProof(
       valid: false,
       claimedAmount: '',
       minDate: '',
-      error: error instanceof Error ? error.message : 'Verification failed',
+      error: toPlainVerificationError(error instanceof Error ? error.message : 'Verification failed'),
     };
   }
 }

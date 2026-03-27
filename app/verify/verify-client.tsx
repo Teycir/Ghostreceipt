@@ -83,7 +83,7 @@ function VerifyContent(): React.JSX.Element {
     return (
       <VerifyPageChrome>
         <div className="glass-card rounded-xl p-8 shadow-2xl">
-          <p className="text-base text-white/50 tracking-wide text-center">Verifying receipt...</p>
+          <p className="text-base text-white/50 tracking-wide text-center">Checking your receipt...</p>
         </div>
       </VerifyPageChrome>
     );
@@ -118,8 +118,8 @@ function VerifyContent(): React.JSX.Element {
                 </h3>
                 <p className="text-xs text-white/40">
                   {result.valid
-                    ? 'Zero-knowledge proof verified successfully'
-                    : 'Proof verification failed'}
+                    ? 'Receipt verified successfully'
+                    : 'We could not verify this receipt'}
                 </p>
               </div>
             </div>

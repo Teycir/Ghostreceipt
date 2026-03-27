@@ -1,5 +1,69 @@
 # Task Plan - 2026-03-26
 
+## Objective (Improve Mobile Fit For Long Error Wording)
+
+Ensure long plain-English error messages remain readable on small screens by reducing base font size and improving text wrapping in shared error UI components.
+
+## Plan
+
+- [x] Update shared `StatusBanner` mobile typography and wrapping behavior.
+- [x] Update inline input error text style for better mobile fit.
+- [x] Validate visually-oriented changes with quick code review and document outcome.
+
+## Review (Improve Mobile Fit For Long Error Wording)
+
+- Status: Completed
+- Shared UI changes:
+  - `components/ui/status-banner.tsx`: reduced mobile base size to `11px`, tightened padding, and enabled safe wrap for long strings (`break-words` + `overflow-wrap:anywhere`).
+  - `components/ui/input.tsx`: inline field errors now use mobile-first `11px` with safe wrapping.
+- Outcome:
+  - Long plain-English messages now fit better on narrow screens without horizontal overflow.
+
+## Objective (Plain-English Copy Audit Across Generator + Verify Flows)
+
+Find and replace remaining cryptic user-facing language in receipt generation and verification paths.
+
+## Plan
+
+- [x] Simplify generator form validation copy in `lib/generator/use-proof-generator.ts` (hash/amount/date/metadata field errors).
+- [x] Simplify proof progress step labels/descriptions in `components/generator/proof-stepper.tsx`.
+- [x] Simplify technical fallback strings in `lib/generator/error-messages.ts`.
+- [x] Add verify error normalization in `lib/verify/receipt-verifier.ts` so internal cryptographic mismatch wording is translated to plain English.
+- [x] Update relevant unit tests and run targeted suites.
+
+## Review (Plain-English Copy Audit Across Generator + Verify Flows)
+
+- Status: Completed
+- Plain-English improvements shipped:
+  - `lib/generator/use-proof-generator.ts`: field validation messages rewritten to full user-facing sentences.
+  - `components/generator/proof-stepper.tsx`: step labels/descriptions changed from internal jargon (`TX`, `oracle payload`, `ZK circuit`) to plain language.
+  - `lib/generator/error-messages.ts`: fetch/confirmation/rate-limit/fallback validation messages simplified.
+  - `lib/verify/receipt-verifier.ts`: technical verification mismatch errors are now normalized to non-cryptic user-facing wording.
+  - `app/verify/verify-client.tsx`: invalid-result subtitle and loading copy simplified.
+- Tests updated:
+  - `tests/unit/generator/error-messages.test.ts`
+  - `tests/unit/verify/receipt-verifier.test.ts`
+- Verification:
+  - `npm test -- tests/unit/generator/error-messages.test.ts tests/unit/verify/receipt-verifier.test.ts --runInBand --ci` (pass)
+
+## Objective (Simplify Date Error Message To Plain English)
+
+Replace technical date comparison wording with a simple, user-friendly sentence.
+
+## Plan
+
+- [x] Update witness date-validation error text in `lib/generator/error-messages.ts` to plain English.
+- [x] Update corresponding unit test assertions in `tests/unit/generator/error-messages.test.ts`.
+- [x] Run targeted test and record outcome.
+
+## Review (Simplify Date Error Message To Plain English)
+
+- Status: Completed
+- Changed date validation message from symbolic comparison style to plain-English explanation with clear action.
+- Updated unit test expectations for the new wording.
+- Verification:
+  - `npm test -- tests/unit/generator/error-messages.test.ts --runInBand --ci` (pass)
+
 ## Objective (Place Explainer Video At Top Of README)
 
 Show the GhostReceipt explainer video at the very top of the README using a GitHub-compatible embedded preview.

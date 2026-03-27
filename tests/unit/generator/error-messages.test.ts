@@ -12,8 +12,8 @@ describe('generator smart error messages', () => {
       },
     });
 
-    expect(message).toContain('not visible yet');
-    expect(message).toContain('~5 min');
+    expect(message).toContain('find this transaction yet');
+    expect(message).toContain('about 5 minutes');
   });
 
   it('maps provider failures to retry guidance', () => {
@@ -24,7 +24,7 @@ describe('generator smart error messages', () => {
       },
     });
 
-    expect(message).toContain('Network busy');
+    expect(message).toContain('Network is busy right now');
   });
 
   it('maps insufficient confirmations to confirmation wait guidance', () => {
@@ -35,8 +35,8 @@ describe('generator smart error messages', () => {
       },
     });
 
-    expect(message).toContain('Still confirming');
-    expect(message).toContain('~5 min');
+    expect(message).toContain('still confirming');
+    expect(message).toContain('about 5 minutes');
   });
 
   it('maps rate limit errors with retry-after timing', () => {
@@ -47,6 +47,7 @@ describe('generator smart error messages', () => {
       },
     });
 
+    expect(message).toContain('Too many requests right now');
     expect(message).toContain('7 secs');
   });
 
@@ -74,8 +75,9 @@ describe('generator smart error messages', () => {
     expect(amountMessage).toContain('This transaction sent 100');
     expect(amountMessage).toContain('minimum claim is 200');
     expect(amountMessage).toContain('100 or less');
-    expect(dateMessage).toContain('Tx date (1970-01-01)');
-    expect(dateMessage).toContain('min date (1970-01-01)');
+    expect(dateMessage).toContain('This payment happened on 1970-01-01');
+    expect(dateMessage).toContain('minimum date of 1970-01-01');
+    expect(dateMessage).toContain('Choose an earlier minimum date');
   });
 
   it('explains zero-value transactions in plain English', () => {
