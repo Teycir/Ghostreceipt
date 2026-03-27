@@ -62,6 +62,8 @@ Status:
   <img src="assets/infographicGhostReceipt.png" alt="GhostReceipt infographic" width="800" />
 </div>
 
+**📺 [Watch the explainer video](https://youtu.be/Dj2BSDsNJC4)**
+
 **What is GhostReceipt?**
 
 GhostReceipt lets you prove you made a cryptocurrency payment without revealing:
