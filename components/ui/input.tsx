@@ -7,11 +7,13 @@ interface InputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   label?: string;
+  description?: string;
   error?: string | undefined;
   disabled?: boolean;
   className?: string;
   containerClassName?: string;
   labelClassName?: string;
+  descriptionClassName?: string;
 }
 
 export function Input({
@@ -21,11 +23,13 @@ export function Input({
   onChange,
   placeholder,
   label,
+  description,
   error,
   disabled,
   className = "",
   containerClassName = "",
   labelClassName = "",
+  descriptionClassName = "",
 }: Readonly<InputProps>): React.JSX.Element {
   return (
     <div className={`flex flex-col gap-1.5 ${containerClassName}`}>
@@ -33,6 +37,11 @@ export function Input({
         <label className={`text-sm font-medium text-white/70 ${labelClassName}`}>
           {label}
         </label>
+      )}
+      {description && (
+        <p className={`text-[10px] leading-snug text-white/45 ${descriptionClassName}`}>
+          {description}
+        </p>
       )}
       <input
         id={id}

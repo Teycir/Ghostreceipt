@@ -135,7 +135,7 @@ export function ReceiptSuccess({
 
   const receiptFields = [
     { label: 'Chain',    value: formatChainLabel(chain, ethereumAsset),                                 delay: '0.12s' },
-    { label: 'Amount',   value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.2s' },
+    { label: 'Minimum Amount', value: `${claimedAmount} (${toHumanAmount(claimedAmount, chain, ethereumAsset)})`, delay: '0.2s' },
     { label: 'Min Date', value: minDate,                                                  delay: '0.28s' },
     ...(receiptLabel ? [{ label: 'Label', value: receiptLabel, delay: '0.36s' }] : []),
     ...(receiptCategory ? [{ label: 'Category', value: receiptCategory, delay: '0.44s' }] : []),

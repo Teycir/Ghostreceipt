@@ -30,11 +30,11 @@ async function navigateViaFooterLink(
   await page.goto(href);
 }
 
-async function fillClaimedAmount(
+async function fillMinimumAmount(
   page: import('@playwright/test').Page,
   amount: string
 ): Promise<void> {
-  await page.getByLabel(/Claimed Amount/i).fill(amount);
+  await page.getByLabel(/Minimum Amount/i).fill(amount);
 }
 
 test.describe('GhostReceipt E2E Flow', () => {
@@ -52,7 +52,7 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await expect(page.locator('label:has-text("Chain")')).toBeVisible();
     await expect(page.locator('label:has-text("Transaction Hash")')).toBeVisible();
-    await expect(page.locator('label:has-text("Claimed Amount")')).toBeVisible();
+    await expect(page.locator('label:has-text("Minimum Amount")')).toBeVisible();
     await expect(page.locator('label:has-text("Minimum Date")')).toBeVisible();
     await expect(page.locator('button:has-text("Generate Receipt")')).toBeVisible();
   });
@@ -64,7 +64,7 @@ test.describe('GhostReceipt E2E Flow', () => {
     await page.click('button:has-text("Generate Receipt")');
     
     await expect(page.locator('text=Transaction hash is required')).toBeVisible();
-    await expect(page.locator('text=Claimed amount is required')).toBeVisible();
+    await expect(page.locator('text=Minimum amount is required')).toBeVisible();
     await expect(page.locator('text=Minimum date is required')).toBeVisible();
   });
 
@@ -74,7 +74,7 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await selectChain(page, 'Bitcoin');
     await page.fill('input[placeholder*="64 hex"]', 'invalid-hash');
-    await fillClaimedAmount(page, '100000000');
+    await fillMinimumAmount(page, '100000000');
     await page.fill('input[type="date"]', '2024-01-01');
     
     await page.click('button:has-text("Generate Receipt")');
@@ -88,7 +88,7 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await selectChain(page, 'Ethereum');
     await page.fill('input[placeholder*="0x"]', 'invalid-hash');
-    await fillClaimedAmount(page, '1000000000000000000');
+    await fillMinimumAmount(page, '1000000000000000000');
     await page.fill('input[type="date"]', '2024-01-01');
     
     await page.click('button:has-text("Generate Receipt")');
@@ -181,7 +181,7 @@ test.describe('GhostReceipt E2E Flow', () => {
 
     await selectChain(page, 'Bitcoin');
     await page.fill('input[placeholder*="64 hex"]', 'a'.repeat(64));
-    await fillClaimedAmount(page, '100000000');
+    await fillMinimumAmount(page, '100000000');
     await page.fill('input[type="date"]', '2024-01-01');
     
     await page.click('button:has-text("Generate Receipt")');

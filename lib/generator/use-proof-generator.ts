@@ -44,7 +44,7 @@ function validateFields(values: GeneratorFormValues): GeneratorFormErrors {
   }
 
   if (!values.claimedAmount.trim()) {
-    errors.claimedAmount = 'Claimed amount is required.';
+    errors.claimedAmount = 'Minimum amount is required.';
   } else if (Number.isNaN(Number(values.claimedAmount)) || Number(values.claimedAmount) <= 0) {
     errors.claimedAmount = 'Enter an amount greater than 0.';
   }

@@ -61,6 +61,15 @@ export function GeneratorForm(): React.JSX.Element {
   // Derived
   const humanAmount = formatAtomicAmount(values.claimedAmount, values.chain, values.ethereumAsset);
   const txHashFormatValid = isValidTxHashForChain(values.txHash, values.chain);
+  const txHashSourceHint = useMemo(() => {
+    if (values.chain === 'bitcoin') {
+      return 'Example sources: mempool.space or BlockCypher tx page.';
+    }
+    if (values.chain === 'solana') {
+      return 'Example source: Solscan tx page (checked via Helius).';
+    }
+    return 'Example source: Etherscan tx page.';
+  }, [values.chain]);
 
   type ChainModeValue = 'bitcoin' | 'ethereum' | 'solana' | 'ethereum-usdc';
   const chainModeValue: ChainModeValue =
@@ -297,6 +306,9 @@ export function GeneratorForm(): React.JSX.Element {
             error={errors.txHash}
             className="h-8 px-1.5 py-1 font-mono text-[9px] tracking-tight sm:text-[10px] md:text-[10px] lg:text-[11px]"
           />
+          <p className="mt-1 text-[10px] leading-snug text-white/45">
+            {txHashSourceHint}
+          </p>
           {txHashFeedback && !errors.txHash && (
             <p
               className={`mt-1 text-[11px] ${txHashFormatValid ? 'text-emerald-300/90' : 'text-amber-300/90'}`}
@@ -308,12 +320,12 @@ export function GeneratorForm(): React.JSX.Element {
         </div>
       </div>
 
-      {/* ── Claimed amount with live unit hint ── */}
+      {/* ── Minimum amount with live unit hint ── */}
       <div className="grid grid-cols-1 gap-2 min-[540px]:grid-cols-2">
         <div>
           <div className="flex items-center justify-between mb-1">
             <label htmlFor={`${formId}-amount`} className="text-xs font-medium text-white/70">
-            Claimed Amount{' '}
+              Minimum Amount{' '}
               <span className="font-normal text-white/35">({atomicUnitLabel(values.chain, values.ethereumAsset)})</span>
             </label>
             {humanAmount && (
@@ -325,6 +337,9 @@ export function GeneratorForm(): React.JSX.Element {
               </span>
             )}
           </div>
+          <p className="mb-1 text-[10px] leading-snug text-white/45">
+            The smallest amount this receipt will prove for this transaction.
+          </p>
           <Input
             id={`${formId}-amount`}
             type="text"
@@ -341,6 +356,7 @@ export function GeneratorForm(): React.JSX.Element {
         <Input
           id={`${formId}-date`}
           label="Minimum Date"
+          description="The earliest date this receipt will prove the payment happened on or after."
           type="date"
           value={values.minDate}
           onChange={(v) => setValues((prev) => ({ ...prev, minDate: v }))}

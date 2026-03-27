@@ -210,7 +210,7 @@ export function buildReceiptPdfHtml(data: ReceiptPdfExportData, generatedAt: Dat
             <span class="value">${escapeHtml(formatChainLabel(data.chain, data.ethereumAsset))}</span>
           </li>
           <li class="summary-item">
-            <span class="label">Claimed Amount</span>
+            <span class="label">Minimum Amount</span>
             <span class="value mono">${escapeHtml(data.claimedAmount)} (${escapeHtml(data.claimedAmountHuman)})</span>
           </li>
           <li class="summary-item">

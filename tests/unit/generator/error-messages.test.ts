@@ -73,7 +73,7 @@ describe('generator smart error messages', () => {
     ]);
 
     expect(amountMessage).toContain('This transaction sent 100');
-    expect(amountMessage).toContain('minimum claim is 200');
+    expect(amountMessage).toContain('minimum amount is 200');
     expect(amountMessage).toContain('100 or less');
     expect(dateMessage).toContain('This payment happened on 1970-01-01');
     expect(dateMessage).toContain('minimum date of 1970-01-01');
@@ -86,7 +86,7 @@ describe('generator smart error messages', () => {
     ]);
 
     expect(amountMessage).toContain('sent no funds');
-    expect(amountMessage).toContain('minimum claim is 50,000,000,000,000,000');
+    expect(amountMessage).toContain('minimum amount is 50,000,000,000,000,000');
     expect(amountMessage).toContain('actually sent funds');
   });
 });

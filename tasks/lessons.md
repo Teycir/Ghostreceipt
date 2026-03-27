@@ -1,5 +1,15 @@
 # Lessons Learned
 
+## 2026-03-27 - Put Source Examples Next To Hash Inputs
+- If users ask where to get a transaction hash, add a small inline helper near the hash field rather than only documenting it elsewhere.
+- Make source hints chain-aware (Bitcoin/Ethereum/Solana) so examples stay accurate.
+- Keep these helpers at compact mobile size (`~10px`) to avoid layout crowding.
+
+## 2026-03-27 - Prefer “Minimum Amount” In User-Facing Claim Copy
+- In UI labels and validation messages, use `minimum amount` instead of `claimed amount` so intent is clearer for non-technical users.
+- Keep internal variable names (`claimedAmount`) as-is for compatibility, but translate wording at display boundaries (form labels, errors, receipt summaries, PDF export).
+- When terminology changes in UI copy, update matching E2E selectors/assertions in the same pass to prevent silent regressions.
+
 ## 2026-03-27 - Error Messages Must Explain Cause In Plain English, Not Internal Comparison Syntax
 - If users see technical validation text like `Claim (...) > tx value (...)`, treat it as a UX bug even when the logic is correct.
 - For amount-claim failures, explicitly describe what happened in user terms (for example "this transaction sent 0") and what action fixes it.

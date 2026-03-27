@@ -1,5 +1,70 @@
 # Task Plan - 2026-03-26
 
+## Objective (Add Small Source Hint Under Transaction Hash)
+
+Help users know where to copy a valid transaction hash/signature by showing compact explorer examples under the hash input.
+
+## Plan
+
+- [x] Add a chain-aware helper hint under `Transaction Hash` with example sources.
+- [x] Keep hint text at compact size for mobile readability.
+- [x] Run type-check verification after UI update.
+
+## Review (Add Small Source Hint Under Transaction Hash)
+
+- Status: Completed
+- UI updates:
+  - `components/generator/generator-form.tsx`: added dynamic hint text under hash input:
+    - Bitcoin: `mempool.space` / `BlockCypher`
+    - Ethereum: `Etherscan`
+    - Solana: `Solscan`
+  - Hint styling uses compact mobile-friendly size (`text-[10px]`) with subtle contrast.
+- Verification:
+  - `npm run typecheck` (pass)
+
+## Objective (Add Plain-English Helper Labels For Minimum Fields)
+
+Improve generator clarity by adding short explanatory text near `Minimum Amount` and `Minimum Date`.
+
+## Plan
+
+- [x] Add a helper line near the `Minimum Amount` label to explain what it proves.
+- [x] Add a helper line near the `Minimum Date` label to explain the date meaning.
+- [x] Keep helper text compact (`~10px`) for mobile fit and run type-check verification.
+
+## Review (Add Plain-English Helper Labels For Minimum Fields)
+
+- Status: Completed
+- UI updates:
+  - `components/generator/generator-form.tsx`: added a compact helper sentence under `Minimum Amount`.
+  - `components/generator/generator-form.tsx`: added `Minimum Date` helper copy via the input description.
+  - `components/ui/input.tsx`: added reusable `description` and `descriptionClassName` props for concise per-field helper text.
+- Verification:
+  - `npm run typecheck` (pass)
+
+## Objective (Use “Minimum Amount” Terminology In User-Facing Copy)
+
+Replace user-facing “Claimed Amount” wording with “Minimum Amount” in the generator flow so the field intent is immediately clear to non-technical users.
+
+## Plan
+
+- [x] Update generator form label and validation copy to “Minimum Amount”.
+- [x] Update generated receipt summary and PDF export labels to “Minimum Amount”.
+- [x] Update affected tests and verify targeted coverage for error-message copy.
+
+## Review (Use “Minimum Amount” Terminology In User-Facing Copy)
+
+- Status: Completed
+- UI copy updates:
+  - `components/generator/generator-form.tsx`: field label now reads `Minimum Amount`.
+  - `lib/generator/use-proof-generator.ts`: required-field message now reads `Minimum amount is required.`
+  - `components/generator/receipt-success.tsx`: receipt summary label now reads `Minimum Amount`.
+  - `lib/generator/pdf-export.ts`: PDF summary label now reads `Minimum Amount`.
+  - `lib/generator/error-messages.ts`: witness amount guidance now consistently uses `minimum amount`.
+- Test updates:
+  - `tests/e2e/generator.spec.ts`: updated label lookup/assertions to `Minimum Amount`.
+  - `tests/unit/generator/error-messages.test.ts`: updated expected strings from `minimum claim` to `minimum amount`.
+
 ## Objective (Full Docs Accuracy Cleanup + README 10% Reduction)
 
 Audit documentation for stale guidance, remove obsolete files, correct inaccurate deployment/security instructions, and reduce README length by about 10% while preserving key content.

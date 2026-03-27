@@ -75,11 +75,11 @@ export function mapWitnessValidationErrors(validationErrors: string[]): string {
       const realValue = match[1] ?? '0';
       const claimedAmount = match[2] ?? '0';
       if (realValue === '0') {
-        return `This transaction sent no funds (value is 0). Your minimum claim is ${formatAtomicInteger(claimedAmount)}. Use a transaction hash that actually sent funds.`;
+        return `This transaction sent no funds (value is 0). Your minimum amount is ${formatAtomicInteger(claimedAmount)}. Use a transaction hash that actually sent funds.`;
       }
-      return `This transaction sent ${formatAtomicInteger(realValue)}, but your minimum claim is ${formatAtomicInteger(claimedAmount)}. Set your minimum claim to ${formatAtomicInteger(realValue)} or less, then try again.`;
+      return `This transaction sent ${formatAtomicInteger(realValue)}, but your minimum amount is ${formatAtomicInteger(claimedAmount)}. Set your minimum amount to ${formatAtomicInteger(realValue)} or less, then try again.`;
     }
-    return 'Your claimed amount is higher than what this transaction sent. Lower the claim and retry.';
+    return 'Your minimum amount is higher than what this transaction sent. Lower the amount and try again.';
   }
 
   if (normalizedFirstError.includes('before minimum date')) {
