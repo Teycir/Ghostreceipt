@@ -21,6 +21,8 @@ const ENV_KEYS = [
   'SOLANA_PUBLIC_RPC_REQUEST_THROTTLE_MS',
   'SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES',
   'SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS',
+  'SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRIES',
+  'SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRY_DELAY_MS',
 ] as const;
 
 const originalEnv = new Map<string, string | undefined>(
@@ -78,6 +80,8 @@ describe('SolanaPublicRpcProvider', () => {
     process.env['SOLANA_PUBLIC_RPC_REQUEST_THROTTLE_MS'] = '0';
     process.env['SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS'] = '0';
     process.env['SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES'] = '0';
+    process.env['SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRY_DELAY_MS'] = '0';
+    process.env['SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRIES'] = '0';
     delete process.env['SOLANA_PUBLIC_RPC_URL'];
     delete process.env['SOLANA_PUBLIC_RPC_URLS'];
     delete process.env['SOLANA_PUBLIC_RPC_URL_1'];
@@ -246,5 +250,92 @@ describe('SolanaPublicRpcProvider', () => {
 
     expect(result.valueAtomic).toBe('77');
     expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toBe('https://solana-rpc.publicnode.com');
+  });
+
+  it('prefers named endpoint config over legacy single-url override', async () => {
+    process.env['SOLANA_PUBLIC_RPC_URL'] = endpointOne;
+    process.env['SOLANA_PUBLIC_RPC_NAMES'] = 'MAINNET_BETA_PRIMARY,PUBLICNODE';
+
+    const provider = new SolanaPublicRpcProvider();
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        makeJsonResponse({
+          jsonrpc: '2.0',
+          id: 1,
+          result: makeTransactionResult(41),
+        })
+      )
+      .mockResolvedValueOnce(
+        makeJsonResponse({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            value: [
+              {
+                confirmations: 3,
+                confirmationStatus: 'confirmed',
+              },
+            ],
+          },
+        })
+      );
+
+    const result = await provider.fetchTransaction(sampleSignature);
+
+    expect(result.valueAtomic).toBe('41');
+    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toBe('https://api.mainnet-beta.solana.com');
+  });
+
+  it('retries transiently failing endpoints across passes while skipping null-history endpoints', async () => {
+    process.env['SOLANA_PUBLIC_RPC_URL_1'] = endpointOne;
+    process.env['SOLANA_PUBLIC_RPC_URL_2'] = endpointTwo;
+    process.env['SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES'] = '0';
+    process.env['SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRIES'] = '1';
+
+    const provider = new SolanaPublicRpcProvider();
+    const fetchMock = jest.spyOn(global, 'fetch')
+      // Pass 1 getTransaction: endpointOne is rate-limited, endpointTwo returns null.
+      .mockResolvedValueOnce(makeJsonResponse({}, 429, 'Too Many Requests'))
+      .mockResolvedValueOnce(
+        makeJsonResponse({
+          jsonrpc: '2.0',
+          id: 1,
+          result: null,
+        })
+      )
+      // Pass 2 getTransaction should retry only endpointOne and succeed.
+      .mockResolvedValueOnce(
+        makeJsonResponse({
+          jsonrpc: '2.0',
+          id: 1,
+          result: makeTransactionResult(55),
+        })
+      )
+      // Confirmation lookup succeeds immediately on endpointOne.
+      .mockResolvedValueOnce(
+        makeJsonResponse({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            value: [
+              {
+                confirmations: 4,
+                confirmationStatus: 'confirmed',
+              },
+            ],
+          },
+        })
+      );
+
+    const result = await provider.fetchTransaction(sampleSignature);
+
+    expect(result.valueAtomic).toBe('55');
+    expect(result.confirmations).toBe(4);
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual([
+      endpointOne,
+      endpointTwo,
+      endpointOne,
+      endpointOne,
+    ]);
   });
 });

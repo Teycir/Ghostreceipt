@@ -428,21 +428,15 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
       : [];
     const sharedList = this.parseEndpointListEnv('ETHEREUM_PUBLIC_RPC_URLS');
 
-    const usdcSingle =
-      this.ethereumAsset === 'usdc' ? process.env['ETHEREUM_USDC_PUBLIC_RPC_URL']?.trim() ?? '' : '';
-    const sharedSingle = process.env['ETHEREUM_PUBLIC_RPC_URL']?.trim() ?? '';
-
-    const configuredUrls = [
+    const directConfiguredUrls = [
       ...usdcNumbered,
       ...usdcPreferred,
-      usdcSingle,
       ...sharedNumbered,
       ...sharedList,
-      sharedSingle,
     ].map((value) => value.trim()).filter((value) => value.length > 0);
 
-    if (configuredUrls.length > 0) {
-      const deduped = Array.from(new Set(configuredUrls));
+    if (directConfiguredUrls.length > 0) {
+      const deduped = Array.from(new Set(directConfiguredUrls));
       this.assertConfiguredEndpointUrls(
         deduped,
         this.ethereumAsset === 'usdc'
@@ -476,6 +470,21 @@ export class EthereumPublicRpcProvider implements EthereumProvider {
           : 'ETHEREUM_PUBLIC_RPC_NAME/NAMES',
         ETHEREUM_PUBLIC_RPC_ENDPOINT_ENV_KEYS
       );
+    }
+
+    const usdcSingle =
+      this.ethereumAsset === 'usdc' ? process.env['ETHEREUM_USDC_PUBLIC_RPC_URL']?.trim() ?? '' : '';
+    if (usdcSingle.length > 0) {
+      const deduped = Array.from(new Set([usdcSingle]));
+      this.assertConfiguredEndpointUrls(deduped, 'ETHEREUM_USDC_PUBLIC_RPC_URL');
+      return deduped;
+    }
+
+    const sharedSingle = process.env['ETHEREUM_PUBLIC_RPC_URL']?.trim() ?? '';
+    if (sharedSingle.length > 0) {
+      const deduped = Array.from(new Set([sharedSingle]));
+      this.assertConfiguredEndpointUrls(deduped, 'ETHEREUM_PUBLIC_RPC_URL');
+      return deduped;
     }
 
     return resolveRequiredEndpointUrlsFromNames(

@@ -1,5 +1,24 @@
 # Lessons Learned
 
+## 2026-03-27 - Solana Consensus Needs Pass-Level Retries, Not Only Per-Endpoint Retries
+- Public Solana peers can fail in mixed modes: one endpoint returns transient rate limits while another returns permanent null-history responses.
+- Per-endpoint retries alone are insufficient in this pattern; add cross-pass retries that keep retrying transient endpoints and drop null-history endpoints for subsequent passes.
+- Keep these knobs env-tunable and synced to Cloudflare (`SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRIES`, `SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRY_DELAY_MS`) for production tuning.
+
+## 2026-03-27 - Validate Reliability Changes With Real Exa-Sourced On-Chain Transactions
+- After provider/config hardening, run real production checks with explorer-sourced transactions (Exa URLs), not only mocks.
+- Keep per-chain candidate lists because some explorer transactions are unsuitable for our proof model (for example Solana tx without native SOL transfer).
+- Record both success and failure outcomes with concrete `oracleValidationStatus` values to avoid false confidence.
+
+## 2026-03-27 - Remove Stale Legacy Single-URL Secrets After Migrating To Named Multi-Endpoint Config
+- Legacy secrets like `*_PUBLIC_RPC_URL` can linger and create confusion; remove them once canonical `*_PUBLIC_RPC_NAMES` setup is active.
+- Keep provider resolution precedence aligned across BTC/ETH/SOL so named/list configs win over legacy single-url values.
+
+## 2026-03-27 - Legacy Single-Endpoint Env Vars Must Not Override Multi-Endpoint Solana Config
+- For Solana public RPC resolution, treat `SOLANA_PUBLIC_RPC_URL` as legacy fallback only.
+- Prefer modern multi-endpoint controls (`SOLANA_PUBLIC_RPC_URL_*/URLS` and `SOLANA_PUBLIC_RPC_NAME/NAMES`) to avoid silently collapsing consensus onto one weak endpoint.
+- When investigating frequent `single_source_fallback`, test both `getTransaction` and `getSignatureStatuses`; some public endpoints return null history even when they appear healthy.
+
 ## 2026-03-27 - Never Use Browser System Tooltips In Premium UI Surfaces
 - Avoid `title` attributes for user-facing explanations on polished UI elements; they produce inconsistent system tooltips.
 - Prefer custom hover/focus tooltip components (`role="tooltip"`) so style and behavior match the app design language.

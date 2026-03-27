@@ -205,4 +205,38 @@ describe('EthereumPublicRpcProvider', () => {
     expect(result.valueAtomic).toBe('1000000');
     expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toBe('https://rpc.flashbots.net');
   });
+
+  it('prefers named endpoint config over legacy shared single-url override', async () => {
+    process.env['ETHEREUM_PUBLIC_RPC_URL'] = endpointOne;
+    process.env['ETHEREUM_PUBLIC_RPC_NAMES'] = 'FLASHBOTS,PUBLICNODE_PRIMARY';
+
+    const provider = new EthereumPublicRpcProvider('native');
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        makeJsonRpcResponse({
+          hash: txHash,
+          value: '0x1',
+          blockNumber: '0x10',
+        })
+      )
+      .mockResolvedValueOnce(
+        makeJsonRpcResponse({
+          blockNumber: '0x10',
+          status: '0x1',
+          logs: [],
+        })
+      )
+      .mockResolvedValueOnce(makeJsonRpcResponse('0x12'))
+      .mockResolvedValueOnce(
+        makeJsonRpcResponse({
+          timestamp: '0x65f25c00',
+          hash: `0x${'b'.repeat(64)}`,
+        })
+      );
+
+    const result = await provider.fetchTransaction(txHash);
+
+    expect(result.valueAtomic).toBe('1');
+    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toBe('https://rpc.flashbots.net');
+  });
 });

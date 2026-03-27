@@ -272,4 +272,35 @@ describe('MempoolSpaceProvider', () => {
       'https://mempool.emzy.de/api/tx/' + 'a'.repeat(64)
     );
   });
+
+  it('prefers named endpoint config over legacy single-url override', async () => {
+    process.env['BITCOIN_PUBLIC_RPC_URL'] = 'https://btc-legacy.example/api';
+    process.env['BITCOIN_PUBLIC_RPC_NAMES'] = 'MEMPOOL_SPACE_MAINNET,MEMPOOL_EMZY_MAINNET';
+
+    const provider = new MempoolSpaceProvider();
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({
+        txid: 'a'.repeat(64),
+        version: 2,
+        locktime: 0,
+        vin: [],
+        vout: [{ value: 42 }],
+        size: 0,
+        weight: 0,
+        fee: 0,
+        status: {
+          confirmed: false,
+        },
+      }),
+    } as Response);
+
+    await provider.fetchTransaction('a'.repeat(64));
+
+    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toBe(
+      'https://mempool.space/api/tx/' + 'a'.repeat(64)
+    );
+  });
 });

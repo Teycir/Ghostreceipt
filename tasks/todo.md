@@ -259,6 +259,106 @@ Replace technical date comparison wording with a simple, user-friendly sentence.
 
 Show the GhostReceipt explainer video at the very top of the README using a GitHub-compatible embedded preview.
 
+## Objective (Diagnose Frequent Solana Single-Source Fallback)
+
+Find why Solana consensus often degrades to `single_source_fallback` even with two configured cascades (Helius + public RPC), then ship a reliable fix.
+
+## Plan
+
+- [x] Reproduce fallback with provided real signatures and capture exact peer-RPC failure reasons.
+- [x] Patch Solana consensus peer fetch path to reduce false peer-unavailable outcomes.
+- [x] Add/adjust unit tests for the new fallback-handling behavior.
+- [x] Run targeted tests + typecheck and document verification in review.
+
+## Review (Diagnose Frequent Solana Single-Source Fallback)
+
+- Status: Completed
+- Root cause:
+  - `solana-rpc.publicnode.com` often returns no historical data for these signatures (`getTransaction: null`, `getSignatureStatuses: [null]`).
+  - `api.mainnet-beta.solana.com` can intermittently return rate-limit errors for `getTransaction`, and when combined with the weak backup endpoint, consensus drops to single-source fallback.
+  - Legacy env precedence bug: if `SOLANA_PUBLIC_RPC_URL` is still set (stale secret), it silently overrides name/list config and can force a single weak endpoint.
+- Fix shipped:
+  - `lib/providers/solana/public-rpc.ts`: changed endpoint resolution precedence so modern multi-endpoint configs (`SOLANA_PUBLIC_RPC_URL_*/URLS` and `SOLANA_PUBLIC_RPC_NAME/NAMES`) are preferred; legacy `SOLANA_PUBLIC_RPC_URL` is now used only when those are absent.
+  - `tests/unit/providers/solana-public-rpc.test.ts`: added regression test ensuring named config is not overridden by stale legacy single-url env.
+- Live evidence captured:
+  - For all provided signatures, `api.mainnet-beta.solana.com` returned usable tx/status (with some tx rate-limit responses under burst), while `solana-rpc.publicnode.com` returned null history.
+- Verification:
+  - `npm test -- tests/unit/providers/solana-public-rpc.test.ts --runInBand --ci` (pass)
+  - `npm run typecheck` (pass)
+
+## Objective (Cleanup Stale Secret + Run Real Exa-Based Multi-Chain Live Checks)
+
+Remove stale legacy Solana single-endpoint secret from Cloudflare Pages and verify BTC/ETH/SOL live fetch behavior with real-world Exa-sourced transactions (no mocks).
+
+## Plan
+
+- [x] Inspect Cloudflare Pages secrets for legacy `SOLANA_PUBLIC_RPC_URL` and delete if present.
+- [x] Collect fresh real transaction URLs/hashes from Exa for Bitcoin, Ethereum, and Solana.
+- [x] Run live `/api/oracle/fetch-tx` checks against production with those hashes and record consensus status outcomes.
+- [x] Document outcomes and any follow-up recommendations.
+
+## Review (Cleanup Stale Secret + Run Real Exa-Based Multi-Chain Live Checks)
+
+- Status: Completed
+- Secret cleanup:
+  - `SOLANA_PUBLIC_RPC_URL`: not present in production secrets (nothing to delete).
+  - `ETHEREUM_PUBLIC_RPC_URL`: removed as stale legacy override.
+  - Verified remaining canonical controls are present:
+    - `ETHEREUM_PUBLIC_RPC_NAMES`
+    - `SOLANA_PUBLIC_RPC_NAMES`
+- Cross-chain precedence hardening shipped (same stale-env fix as Solana):
+  - `lib/providers/bitcoin/mempool.ts`: named/list config now preferred; legacy `BITCOIN_PUBLIC_RPC_URL` used only as fallback.
+  - `lib/providers/ethereum/public-rpc.ts`: named/list config now preferred; legacy single-url vars used only as fallback.
+  - Added regression tests:
+    - `tests/unit/providers/mempool.test.ts`
+    - `tests/unit/providers/ethereum-public-rpc.test.ts`
+- Exa-sourced live checks against `https://ghostreceipt.pages.dev/api/oracle/fetch-tx`:
+  - Bitcoin:
+    - Exa tx `d29c9c0e...85bc9b` -> `200`, `consensus_verified`.
+  - Ethereum:
+    - Exa tx `0xb8a941...83d661` -> `404 TRANSACTION_NOT_FOUND` (candidate unsuitable).
+    - Exa-backed fallback tx `0xb0cf76...778ef` -> `200`, `consensus_verified`.
+  - Solana:
+    - Exa tx `GN4DFp...Vey2` -> `502`, unsupported (no native SOL transfer).
+    - Exa tx `3QNm33...rmB4` -> `200`, `single_source_fallback` (public consensus source unavailable).
+- Verification:
+  - `npm test -- tests/unit/providers/solana-public-rpc.test.ts tests/unit/providers/ethereum-public-rpc.test.ts tests/unit/providers/mempool.test.ts --runInBand --ci` (pass)
+  - `npm run typecheck` (pass)
+
+## Objective (Deep Solana Consensus Hardening With Real-Case Validation)
+
+Improve Solana consensus resilience so real mainnet signatures more often reach dual-source consensus instead of degrading to single-source fallback under peer rate limits/history gaps.
+
+## Plan
+
+- [x] Add pass-level retry logic in Solana public RPC provider so transiently failing endpoints are retried while null-history endpoints are deprioritized.
+- [x] Raise default Solana endpoint retry depth and keep backoff bounded.
+- [x] Add regression tests for mixed `rate limit + null history` behavior.
+- [x] Validate against user-provided real Solana signatures using live RPC probes and capture results.
+- [x] Expose/sync new Solana hardening tuning env vars in docs and secret sync tooling.
+
+## Review (Deep Solana Consensus Hardening With Real-Case Validation)
+
+- Status: Completed
+- Code hardening shipped:
+  - `lib/providers/solana/public-rpc.ts`:
+    - increased default endpoint retries from `1` to `2`;
+    - added pass-level retries (`SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRIES`, default `2`);
+    - added pass-level backoff (`SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRY_DELAY_MS`, default `800`);
+    - pass retries now keep retrying only transient-failure endpoints (rate/network/timeout), while endpoints returning null/unusable history are excluded from next pass.
+- Tests:
+  - `tests/unit/providers/solana-public-rpc.test.ts`: added coverage for mixed `429 + null history` where second pass succeeds on retryable endpoint.
+  - existing BTC/ETH stale-env precedence tests retained and passing.
+- Live validation with user signatures:
+  - Real-time RPC behavior remains burst-sensitive, but hardened multi-pass retry recovered signatures that previously fell straight to fallback in the same failure pattern.
+  - Additional live probe run against the two previously failing signatures (`3dPZ...`, `3u2L...`) recovered successfully on subsequent retry windows.
+- Ops/config updates:
+  - `scripts/sync-secrets.sh`: now syncs optional Solana hardening env vars.
+  - `.env.example` and Cloudflare Pages runbook now document the new Solana tuning knobs.
+- Verification:
+  - `npm test -- tests/unit/providers/solana-public-rpc.test.ts tests/unit/providers/ethereum-public-rpc.test.ts tests/unit/providers/mempool.test.ts --runInBand --ci` (pass)
+  - `npm run typecheck` (pass)
+
 ## Plan
 
 - [x] Add a top-of-README video preview block linked to the YouTube explainer.

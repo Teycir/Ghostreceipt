@@ -60,8 +60,10 @@ interface SignatureStatusesResult {
 }
 
 const DEFAULT_SOLANA_PUBLIC_RPC_THROTTLE_MS = 500;
-const DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES = 1;
+const DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRIES = 2;
 const DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS = 250;
+const DEFAULT_SOLANA_PUBLIC_RPC_PASS_RETRIES = 2;
+const DEFAULT_SOLANA_PUBLIC_RPC_PASS_RETRY_DELAY_MS = 800;
 const RPC_SCOPE = 'provider:solana-public-rpc';
 
 function parseNonNegativeIntEnv(key: string, fallback: number): number {
@@ -92,6 +94,8 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
   };
 
   private readonly endpointUrls: string[];
+  private readonly endpointPassRetries: number;
+  private readonly endpointPassRetryDelayMs: number;
   private readonly endpointRetryDelayMs: number;
   private readonly endpointRetries: number;
   private readonly throttleMs: number;
@@ -110,6 +114,14 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
     this.endpointRetryDelayMs = parseNonNegativeIntEnv(
       'SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS',
       DEFAULT_SOLANA_PUBLIC_RPC_ENDPOINT_RETRY_DELAY_MS
+    );
+    this.endpointPassRetries = parseNonNegativeIntEnv(
+      'SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRIES',
+      DEFAULT_SOLANA_PUBLIC_RPC_PASS_RETRIES
+    );
+    this.endpointPassRetryDelayMs = parseNonNegativeIntEnv(
+      'SOLANA_PUBLIC_RPC_ENDPOINT_PASS_RETRY_DELAY_MS',
+      DEFAULT_SOLANA_PUBLIC_RPC_PASS_RETRY_DELAY_MS
     );
   }
 
@@ -262,36 +274,57 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
       unusableResultMessage?: string;
     } = {}
   ): Promise<T> {
-    const endpointFailures: string[] = [];
-    const unusableResults: string[] = [];
+    let passEndpoints = [...this.endpointUrls];
+    const allPassErrors: string[] = [];
 
-    for (const endpointUrl of this.endpointUrls) {
-      try {
-        const result = await this.requestRpcOnEndpointWithRetries<T>(
-          endpointUrl,
-          method,
-          params,
-          signal
-        );
-        if (options.isResultUsable && !options.isResultUsable(result)) {
-          unusableResults.push(
-            `${endpointUrl} -> ${options.unusableResultMessage ?? 'unusable RPC result'}`
-          );
-          continue;
-        }
-        return result;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        endpointFailures.push(`${endpointUrl} -> ${message}`);
+    for (let pass = 0; pass <= this.endpointPassRetries; pass += 1) {
+      if (passEndpoints.length === 0) {
+        break;
       }
+
+      const passErrors: string[] = [];
+      const retryableEndpoints = new Set<string>();
+      const unusableResults: string[] = [];
+
+      for (const endpointUrl of passEndpoints) {
+        try {
+          const result = await this.requestRpcOnEndpointWithRetries<T>(
+            endpointUrl,
+            method,
+            params,
+            signal
+          );
+          if (options.isResultUsable && !options.isResultUsable(result)) {
+            unusableResults.push(
+              `${endpointUrl} -> ${options.unusableResultMessage ?? 'unusable RPC result'}`
+            );
+            continue;
+          }
+          return result;
+        } catch (error) {
+          const normalizedError = error instanceof Error ? error : new Error(String(error));
+          passErrors.push(`${endpointUrl} -> ${normalizedError.message}`);
+          if (this.isRetryableEndpointError(normalizedError)) {
+            retryableEndpoints.add(endpointUrl);
+          }
+        }
+      }
+
+      allPassErrors.push(...passErrors, ...unusableResults);
+
+      if (pass >= this.endpointPassRetries || retryableEndpoints.size === 0) {
+        break;
+      }
+
+      passEndpoints = Array.from(retryableEndpoints);
+      await this.waitBeforeRetry(this.endpointPassRetryDelayMs * (pass + 1), signal);
     }
 
-    const errors = [...endpointFailures, ...unusableResults];
-    if (errors.length === 0) {
+    if (allPassErrors.length === 0) {
       throw new Error('Solana public RPC endpoints failed: no endpoints configured');
     }
 
-    throw new Error(`Solana public RPC endpoints failed: ${errors.join(' | ')}`);
+    throw new Error(`Solana public RPC endpoints failed: ${allPassErrors.join(' | ')}`);
   }
 
   private async requestRpcOnEndpointWithRetries<T>(
@@ -434,15 +467,13 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
   private resolveEndpointUrls(): string[] {
     const numberedFromEnv = this.parseNumberedEnvValues('SOLANA_PUBLIC_RPC_URL_');
     const listFromEnv = this.parseEndpointListEnv('SOLANA_PUBLIC_RPC_URLS');
-    const singleFromEnv = process.env['SOLANA_PUBLIC_RPC_URL']?.trim() ?? '';
-    const configuredUrls = [
+    const directConfiguredUrls = [
       ...numberedFromEnv,
       ...listFromEnv,
-      singleFromEnv,
     ].map((value) => value.trim()).filter((value) => value.length > 0);
 
-    if (configuredUrls.length > 0) {
-      const deduped = Array.from(new Set(configuredUrls));
+    if (directConfiguredUrls.length > 0) {
+      const deduped = Array.from(new Set(directConfiguredUrls));
       this.assertConfiguredEndpointUrls(deduped, 'SOLANA_PUBLIC_RPC_URL/URLS');
       return deduped;
     }
@@ -460,6 +491,13 @@ export class SolanaPublicRpcProvider implements SolanaProvider {
         'SOLANA_PUBLIC_RPC_NAME/NAMES',
         SOLANA_PUBLIC_RPC_ENDPOINT_ENV_KEYS
       );
+    }
+
+    const singleFromEnv = process.env['SOLANA_PUBLIC_RPC_URL']?.trim() ?? '';
+    if (singleFromEnv.length > 0) {
+      const deduped = Array.from(new Set([singleFromEnv]));
+      this.assertConfiguredEndpointUrls(deduped, 'SOLANA_PUBLIC_RPC_URL');
+      return deduped;
     }
 
     return resolveRequiredEndpointUrlsFromNames(

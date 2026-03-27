@@ -298,15 +298,13 @@ export class MempoolSpaceProvider implements BitcoinProvider {
   private resolveBaseUrls(): string[] {
     const numberedFromEnv = this.parseNumberedEnvValues('BITCOIN_PUBLIC_RPC_URL_');
     const listFromEnv = this.parseListEnv('BITCOIN_PUBLIC_RPC_URLS');
-    const singleFromEnv = process.env['BITCOIN_PUBLIC_RPC_URL']?.trim() ?? '';
-    const configuredBaseUrls = [
+    const directConfiguredBaseUrls = [
       ...numberedFromEnv,
       ...listFromEnv,
-      singleFromEnv,
     ].map((value) => value.trim()).filter((value) => value.length > 0);
 
-    if (configuredBaseUrls.length > 0) {
-      const deduped = Array.from(new Set(configuredBaseUrls));
+    if (directConfiguredBaseUrls.length > 0) {
+      const deduped = Array.from(new Set(directConfiguredBaseUrls));
       this.assertConfiguredBaseUrls(deduped, 'BITCOIN_PUBLIC_RPC_URL/URLS');
       return deduped;
     }
@@ -324,6 +322,13 @@ export class MempoolSpaceProvider implements BitcoinProvider {
         'BITCOIN_PUBLIC_RPC_NAME/NAMES',
         BITCOIN_PUBLIC_RPC_ENDPOINT_ENV_KEYS
       );
+    }
+
+    const singleFromEnv = process.env['BITCOIN_PUBLIC_RPC_URL']?.trim() ?? '';
+    if (singleFromEnv.length > 0) {
+      const deduped = Array.from(new Set([singleFromEnv]));
+      this.assertConfiguredBaseUrls(deduped, 'BITCOIN_PUBLIC_RPC_URL');
+      return deduped;
     }
 
     return resolveRequiredEndpointUrlsFromNames(
