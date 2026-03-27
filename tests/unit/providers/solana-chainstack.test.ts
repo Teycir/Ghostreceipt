@@ -101,7 +101,7 @@ describe('SolanaChainstackProvider', () => {
     expect(result.valueAtomic).toBe('2500');
     expect(result.confirmations).toBe(7);
     expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toBe(
-      'https://solana-mainnet.core.chainstack.com/test'
+      process.env['SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL']
     );
   });
 
