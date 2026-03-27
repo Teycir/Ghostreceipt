@@ -1,5 +1,11 @@
 # GhostReceipt Implementation Progress
 
+> Historical milestone record (snapshot from initial rollout phases).
+> For current operational guidance and runtime architecture, use:
+> - `docs/README.md`
+> - `docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md`
+> - `docs/DEPLOYMENT_CHECKLIST.md`
+
 ## Phase 0: Foundation and Reliability ✅ COMPLETE
 
 **Completed:** 2026-03-21

@@ -7,7 +7,7 @@
 - [x] Security headers in `/public/_headers`
 - [x] SPA redirects in `/public/_redirects`
 - [x] `.cfignore` excludes unnecessary files
-- [ ] Cloudflare Functions implement oracle logic
+- [x] Cloudflare Pages Functions wrappers implement oracle logic
 - [ ] All tests passing
 - [ ] Security audit completed
 
@@ -147,7 +147,7 @@ npx wrangler pages deployment rollback <DEPLOYMENT_ID> --project-name=ghostrecei
 
 ## Resources
 
-- [Cloudflare Deployment Guide](./CLOUDFLARE_DEPLOYMENT.md)
+- [Cloudflare Deployment Guide](./runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
 - [Cloudflare Edge Rate-Limit Rules](./runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - [Oracle Fail-Safe Architecture](./runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
 - [Security Runbook](./runbooks/SECURITY.md)

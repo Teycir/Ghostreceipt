@@ -1,188 +1,71 @@
-# Quick Deployment Guide - Cloudflare Pages
+# Quick Deploy (Cloudflare Pages)
 
-## 🚀 Deploy to Production NOW
+This is the fastest safe path to deploy GhostReceipt production.
 
-### Option 1: Automatic Deployment (Recommended)
+## Prerequisites
 
-1. **Set GitHub Secret**
-   ```bash
-   # Go to: https://github.com/Teycir/GhostReceipt/settings/secrets/actions
-   # Add secret: CLOUDFLARE_API_TOKEN
-   # Get token from: https://dash.cloudflare.com/profile/api-tokens
-   ```
+- Cloudflare Pages project: `ghostreceipt`
+- GitHub repo secrets configured:
+  - `CLOUDFLARE_API_TOKEN`
+  - `CLOUDFLARE_ACCOUNT_ID`
+- Local runtime config present in `.env.local`
 
-2. **Use single-branch mode (`main` only)**
-   - In GitHub branch settings, disable protection rules on `main` (no PR requirement, no required checks gate on GitHub side).
-   - Local `pre-push` hook now enforces the full quality gate before any push.
+## Recommended Path (CI-gated deploy)
 
-3. **Push to main branch**
-   ```bash
-   git add .
-   git commit -m "feat: add Cloudflare Pages deployment"
-   git push origin main
-   ```
+1. Run local checks:
 
-4. **Verify local CI gate command (one-time)**
-   ```bash
-   npm run ci:quality-gate
-   ```
-
-5. **CI gate then deploy**
-   - Local push is blocked unless `ci:quality-gate` passes.
-   - Remote `CI` workflow still runs on push to `main`.
-   - Deploy workflow starts only after successful CI on `main`.
-
-### Option 2: Manual Deployment via Dashboard
-
-1. **Go to Cloudflare Pages**
-   - https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pages
-
-2. **Create Project**
-   - Click "Create a project"
-   - Select "Connect to Git"
-   - Choose repository: `Teycir/GhostReceipt`
-   - Branch: `main`
-
-3. **Build Settings**
-   ```
-   Build command: npm run build
-   Build output directory: .next
-   Root directory: /
-   ```
-
-4. **Environment Variables** (Settings > Environment Variables)
-   ```
-   NEXT_PUBLIC_APP_URL=https://ghostreceipt.pages.dev
-   NEXT_PUBLIC_APP_NAME=GhostReceipt
-   NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE=
-   ORACLE_PRIVATE_KEY=<your_key>
-   ETHERSCAN_API_KEY=<your_key>
-   ETHERSCAN_API_KEY_2=<your_key>
-   ETHERSCAN_API_KEY_3=<your_key>
-   TRUST_PROXY_HEADERS=true
-   LOG_LEVEL=info
-   DEBUG=false
-   ```
-
-5. **Deploy**
-   - Click "Save and Deploy"
-
-### Option 3: CLI Deployment
-
-1. **Install Wrangler**
-   ```bash
-   npm install -g wrangler
-   ```
-
-2. **Login**
-   ```bash
-   wrangler login
-   ```
-
-3. **Deploy**
-   ```bash
-   npm run build
-   npx wrangler pages deploy .next --project-name=ghostreceipt
-   ```
-
-## ✅ Pre-Deployment Checklist
-
-Run this before deploying:
 ```bash
-npm run ci:quality-gate && npm run deploy:check
+npm run deploy:check
 ```
 
-This checks:
-- ✓ Secrets/config guards (`check:secrets`, oracle log, verifier artifact)
-- ✓ Node.js version (>= 20.9.0)
-- ✓ Required files exist
-- ✓ Dependencies installed
-- ✓ Type check passes
-- ✓ Linter passes
-- ✓ Build succeeds
-- ✓ No secrets in code
+2. Sync runtime secrets/endpoints to Cloudflare Pages:
 
-## 🔐 Required Secrets
-
-Set these in Cloudflare Pages dashboard:
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ORACLE_PRIVATE_KEY` | ✓ | Oracle signing key (generate with `openssl rand -hex 32`) |
-| `ETHERSCAN_API_KEY` | ✓ | Primary Etherscan API key |
-| `ETHERSCAN_API_KEY_2` | ✓ | Fallback Etherscan API key |
-| `ETHERSCAN_API_KEY_3` | ✓ | Fallback Etherscan API key |
-| `NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE` | - | Optional edge backup oracle base (`.../api/oracle`) |
-| `TRUST_PROXY_HEADERS` | ✓ | Set to `true` for Cloudflare |
-| `LOG_LEVEL` | - | `info` (production) or `debug` (preview) |
-| `DEBUG` | - | `false` (production) or `true` (preview) |
-
-## 🧪 Test Deployment
-
-After deployment, test these endpoints:
-
-1. **Homepage**
-   ```bash
-   curl https://ghostreceipt.pages.dev
-   ```
-
-2. **Oracle API**
-   ```bash
-   curl -X POST https://ghostreceipt.pages.dev/api/oracle/fetch-tx \
-     -H "Content-Type: application/json" \
-     -d '{
-       "chain": "ethereum",
-       "txHash": "0x..."
-     }'
-   ```
-
-3. **Static Assets**
-   ```bash
-   curl https://ghostreceipt.pages.dev/zk/verification_key.json
-   ```
-
-## 📊 Monitor Deployment
-
-- **Deployment Status**: https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pages/view/ghostreceipt/deployments
-- **Analytics**: https://dash.cloudflare.com/8f49c311ff2506c6020f060b8c1da686/pages/view/ghostreceipt/analytics
-- **Logs**: `npx wrangler pages deployment tail`
-
-## 🐛 Troubleshooting
-
-### Build Fails
 ```bash
-# Test build locally
+npm run cf:sync
+```
+
+3. Push to `main`.
+
+Deploy runs automatically only after CI succeeds on `main`.
+
+## Manual Pages Deploy (fallback)
+
+Use this only when GitHub Actions is unavailable.
+
+```bash
 npm run build
-
-# Check logs in Cloudflare dashboard
-# Deployments > [Latest] > View details
+npx wrangler pages deploy out --project-name=ghostreceipt --branch=main
 ```
 
-### Environment Variables Not Working
+## Verify Deployment
+
+1. App loads:
+
 ```bash
-# Verify variables are set
-# Settings > Environment Variables
-
-# Redeploy after adding variables
-# Deployments > Retry deployment
+curl -I https://ghostreceipt.pages.dev
 ```
 
-### API Routes 404
+2. Oracle route responds:
+
 ```bash
-# Ensure routes are in app/api/ directory
-# Check function logs in deployment details
-# If using edge backup failover, verify NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE is reachable
+curl -X POST https://ghostreceipt.pages.dev/api/oracle/fetch-tx \
+  -H "Content-Type: application/json" \
+  -d '{"chain":"ethereum","txHash":"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"}'
 ```
 
-## 📚 Full Documentation
+3. Optional compact-link storage check:
 
-- [Cloudflare Pages Deployment Guide](./CLOUDFLARE_PAGES_DEPLOYMENT.md)
-- [Cloudflare Workers Deployment Guide](./CLOUDFLARE_DEPLOYMENT.md)
-- [Security Runbook](./SECURITY.md)
-- [Release Readiness Checklist](../project/RELEASE_READINESS_CHECKLIST.md)
+- Confirm D1 binding exists in Pages functions settings as `SHARE_POINTERS_DB`.
 
-## 🆘 Support
+## Troubleshooting
 
-- **Issues**: https://github.com/Teycir/GhostReceipt/issues
-- **Cloudflare Docs**: https://developers.cloudflare.com/pages/
-- **Community**: https://community.cloudflare.com/
+- Build mismatch: ensure output directory is `out`.
+- Missing runtime vars/secrets: run `npm run cf:sync` and redeploy.
+- `5xx` from oracle routes: validate env keys and endpoint URL vars from `.env.local`.
+
+## Related Docs
+
+- Full Pages deployment guide: [CLOUDFLARE_PAGES_DEPLOYMENT.md](./CLOUDFLARE_PAGES_DEPLOYMENT.md)
+- Deployment checklist: [../DEPLOYMENT_CHECKLIST.md](../DEPLOYMENT_CHECKLIST.md)
+- Security runbook: [SECURITY.md](./SECURITY.md)
+- Edge rate-limit rules: [CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md](./CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)

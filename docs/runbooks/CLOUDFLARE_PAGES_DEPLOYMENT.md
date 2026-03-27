@@ -172,12 +172,6 @@ npx wrangler d1 execute ghostreceipt-share-pointers --file=./scripts/sql/share-p
 
 Without this binding, compact QR short links are disabled and the API returns a configuration error instead of creating non-resolvable pointers.
 
-### Function Configuration
-Functions run in Cloudflare's edge network with:
-- **Memory**: 128MB default
-- **Timeout**: 10s default
-- **Concurrency**: Automatic scaling
-
 ## Monitoring
 
 ### Analytics
@@ -229,14 +223,13 @@ Cloudflare Pages automatically caches:
 - HTTP/3 support
 
 ### Build Optimization
-- Enable Next.js static optimization
 - Minimize bundle size
-- Use image optimization
+- Keep static assets cache-friendly
 
 ## Security
 
 ### Headers
-Security headers are configured in `next.config.mjs`:
+Security headers are configured in `public/_headers`:
 - HSTS
 - X-Frame-Options
 - CSP

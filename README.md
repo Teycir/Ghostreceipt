@@ -68,8 +68,6 @@ Status:
   <img src="assets/infographicGhostReceipt.png" alt="GhostReceipt infographic" width="800" />
 </div>
 
-**📺 [Watch the explainer video](https://youtu.be/Dj2BSDsNJC4)**
-
 **What is GhostReceipt?**
 
 GhostReceipt lets you prove you made a cryptocurrency payment without revealing:
@@ -77,20 +75,20 @@ GhostReceipt lets you prove you made a cryptocurrency payment without revealing:
 - The recipient's wallet address  
 - The exact transaction ID
 
-It uses **zero-knowledge proofs** - a cryptographic technique that lets you prove something is true without revealing the underlying data. 
+It uses **zero-knowledge proofs** to prove payment facts without exposing sensitive transaction identity data.
 
 You can share a cryptographic receipt that proves:
 - ✅ You paid at least X amount
 - ✅ The payment happened within a specific time window
 - ❌ But hides your identity and the other party's identity
 
-**Why use it?**
+**Why use it:**
 - Prove payment to clients without exposing your entire transaction history
 - Show proof of funds without revealing your wallet balance
 - Verify payments in disputes while maintaining privacy
 - No signup required, no credit card needed, works in your browser
 
-**How it works (simple version):**
+**How it works:**
 1. Paste your transaction hash (the payment ID from blockchain)
 2. Set your privacy preferences (minimum amount to prove, time window)
 3. Generate a cryptographic proof in your browser
@@ -128,7 +126,6 @@ Generate a cryptographic proof that's mathematically verifiable but reveals only
 
 **For Everyone:**
 - 🚀 **Fast**: Generate proof in under 60 seconds
-- 📊 **Measured average (integration test)**: `~181ms` end-to-end (`~171ms` proving) from `npm run test:perf:proof` (`measuredIterations=2`, `warmup=1`)
 - 🔒 **Private**: Your wallet addresses stay hidden
 - 📱 **Mobile-friendly**: Works on phones and tablets
 - 🔗 **Easy sharing**: Get a link or QR code to share your proof
@@ -158,7 +155,7 @@ Generate a cryptographic proof that's mathematically verifiable but reveals only
 
 ## Architecture (Technical Overview)
 
-**Simple flow diagram:**
+**Flow diagram:**
 
 ```
 You → Enter transaction hash → GhostReceipt checks blockchain → 
@@ -192,50 +189,6 @@ flowchart LR
     V --> OUT[Verified or Counterfeit State]
 ```
 
-**Sequence diagram:**
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant UI as Generator UI
-    participant OraclePrimary as Oracle API (primary)
-    participant OracleBackup as Edge Oracle (backup)
-    participant Oracle as Oracle Handler
-    participant Providers as Chain Providers
-    participant ZK as Browser Prover
-    participant Verify as Verify Page
-
-    User->>UI: Enter chain + tx hash + claim
-    UI->>OraclePrimary: POST /api/oracle/fetch-tx
-    alt Primary unavailable (network/404/405/5xx)
-      UI->>OracleBackup: POST <NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE>/fetch-tx
-      OracleBackup->>Oracle: Delegate request
-    else Primary available
-      OraclePrimary->>Oracle: Handle request
-    end
-    Oracle->>Providers: Fetch primary canonical tx data
-    Providers-->>Oracle: Primary canonical fields
-    alt Consensus mode = strict/best_effort
-      Oracle->>Providers: Fetch peer canonical data
-      Providers-->>Oracle: Peer canonical fields or unavailable
-      alt Peer matches primary
-        Oracle-->>UI: Signed payload + consensus_verified label
-      else Peer unavailable and mode=best_effort
-        Oracle-->>UI: Signed payload + single_source_fallback label
-      else Peer mismatch or strict unavailable
-        Oracle-->>UI: Error (fail closed, no signature)
-      end
-    else Consensus mode = off
-      Oracle-->>UI: Signed payload + single_source_only label
-    end
-    UI->>ZK: Build witness + generate proof
-    ZK-->>UI: proof + publicSignals
-    UI-->>User: Share link/QR payload
-    User->>Verify: Open verify link
-    Verify->>Verify: Verify proof + signals
-    Verify-->>User: Verified receipt or invalid warning
-```
-
 </details>
 
 ## API Model (Technical)
@@ -248,7 +201,7 @@ GhostReceipt uses multiple data sources to ensure reliability:
 - Backup is only used for transport/unavailable failures (network errors, `404/405`, or `5xx`)
 - Backup is intentionally not used for normal client errors (`4xx`, including `429`) to avoid bypassing protections
 
-**1. Public blockchain APIs (default, no keys needed):**
+**1. Public blockchain APIs (default):**
 - Bitcoin: BlockCypher (with API token rotation) + mempool.space fallback
 - Ethereum: Managed Etherscan keys + public RPC nodes
 - Solana: Managed Helius keys + public RPC nodes
@@ -262,33 +215,17 @@ GhostReceipt uses multiple data sources to ensure reliability:
 - Validates and signs transaction data
 - Trust boundary between data providers and proof generation
 
-**4. Optional user API keys (advanced only):**
-- Users can add their own keys for higher throughput
-- Never required for basic usage
-
 ## How It Works (Technical Details)
 
 **For developers and technical users:**
 
-### Step-by-step process:
+### Step-by-step
 
-1. **You provide:** Transaction hash + privacy preferences (minimum amount, time window)
-
-2. **Data fetching:** GhostReceipt fetches transaction data from multiple blockchain data providers:
-   - Bitcoin: BlockCypher + mempool.space
-   - Ethereum: Etherscan + public RPC nodes
-   - Solana: Helius + public RPC nodes
-
-3. **Consensus validation:** The system cross-checks data from multiple sources to ensure accuracy
-
-4. **Oracle signature:** Once verified, the system creates a cryptographic signature confirming the transaction facts
-
-5. **Zero-knowledge proof:** Your browser generates a mathematical proof that:
-   - Proves your payment meets your claimed criteria
-   - Hides your wallet addresses and exact transaction details
-   - Can be verified by anyone
-
-6. **Share:** You get a link or QR code containing the proof
+1. You provide a transaction hash and claim settings (minimum amount/date).
+2. GhostReceipt fetches canonical transaction data from chain providers.
+3. Oracle logic validates data (and consensus when enabled) and signs a commitment.
+4. Your browser generates a zero-knowledge proof from the signed facts.
+5. You share a verify link or QR code.
 
 ### Validation levels:
 
@@ -308,18 +245,16 @@ When you generate a receipt, GhostReceipt:
 3. Your browser generates a privacy-preserving proof
 4. The proof can be verified by anyone, but only reveals what you chose to share
 
-**What you're trusting:**
+**What you trust:**
 - The GhostReceipt service correctly fetches blockchain data (we use multiple sources and cross-check them)
 - The cryptographic math works (it's based on well-tested zero-knowledge proof technology)
 
-**What you're NOT trusting:**
+**What you do not trust:**
 - We never see your private keys or control your funds
 - The proof generation happens in YOUR browser, not on our servers
 - Your sensitive data (wallet addresses) never leaves your device
 
-**For technical users:**
-
-GhostReceipt uses multiple oracle signing keys with a transparency log for key rotation. Each transaction is verified against multiple blockchain data providers before signing. The oracle:
+For technical users: GhostReceipt uses multiple oracle signing keys with a transparency log for key rotation. Each transaction is verified against multiple providers before signing. The oracle:
 - ✅ Can confirm transaction facts (amount, timestamp, chain)
 - ✅ Signs a commitment used for zero-knowledge proof generation
 - ❌ Cannot forge blockchain state without compromising multiple data providers
@@ -390,7 +325,7 @@ See `.env.example` for all available options.
 
 **Backend:**
 - Next.js API routes
-- Cloudflare Workers (optional)
+- Cloudflare Pages Functions
 
 **Cryptography:**
 - Circom 2 (zero-knowledge circuits)
@@ -411,7 +346,7 @@ See `.env.example` for all available options.
 
 **For developers:**
 - [Documentation hub](./docs/README.md)
-- [Deployment guide](./docs/DEPLOYMENT_READY.md)
+- [Deployment checklist](./docs/DEPLOYMENT_CHECKLIST.md)
 - [Quick deploy](./docs/runbooks/QUICK_DEPLOY.md)
 - [Cloudflare edge rate-limit runbook](./docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - [Oracle fail-safe architecture runbook](./docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
@@ -467,7 +402,7 @@ See `.env.example` for all available options.
 **No.** The proof generation happens entirely in your browser. Your wallet addresses and transaction details are never sent to any server.
 
 ### Can I use this for business/legal purposes?
-**Maybe.** GhostReceipt provides cryptographic proof of payment, but whether it's accepted for legal/business purposes depends on the other party. It's best used for situations where both parties agree to use privacy-preserving proofs.
+**Maybe.** GhostReceipt provides cryptographic payment proof, but acceptance depends on your counterparty and jurisdiction.
 
 ## Complementary Projects
 

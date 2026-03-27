@@ -15,7 +15,7 @@ This directory is the central home for project documentation.
 
 - Security and secret handling: [docs/runbooks/SECURITY.md](./runbooks/SECURITY.md)
 - Threat model: [docs/runbooks/THREAT_MODEL.md](./runbooks/THREAT_MODEL.md)
-- Cloudflare deployment: [docs/runbooks/CLOUDFLARE_DEPLOYMENT.md](./runbooks/CLOUDFLARE_DEPLOYMENT.md)
+- Cloudflare Pages deployment: [docs/runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md](./runbooks/CLOUDFLARE_PAGES_DEPLOYMENT.md)
 - Cloudflare edge rate-limits: [docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md](./runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 - Oracle fail-safe routing (client primary, edge backup): [docs/runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md](./runbooks/ORACLE_FAILSAFE_ARCHITECTURE.md)
 - Manual QA and live-data reproduction: [docs/runbooks/MANUAL_TESTING.md](./runbooks/MANUAL_TESTING.md)
@@ -31,4 +31,4 @@ This directory is the central home for project documentation.
 - Changelog: [`CHANGELOG.md`](../CHANGELOG.md)
 - Contributing guide: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
 - License: [`LICENSE`](../LICENSE)
-- Third-party attributions: [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)
+- Third-party attributions: [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)

@@ -1,5 +1,37 @@
 # Task Plan - 2026-03-26
 
+## Objective (Full Docs Accuracy Cleanup + README 10% Reduction)
+
+Audit documentation for stale guidance, remove obsolete files, correct inaccurate deployment/security instructions, and reduce README length by about 10% while preserving key content.
+
+## Plan
+
+- [x] Identify and remove obsolete docs that conflict with current Cloudflare Pages architecture.
+- [x] Rewrite/update deployment and security docs that have drifted from current scripts/config (`out` export, strict branch protection, `cf:sync`, D1 binding).
+- [x] Update all references/links to removed or renamed docs.
+- [x] Reduce `README.md` word count by roughly 10% (target ~2,330 words from 2,593) by removing repetition and tightening wording.
+- [x] Run link/reference sanity checks and record review results.
+
+## Review (Full Docs Accuracy Cleanup + README 10% Reduction)
+
+- Status: Completed
+- Obsolete docs removed:
+  - `docs/DEPLOYMENT_READY.md`
+  - `docs/runbooks/CLOUDFLARE_DEPLOYMENT.md`
+- Canonicalization updates:
+  - Replaced duplicate/stale deployment guidance with a canonical pointer doc: `docs/CLOUDFLARE_DEPLOYMENT.md`
+  - Rewrote `docs/runbooks/QUICK_DEPLOY.md` to match current CI-gated Pages flow.
+  - Rewrote `docs/runbooks/SECURITY.md` to current secret sync + transparency-log policy.
+  - Updated `docs/README.md` and `docs/DEPLOYMENT_CHECKLIST.md` links to current Pages runbooks.
+  - Added historical disclaimer to `docs/project/IMPLEMENTATION_PROGRESS.md`.
+  - Updated stale template `wrangler.toml.example` to current Pages + D1 shape.
+- README reduction:
+  - Before: `2593` words
+  - After: `2281` words
+  - Reduction: `312` words (~`12.0%`)
+- Accuracy/link verification:
+  - Local markdown link sanity check passes: no broken local markdown links found.
+
 ## Objective (Improve Mobile Fit For Long Error Wording)
 
 Ensure long plain-English error messages remain readable on small screens by reducing base font size and improving text wrapping in shared error UI components.

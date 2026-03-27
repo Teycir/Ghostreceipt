@@ -1,273 +1,105 @@
-# Security & Sensitive Data Protection
+# Security Runbook
 
-## Sensitive Data Classification
+This runbook defines how GhostReceipt handles secrets, oracle keys, and production security controls.
 
-### 🔴 CRITICAL - Never Commit
-These files contain secrets and must NEVER be committed to git:
+## Secret Handling
 
-1. **Environment Files**
-   - `.env`
-   - `.env.local`
-   - `.env.*.local`
-   - `.dev.vars` (Cloudflare local secrets)
+Never commit real secrets.
 
-2. **Cloudflare Configuration**
-   - `wrangler.toml` (contains account ID and namespace IDs)
-   - `.wrangler/` directory (local Cloudflare cache)
+Sensitive files/values:
+- `.env.local`, `.env.*.local`, `.dev.vars`
+- Provider keys/tokens (`ETHERSCAN_*`, `HELIUS_*`, `BLOCKCYPHER_*`)
+- `ORACLE_PRIVATE_KEY`
 
-3. **API Keys & Secrets**
-   - Oracle private keys
-   - Etherscan API keys
-   - Helius API keys
-   - Any provider API keys
+Tracked files that are safe to commit:
+- `wrangler.toml` (project config + D1 binding metadata)
+- `wrangler.toml.example`
 
-### 🟡 PROTECTED - Gitignored
-These files are automatically excluded:
+## Local Setup
 
-- `node_modules/`
-- `.next/` (build artifacts)
-- `*.tsbuildinfo` (TypeScript cache)
-- `.cache/` (various caches)
-- `.eslintcache`
-
-`package-lock.json` is intentionally tracked and should be reviewed in pull requests.
-
-## Setup Instructions
-
-### 1. Copy Template Files
+1. Copy runtime template:
 
 ```bash
-# Copy environment template
 cp .env.example .env.local
-
-# Copy Cloudflare config template
-cp wrangler.toml.example wrangler.toml
 ```
 
-### 2. Fill in Secrets
+2. Fill required values in `.env.local`.
 
-Edit `.env.local`:
-```bash
-# Oracle signing key (generate with: openssl rand -hex 32)
-ORACLE_PRIVATE_KEY=your_generated_key_here
-
-# Etherscan API keys (get from: https://etherscan.io/myapikey)
-ETHERSCAN_API_KEY_1=your_primary_key
-ETHERSCAN_API_KEY_2=your_fallback_key_1
-ETHERSCAN_API_KEY_3=your_fallback_key_2
-
-# Helius API keys (get from: https://dashboard.helius.dev)
-HELIUS_API_KEY_1=your_primary_key
-HELIUS_API_KEY_2=your_fallback_key_1
-HELIUS_API_KEY_3=your_fallback_key_2
-
-```
-
-Edit `wrangler.toml`:
-```toml
-account_id = "8f49c311ff2506c6020f060b8c1da686"  # Your Cloudflare account ID
-
-[[kv_namespaces]]
-binding = "CACHE"
-id = "your_kv_namespace_id"  # From: wrangler kv:namespace create CACHE
-```
-
-### 3. Set Cloudflare Secrets
-
-For production deployment:
-```bash
-wrangler secret put ORACLE_PRIVATE_KEY --env production
-wrangler secret put ETHERSCAN_API_KEY_1 --env production
-wrangler secret put ETHERSCAN_API_KEY_2 --env production
-wrangler secret put ETHERSCAN_API_KEY_3 --env production
-wrangler secret put HELIUS_API_KEY_1 --env production
-wrangler secret put HELIUS_API_KEY_2 --env production
-wrangler secret put HELIUS_API_KEY_3 --env production
-```
-
-## Verification Checklist
-
-Before committing code:
-
-- [ ] No `.env` or `.env.local` files staged
-- [ ] No `wrangler.toml` staged (use `wrangler.toml.example` instead)
-- [ ] No API keys in code (search for: `sk_`, `pk_`, `api_key`)
-- [ ] No hardcoded secrets in source files
-- [ ] CI check passes (GitHub Actions checks for secrets)
-
-## CI/CD Secret Detection
-
-Our CI pipeline automatically checks for leaked secrets:
+3. Validate before deploy:
 
 ```bash
-# Runs on every push/PR
-grep -r "sk_live_\|pk_live_\|api_key" \
-  --exclude-dir=node_modules \
-  --exclude-dir=.next \
-  --exclude-dir=.git .
+npm run deploy:check
 ```
 
-If secrets are found, the build fails.
+## Cloudflare Secrets Sync (Recommended)
 
-## Key Rotation
+Use the strict sync script instead of manual one-by-one secret commands.
 
-### Oracle Private Key
 ```bash
-# Generate new key
+npm run cf:sync
+```
+
+This sync path is fail-fast for missing required runtime keys and endpoint URL variables.
+
+## Oracle Key Management
+
+- Keep oracle private key only in secret stores (`.env.local` locally, Cloudflare Pages secrets in hosted envs).
+- Rotate on compromise suspicion, maintainer offboarding, or scheduled cadence.
+- Keep transparency log updated during key rotations:
+  - `config/oracle/transparency-log.json`
+
+Validation command:
+
+```bash
+npm run check:oracle-transparency-log
+```
+
+## Rotation Checklist
+
+1. Generate new key:
+
+```bash
 openssl rand -hex 32
-
-# Update in .env.local
-ORACLE_PRIVATE_KEY=new_key_here
-
-# Update in Cloudflare
-wrangler secret put ORACLE_PRIVATE_KEY --env production
 ```
 
-### Provider API Keys
-```bash
-# Update in .env.local
-ETHERSCAN_API_KEY_1=new_key_here
-HELIUS_API_KEY_1=new_key_here
+2. Update `.env.local` and re-sync:
 
-# Update in Cloudflare
-wrangler secret put ETHERSCAN_API_KEY_1 --env production
-wrangler secret put HELIUS_API_KEY_1 --env production
+```bash
+npm run cf:sync
 ```
 
-## Oracle Key Management Policy
+3. Update transparency log entry and run validation.
+4. Redeploy production.
+5. Verify newly generated receipts pass `/api/oracle/verify-signature`.
 
-This project currently operates a centralized oracle signing key for canonical tx fact attestations.
+## Runtime Protection Layers
 
-### Key Custody
-- The oracle private key must exist only in secret stores (`.env.local` for local dev, deployment secret manager for hosted envs).
-- If running verification in an isolated environment, prefer `ORACLE_PUBLIC_KEY` without private key access.
-- Never place oracle private key material in source files, commit history, issue trackers, screenshots, or CI logs.
-- Limit write access to production secret stores to a minimal maintainer set.
+- In-app route limits for oracle endpoints.
+- Cloudflare edge WAF rate-limit rules for:
+  - `POST /api/oracle/fetch-tx`
+  - `POST /api/oracle/verify-signature`
+- Primary-first client routing with optional backup only on transport/platform failures.
 
-### Rotation Cadence
-- Scheduled rotation: every 90 days.
-- Immediate rotation triggers:
-  - suspected key leak or accidental exposure,
-  - maintainer access change/offboarding,
-  - unexplained signature verification anomalies.
+Related guide:
+- [CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md](./CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md)
 
-### Rotation Procedure (High-Level)
-1. Generate a new key with `openssl rand -hex 32`.
-2. Deploy updated secret to all environments.
-3. Redeploy oracle API.
-4. Verify signatures on newly issued payloads.
-5. Archive a short provenance note (date, operator, reason, impacted environments).
+## Incident Response (Secret Exposure)
 
-### Transparency Log Policy (Required)
-- Oracle key validity windows are tracked in `config/oracle/transparency-log.json`.
-- The verifier rejects receipts when the `oraclePubKeyId` is:
-  - missing from the log,
-  - outside its `validFrom`/`validUntil` window at `signedAt`,
-  - marked as `revoked` for that window.
-- The log is append-only and hash-chained per entry (`prevEntryHash` -> `entryHash`).
+1. Rotate exposed key(s) immediately.
+2. Re-sync secrets (`npm run cf:sync`) and redeploy.
+3. Verify oracle signature path and generation flow.
+4. Document incident window and remediation.
 
-### Transparency Log Rotation Workflow
-1. Add a new entry to `config/oracle/transparency-log.json` with:
-   - `keyId` derived from the new public key,
-   - `publicKey` (hex),
-   - `validFrom` unix timestamp,
-   - `status` (`active`, `retired`, or `revoked`),
-   - chain fields (`prevEntryHash`, `entryHash`).
-2. If retiring/revoking a prior key, close its window with `validUntil`.
-3. Run `npm run check:oracle-transparency-log`.
-4. Run verifier route tests and confirm both old/new key expectations.
-5. Merge and deploy the key rotation change in the same release train as the secret update.
+## Continuous Checks
 
-### Verification Endpoint Usage
-- The verifier path checks oracle-authenticated payloads via `POST /api/oracle/verify-signature`.
-- Client routing is primary-first (`/api/oracle/*`) with optional edge backup (`NEXT_PUBLIC_ORACLE_EDGE_BACKUP_BASE`) only on transport/platform failures.
-- Do not use backup retries for normal `4xx` responses (including `429`) to avoid policy bypass.
-- Oracle signatures are Ed25519 (`64` bytes, hex-encoded as `128` chars).
-- Ensure `oraclePubKeyId` in generated payloads maps to the active key ID after rotation.
-- Keep route-level rate limiting enabled for this endpoint to reduce probing/oracle abuse risk.
-- Add Cloudflare edge rate-limit rules as an outer wall (runbook: `docs/runbooks/CLOUDFLARE_EDGE_RATE_LIMIT_RULES.md`).
+Run before release:
 
-### Runtime Storage Limits (Important)
-- Current replay protection and API rate limit stores are in-memory maps.
-- In serverless environments (for example Cloudflare Workers), this state is instance-local and ephemeral.
-- Consequences:
-  - Limits can reset on cold starts.
-  - Cross-instance requests can bypass per-instance counters.
-- Production guidance:
-  - Cloudflare target: keep edge route wall active now, then move in-app coordination to Durable Objects or KV-backed state.
-  - In-app rate-limit backend mode:
-    - `ORACLE_RATE_LIMIT_BACKEND=legacy` (default, safest baseline),
-    - `ORACLE_RATE_LIMIT_BACKEND=durable_prefer` (technical durable failures fallback to legacy),
-    - `ORACLE_RATE_LIMIT_BACKEND=durable_strict` (no fallback on technical failure).
-  - Node target: use a shared external store (for example Redis) for distributed rate/replay controls.
-
-### CSP Trade-offs
-- Current CSP includes `script-src 'unsafe-eval'` because `snarkjs`/witness tooling requires dynamic evaluation in browser flows.
-- Current CSP also includes `script-src 'unsafe-inline'`, which broadens XSS exposure.
-- Plan to replace inline allowances with nonce/hash-based scripts when framework/runtime support is finalized for this app path.
-
-### Bitcoin Canonical Value Semantics
-- Bitcoin `valueAtomic` currently represents total transaction output value (`sum(vout)` / `output_total`), not recipient-specific net received value.
-- This is intentional for the current privacy model (recipient redacted), but must be documented in product/release notes so claim interpretation is unambiguous.
-
-### Incident Response Addendum (Oracle Key Compromise)
-1. Rotate `ORACLE_PRIVATE_KEY` immediately in all environments.
-2. Revoke any stale deployment credentials used during the incident window.
-3. Publish an incident note with exposure window and remediation steps.
-4. Re-run a release-readiness checklist before resuming normal issuance.
-
-## Emergency Response
-
-If secrets are accidentally committed:
-
-1. **Immediately rotate all exposed keys**
-2. **Remove from git history:**
-   ```bash
-   git filter-branch --force --index-filter \
-     "git rm --cached --ignore-unmatch .env.local" \
-     --prune-empty --tag-name-filter cat -- --all
-   ```
-3. **Force push (if safe):**
-   ```bash
-   git push origin --force --all
-   ```
-4. **Notify team and update documentation**
-
-## Best Practices
-
-1. **Never share secrets via:**
-   - Email
-   - Slack/Discord
-   - Screenshots
-   - Public repositories
-
-2. **Use secure channels:**
-   - Password managers (1Password, Bitwarden)
-   - Encrypted messaging (Signal)
-   - Cloudflare secrets (for production)
-
-3. **Regular audits:**
-   - Review `.gitignore` monthly
-   - Check for exposed secrets quarterly
-   - Rotate keys every 6 months
-
-4. **Development workflow:**
-   - Use `.env.local` for local dev
-   - Use Cloudflare secrets for production
-   - Never commit real keys to git
-
-## Monitoring
-
-Check for exposed secrets:
 ```bash
-# Local check
 npm run check:secrets
-
-# GitHub Actions check (automatic on push)
+npm run deploy:check
 ```
 
 ## References
 
-- [Cloudflare Secrets Management](https://developers.cloudflare.com/workers/configuration/secrets/)
-- [GitHub Secret Scanning](https://docs.github.com/en/code-security/secret-scanning)
-- [OWASP Secrets Management](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
+- Cloudflare Pages security model: https://developers.cloudflare.com/pages/
+- OWASP Secrets Management Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
