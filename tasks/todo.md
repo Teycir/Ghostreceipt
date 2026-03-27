@@ -1,5 +1,27 @@
 # Task Plan - 2026-03-26
 
+## Objective (Improve Generator Error Clarity + Show Full Transaction Hash)
+
+Make amount validation errors plain-English and adjust the transaction-hash input typography so long hashes are fully readable instead of appearing cropped.
+
+## Plan
+
+- [x] Rewrite witness amount error copy in `lib/generator/error-messages.ts` to plain-English guidance (including a specific zero-value case).
+- [x] Update unit tests in `tests/unit/generator/error-messages.test.ts` to assert new user-facing wording.
+- [x] Reduce transaction-hash input typography size in `components/generator/generator-form.tsx` so full 66-char Ethereum hashes fit better.
+- [x] Run targeted tests and document outcome in this task file.
+
+## Review (Improve Generator Error Clarity + Show Full Transaction Hash)
+
+- Status: Completed
+- UI copy improvements:
+  - Replaced technical witness amount error text with plain-English guidance.
+  - Added explicit zero-value transaction message to clarify why positive claim amounts fail on txs that send no native value.
+- Hash visibility improvement:
+  - Updated transaction hash input typography to compact monospace sizing (`10px` mobile, `11px` small, `12px` desktop with tighter tracking) to reduce visible truncation.
+- Verification:
+  - `npm test -- tests/unit/generator/error-messages.test.ts --runInBand --ci` (pass)
+
 ## Objective (Add Assets Images To README)
 
 Show the newly added product screenshots from `assets/` in the root README so visitors can quickly see the UI and generated output.

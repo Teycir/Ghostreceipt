@@ -67,9 +67,12 @@ export function mapWitnessValidationErrors(validationErrors: string[]): string {
     if (match) {
       const realValue = match[1] ?? '0';
       const claimedAmount = match[2] ?? '0';
-      return `Claim (${claimedAmount}) > tx value (${realValue}). Try ${realValue}?`;
+      if (realValue === '0') {
+        return `This transaction sent 0 on-chain. Your minimum claim is ${claimedAmount}, so this proof cannot be generated. Paste the hash of a transaction that actually sent funds.`;
+      }
+      return `This transaction sent ${realValue}, but your minimum claim is ${claimedAmount}. Set the claim to ${realValue} or less, then try again.`;
     }
-    return 'Claim exceeds tx value. Lower amount and retry.';
+    return 'Your claimed amount is higher than what this transaction sent. Lower the claim and retry.';
   }
 
   if (normalizedFirstError.includes('before minimum date')) {

@@ -295,7 +295,7 @@ export function GeneratorForm(): React.JSX.Element {
             onChange={handleTxHashChange}
             disabled={isProcessing}
             error={errors.txHash}
-            className="h-8 px-2 py-1 text-[12px]"
+            className="h-8 px-2 py-1 font-mono text-[10px] tracking-tight sm:text-[11px] md:text-[12px]"
           />
           {txHashFeedback && !errors.txHash && (
             <p

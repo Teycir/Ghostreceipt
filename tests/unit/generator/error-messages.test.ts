@@ -63,7 +63,7 @@ describe('generator smart error messages', () => {
     expect(message).toContain('BITCOIN_PROVIDER_BLOCKCYPHER_MAINNET_URL');
   });
 
-  it('maps witness amount/date violations to user-readable text', () => {
+  it('maps witness amount/date violations to plain-English guidance', () => {
     const amountMessage = mapWitnessValidationErrors([
       'Real value (100) is less than claimed amount (200)',
     ]);
@@ -71,9 +71,20 @@ describe('generator smart error messages', () => {
       'Real timestamp (10) is before minimum date (20)',
     ]);
 
-    expect(amountMessage).toContain('Claim (200) > tx value (100)');
-    expect(amountMessage).toContain('Try 100?');
+    expect(amountMessage).toContain('This transaction sent 100');
+    expect(amountMessage).toContain('minimum claim is 200');
+    expect(amountMessage).toContain('100 or less');
     expect(dateMessage).toContain('Tx date (1970-01-01)');
     expect(dateMessage).toContain('min date (1970-01-01)');
+  });
+
+  it('explains zero-value transactions in plain English', () => {
+    const amountMessage = mapWitnessValidationErrors([
+      'Real value (0) is less than claimed amount (50000000000000000)',
+    ]);
+
+    expect(amountMessage).toContain('sent 0 on-chain');
+    expect(amountMessage).toContain('minimum claim is 50000000000000000');
+    expect(amountMessage).toContain('actually sent funds');
   });
 });
