@@ -29,24 +29,30 @@ cp .env.example .env.local
 
 ## Live Reproduction Data (Real On-Chain)
 
-Use real transaction data verified in live integration flows (as of 2026-03-25):
+Use real transaction data verified against production API (`https://ghostreceipt.pages.dev`) as of `2026-03-27`:
 
 - BTC:
-  - `470e55fb000d45c1873a88fe7d3ee1f20208be7d7661c2e29300780a50dd6769`
-  - Explorer: `https://mempool.space/tx/470e55fb000d45c1873a88fe7d3ee1f20208be7d7661c2e29300780a50dd6769`
+  - `d07422d13247b8f59bddd9ea53f8ccbd0f6a14e6f666eb3dde703c7db4fd1f58`
+  - Explorer: `https://mempool.space/tx/d07422d13247b8f59bddd9ea53f8ccbd0f6a14e6f666eb3dde703c7db4fd1f58`
 - ETH (native):
-  - `0xb0cf76e4cdb751093ec1fadd8a790fad6331a3e85be33e30e44108dbc71778ef`
-  - Explorer: `https://etherscan.io/tx/0xb0cf76e4cdb751093ec1fadd8a790fad6331a3e85be33e30e44108dbc71778ef`
+  - `0x07f38e681d32e36213e575b25a5f6367ac2fee9eb3c3976d9651ec0786c8ca42`
+  - Explorer: `https://etherscan.io/tx/0x07f38e681d32e36213e575b25a5f6367ac2fee9eb3c3976d9651ec0786c8ca42`
 - ETH (USDC):
-  - `0x09180a76aed361c4eeecbf510efdc05fa6314d2f1ff35e33e244da0c7ca31755`
-  - Explorer: `https://etherscan.io/tx/0x09180a76aed361c4eeecbf510efdc05fa6314d2f1ff35e33e244da0c7ca31755`
+  - `0x49f81b3603bda9461ce92925666c215442ed48f53e62ea8b066f3e46d828213c`
+  - Explorer: `https://etherscan.io/tx/0x49f81b3603bda9461ce92925666c215442ed48f53e62ea8b066f3e46d828213c`
 - SOL:
-  - `5JrFL9NNVNLV1PvnUbDd9BBCFZBgYACJSZHrKabKd21WR6DppEepK68CNFrM3Hi8FGHeKBXpGVVkUKeQhuvMXGJ1`
-  - Explorer: `https://solscan.io/tx/5JrFL9NNVNLV1PvnUbDd9BBCFZBgYACJSZHrKabKd21WR6DppEepK68CNFrM3Hi8FGHeKBXpGVVkUKeQhuvMXGJ1`
+  - `4AotthQtPNPMenWxNHr9QGaPh8moLAwX4bRMdbi8sezPW5N3vesV9HUDFYo9kH3anGgLNZTtPYDxpKfq7e58o5zs`
+  - Explorer: `https://solscan.io/tx/4AotthQtPNPMenWxNHr9QGaPh8moLAwX4bRMdbi8sezPW5N3vesV9HUDFYo9kH3anGgLNZTtPYDxpKfq7e58o5zs`
 
 For claim inputs, start with conservative values:
 - Claimed amount: `1`
 - Minimum date: a historical date well before the tx date (for example `2020-01-01`).
+
+For explicit bound checks per transaction:
+- Positive amount check: set claimed/minimum amount equal to the fetched on-chain amount.
+- Negative amount check: set claimed/minimum amount to fetched amount + `1`.
+- Positive date check: set minimum date equal to the fetched transaction date.
+- Negative date check: set minimum date to one day after the fetched transaction date.
 
 If a hash becomes unavailable over time, replace with current real tx values in:
 - `.env.local`:

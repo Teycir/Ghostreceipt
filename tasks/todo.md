@@ -2488,3 +2488,26 @@ Harden Solana consensus verification so we first verify against Chainstack, then
   - `npm run typecheck` (pass)
   - `LIVE_INTEGRATION=1 ORACLE_SOL_CONSENSUS_MODE=strict LIVE_SOL_TX_SIGNATURE=2EZa6mCEiQnc9aK8cDdbtdCqJuJr8b8hxxeRrzAH7YwSm3jF7jH5jztofBDGuWhjyH3vuEQhScZvWNRMBhdN1haX SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL=https://solana-mainnet.core.chainstack.com/bd168936a4de5ea0717eb19690ac5978 npx jest tests/integration/live-solana-e2e.test.ts --runInBand --ci --testTimeout=240000` (pass)
   - `LIVE_INTEGRATION=1 ... SOLANA_PROVIDER_CHAINSTACK_MAINNET_URL=https://solana-mainnet.core.chainstack.com/invalid npx jest tests/integration/live-consensus-flows.test.ts -t "live Solana consensus behavior" --runInBand --ci --testTimeout=300000` (pass, validates strict Solana consensus still succeeds when Chainstack is unavailable via public RPC fallback)
+
+## Objective (Document Production Bound-Check Validation Snapshot)
+
+Record production live-check outcomes for BTC/ETH/USDC/SOL, including positive and out-of-bound negative amount/date checks.
+
+## Plan
+
+- [x] Update manual testing runbook with fresh production-verified hashes.
+- [x] Document stale documented USDC hash replacement in runbook notes.
+- [x] Add production validation snapshot (amount/date bound-check logic and expected outcomes).
+
+## Review (Document Production Bound-Check Validation Snapshot)
+
+- Status: Completed
+- Updated docs:
+  - `docs/runbooks/MANUAL_TESTING.md`
+    - Refreshed BTC/ETH/USDC/SOL live reproduction hashes to production-verified values (as of 2026-03-27).
+    - Added explicit positive/negative bound-check instructions for amount and date.
+  - `docs/runbooks/FRESH_TRANSACTION_TEST_DATA_2026-03-26.md`
+    - Added `Production Validation Snapshot (2026-03-27)` section.
+    - Documented documented-hash status and stale USDC replacement.
+    - Added fresh production table with `valueAtomic`, UTC timestamp, and `consensus_verified` status for BTC/ETH/USDC/SOL.
+    - Added bound-check rules used (`value`, `value+1`, same date, +1 day).
