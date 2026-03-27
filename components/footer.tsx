@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 const links = [
   { label: 'History', href: '/history' },
   { label: 'How to Use', href: '/docs/how-to-use.html' },
+  { label: 'Explainer Video', href: 'https://youtu.be/Dj2BSDsNJC4', external: true },
   { label: 'FAQ',        href: '/docs/faq.html' },
   { label: 'Security',   href: '/docs/security.html' },
   { label: 'License',    href: '/docs/license.html' },
