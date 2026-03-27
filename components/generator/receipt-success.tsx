@@ -236,6 +236,9 @@ export function ReceiptSuccess({
             Verification Code
           </p>
           <p className="mt-1 font-mono text-sm text-cyan-100">{verificationCode}</p>
+          <p className="mt-1 text-[10px] leading-snug text-cyan-100/70">
+            Use this code to quickly confirm the link or QR is for the same receipt.
+          </p>
         </div>
 
         <Button
